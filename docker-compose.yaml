@@ -37,7 +37,7 @@ services:
     volumes:
       - ./:/usr/src/app
     environment:
-      - LOG_SINK=loki
+      - LOG_SINK=stdout
       - LOKI_URL=http://loki:3100
       - APP_NAME=gs-scaffold
       - APP_VERSION=0.0.1

@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ClsModule, ClsService } from 'nestjs-cls';
-import { buildAppLogger } from './logger.factory';
-import { Log } from './structured-logger';
+import { buildAppLogger } from '../logger.factory';
+import { Log } from '../structured-logger';
 
 describe('Structured Logger Unit Tests', () => {
   let clsService: ClsService;

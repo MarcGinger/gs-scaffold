@@ -4,7 +4,7 @@ import { Queue, Worker } from 'bullmq';
 import {
   addJobWithTrace,
   setTraceContextOnJobStart,
-} from './logging-integrations';
+} from '../logging-integrations';
 
 describe('BullMQ Trace Propagation', () => {
   let clsService: ClsService;

@@ -9,7 +9,7 @@ import { TraceMiddleware } from './shared/logging/trace.middleware';
   imports: [
     ClsModule.forRoot({
       global: true,
-      middleware: { mount: true },
+      middleware: { mount: true, generateId: true },
     }),
     LoggingModule,
   ],

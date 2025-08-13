@@ -12,8 +12,13 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
 
+# Ensure dist directory exists and build the application
+COPY . .
+RUN npm run build
+
 USER node
 
 EXPOSE 3010
 
-CMD ["npm", "run", "start:dev"]
+# Use production start to ensure JSON logging and stability
+CMD ["npm", "run", "start:prod"]

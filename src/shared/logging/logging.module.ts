@@ -1,6 +1,7 @@
 import { LoggerModule } from 'nestjs-pino';
 import { Module } from '@nestjs/common';
 import { APP_LOGGER_PROVIDER } from './logger.factory';
+import { appLoggerProvider } from './logging.providers';
 import { randomUUID } from 'crypto';
 
 function buildTransport() {
@@ -104,8 +105,8 @@ export function redactPayload(
       },
     }),
   ],
-  providers: [APP_LOGGER_PROVIDER],
-  exports: [APP_LOGGER_PROVIDER],
+  providers: [APP_LOGGER_PROVIDER, appLoggerProvider],
+  exports: [APP_LOGGER_PROVIDER, appLoggerProvider],
 })
 export class LoggingModule {}
 

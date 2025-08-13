@@ -1,4 +1,4 @@
-import { Log, BaseCtx } from '../structured-logger';
+import { Log, BaseCtx } from '../../structured-logger';
 import pino from 'pino';
 
 describe('Log helpers', () => {

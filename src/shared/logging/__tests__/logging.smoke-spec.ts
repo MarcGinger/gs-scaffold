@@ -3,7 +3,7 @@ import { ClsService } from 'nestjs-cls';
 import {
   addJobWithTrace,
   setTraceContextOnJobStart,
-} from './logging-integrations';
+} from '../logging-integrations';
 
 describe('BullMQ trace propagation', () => {
   it('should propagate traceId from producer to worker', async (done) => {

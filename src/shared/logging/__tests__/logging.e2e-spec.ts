@@ -7,10 +7,10 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ClsModule, ClsService } from 'nestjs-cls';
-import { LoggingModule } from './logging.module';
-import { TraceMiddleware } from './trace.middleware';
-import { AppController } from '../../app.controller';
-import { AppService } from '../../app.service';
+import { LoggingModule } from '../logging.module';
+import { TraceMiddleware } from '../trace.middleware';
+import { AppController } from '../../../app.controller';
+import { AppService } from '../../../app.service';
 
 @Module({
   imports: [
