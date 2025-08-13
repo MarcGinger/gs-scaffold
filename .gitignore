@@ -3,6 +3,7 @@
 /node_modules
 /build
 /loki-data
+/grafana-data
 # Logs
 logs
 *.log

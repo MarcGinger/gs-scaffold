@@ -7,6 +7,7 @@ import { AppConfigUtil } from './shared/config/app-config.util';
 import { ConfigManager } from './shared/config/config.manager';
 import { APP_LOGGER } from './shared/logging/logging.providers';
 import { Log } from './shared/logging/structured-logger';
+import { ResultInterceptor } from './shared/errors/result.interceptor';
 
 async function bootstrap() {
   let baseLogger: PinoLogger | undefined;
@@ -61,6 +62,15 @@ async function bootstrap() {
 
     // Enable graceful shutdown hooks
     app.enableShutdownHooks();
+
+    // Register global Result Interceptor for automatic Result<T,E> → HTTP conversion
+    app.useGlobalInterceptors(new ResultInterceptor());
+
+    Log.minimal.info(baseLogger, 'Result Interceptor registered globally', {
+      method: 'bootstrap',
+      feature: 'error_management',
+      description: 'Automatic Result<T,E> to HTTP response conversion enabled',
+    });
 
     await app.listen(port);
 

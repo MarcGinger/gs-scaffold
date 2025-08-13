@@ -8,6 +8,12 @@ import { Log } from '../shared/logging/structured-logger';
 // Create service-specific logger helpers
 const userLoggerFactory = createServiceLoggerFactory('user-service');
 
+// DTOs for request/response
+interface CreateUserDto {
+  name: string;
+  email: string;
+}
+
 @Controller('users')
 export class UserController {
   private readonly log: Logger;
@@ -22,13 +28,22 @@ export class UserController {
     );
   }
 
+  @Get()
+  findAllUsers(): any {
+    Log.minimal.info(this.log, 'Get all users endpoint called', {
+      method: 'findAllUsers',
+      endpoint: 'GET /users',
+    });
+
+    return this.userService.findAllUsers();
+  }
+
   @Post()
-  createUser(
-    @Body() userData: { id: string; name?: string; email?: string },
-  ): any {
+  createUser(@Body() userData: CreateUserDto): any {
     Log.minimal.info(this.log, 'Create user endpoint called', {
       method: 'createUser',
       endpoint: 'POST /users',
+      userEmail: userData.email,
     });
 
     return this.userService.createUser(userData);
@@ -41,17 +56,6 @@ export class UserController {
       endpoint: 'GET /users/:id',
       userId: id,
     });
-
-    // This will log with:
-    // {
-    //   "service": "user-service",
-    //   "component": "UserController",
-    //   "level": "info",
-    //   "msg": "Find user endpoint called",
-    //   "method": "findUser",
-    //   "endpoint": "GET /users/:id",
-    //   "userId": "123"
-    // }
 
     return this.userService.findUser(id);
   }
