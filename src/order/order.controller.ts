@@ -23,7 +23,7 @@ export class OrderController {
   }
 
   @Post()
-  createOrder(@Body() orderData: { id: string; amount: number }) {
+  createOrder(@Body() orderData: { id: string; amount: number }): any {
     Log.minimal.info(this.log, 'Create order endpoint called', {
       method: 'createOrder',
       endpoint: 'POST /orders',
@@ -33,7 +33,7 @@ export class OrderController {
   }
 
   @Get(':id/status')
-  getOrderStatus(@Param('id') id: string) {
+  getOrderStatus(@Param('id') id: string): any {
     Log.minimal.info(this.log, 'Get order status endpoint called', {
       method: 'getOrderStatus',
       endpoint: 'GET /orders/:id/status',

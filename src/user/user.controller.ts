@@ -23,7 +23,9 @@ export class UserController {
   }
 
   @Post()
-  createUser(@Body() userData: { id: string; name?: string; email?: string }) {
+  createUser(
+    @Body() userData: { id: string; name?: string; email?: string },
+  ): any {
     Log.minimal.info(this.log, 'Create user endpoint called', {
       method: 'createUser',
       endpoint: 'POST /users',
@@ -33,7 +35,7 @@ export class UserController {
   }
 
   @Get(':id')
-  findUser(@Param('id') id: string) {
+  findUser(@Param('id') id: string): any {
     Log.minimal.info(this.log, 'Find user endpoint called', {
       method: 'findUser',
       endpoint: 'GET /users/:id',
