@@ -6,11 +6,11 @@ import { Logger } from 'pino';
 
 /**
  * Configuration service that integrates AppConfigUtil with your logging system
+ * Demonstrates proper use of component logger pattern
  */
 export class ConfigService {
   private static instance: ConfigService;
   private readonly config: ReturnType<typeof AppConfigUtil.getLoggingConfig>;
-  private logger?: Logger; // Component logger instance
 
   private constructor() {
     this.config = AppConfigUtil.getLoggingConfig();
@@ -24,27 +24,19 @@ export class ConfigService {
   }
 
   /**
-   * Initialize the component logger - call this once with the base logger
-   */
-  private initializeLogger(baseLogger: Logger): void {
-    if (!this.logger) {
-      this.logger = createComponentLogger(baseLogger, 'ConfigService');
-    }
-  }
-
-  /**
    * Validates and logs configuration on startup
+   * Uses component logger for automatic component name inclusion
    */
   validateAndLog(logger: Logger): void {
-    // Initialize the component logger
-    this.initializeLogger(logger);
+    // Create a component-specific logger that automatically includes component name
+    const componentLogger = createComponentLogger(logger, 'ConfigService');
 
     const validation = AppConfigUtil.validateLoggingConfig();
 
     if (!validation.valid) {
-      // Use Log.minimal.error for configuration failures
+      // Using Log.minimal.error since component is already set by componentLogger
       Log.minimal.error(
-        this.logger!,
+        componentLogger,
         new Error('Configuration validation failed'),
         'Configuration validation failed',
         {
@@ -59,8 +51,7 @@ export class ConfigService {
     }
 
     if (validation.warnings.length > 0) {
-      // Use Log.minimal.warn for warnings
-      Log.minimal.warn(this.logger!, 'Configuration warnings detected', {
+      Log.minimal.warn(componentLogger, 'Configuration warnings detected', {
         method: 'validateAndLog',
         configWarnings: validation.warnings,
       });
@@ -68,10 +59,10 @@ export class ConfigService {
 
     // Also run the logging-specific validation
     try {
-      validateProductionLogging(this.logger!);
+      validateProductionLogging(componentLogger);
     } catch (error) {
       Log.minimal.error(
-        this.logger!,
+        componentLogger,
         error,
         'Production logging validation failed',
         {
@@ -81,9 +72,8 @@ export class ConfigService {
       throw error;
     }
 
-    // Use Log.minimal.info for successful validation
     Log.minimal.info(
-      this.logger!,
+      componentLogger,
       'Configuration validated and loaded successfully',
       {
         method: 'validateAndLog',
@@ -120,45 +110,5 @@ export class ConfigService {
 
   isContainerized(): boolean {
     return AppConfigUtil.isContainerized();
-  }
-
-  /**
-   * Log a configuration info message using the minimal pattern
-   */
-  logInfo(message: string, context: Record<string, any> = {}): void {
-    if (this.logger) {
-      Log.minimal.info(this.logger, message, {
-        method: 'logInfo',
-        ...context,
-      });
-    }
-  }
-
-  /**
-   * Log a configuration warning using the minimal pattern
-   */
-  logWarning(message: string, context: Record<string, any> = {}): void {
-    if (this.logger) {
-      Log.minimal.warn(this.logger, message, {
-        method: 'logWarning',
-        ...context,
-      });
-    }
-  }
-
-  /**
-   * Log a configuration error using the minimal pattern
-   */
-  logError(
-    error: Error,
-    message: string,
-    context: Record<string, any> = {},
-  ): void {
-    if (this.logger) {
-      Log.minimal.error(this.logger, error, message, {
-        method: 'logError',
-        ...context,
-      });
-    }
   }
 }

@@ -3,15 +3,18 @@ import type { Logger } from 'pino';
 import { Log } from './shared/logging/structured-logger';
 import {
   APP_LOGGER,
-  createComponentLogger,
+  createServiceLoggerFactory,
 } from './shared/logging/logging.providers';
+
+// Create service-specific logger helpers for main app
+const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
 
 @Injectable()
 export class AppService {
   private readonly log: Logger;
 
   constructor(@Inject(APP_LOGGER) baseLogger: Logger) {
-    this.log = createComponentLogger(baseLogger, 'AppService');
+    this.log = appLoggerFactory.createComponentLogger(baseLogger, 'AppService');
   }
 
   getHello(): string {

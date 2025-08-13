@@ -11,7 +11,10 @@ export const APP_LOGGER = 'APP_LOGGER';
  *
  * This means services only need to pass method-specific context.
  */
-export const appLoggerProvider: Provider = {
+/**
+ * Enhanced app logger provider with configurable service name
+ */
+export const createAppLoggerProvider = (serviceName?: string) => ({
   provide: APP_LOGGER,
   inject: [ClsService],
   useFactory: (cls: ClsService): Logger => {
@@ -60,7 +63,7 @@ export const appLoggerProvider: Provider = {
         app: process.env.APP_NAME ?? 'app',
         environment: process.env.NODE_ENV ?? 'local',
         version: process.env.APP_VERSION ?? '0.0.1',
-        service: process.env.APP_NAME ?? 'app', // default service name
+        service: serviceName || process.env.APP_NAME || 'app', // Configurable service name
       },
       mixin() {
         return {
@@ -81,19 +84,50 @@ export const appLoggerProvider: Provider = {
       },
     });
   },
-};
+});
+
+// Keep the original for backward compatibility
+export const appLoggerProvider = createAppLoggerProvider();
 
 /**
- * Helper function to create component-specific loggers.
- * Returns a child logger that always includes the component name.
+ * Helper function to create component-specific loggers with configurable service name.
+ * Returns a child logger that always includes the component name and service name.
  *
  * @param baseLogger - The base APP_LOGGER instance
  * @param component - Component name (usually class name)
- * @returns Child logger with component context
+ * @param serviceName - Optional service name override
+ * @returns Child logger with component and service context
  */
 export function createComponentLogger(
   baseLogger: Logger,
   component: string,
+  serviceName?: string,
 ): Logger {
-  return baseLogger.child({ component });
+  const context: Record<string, any> = { component };
+
+  // Add service name if provided (overrides any existing service in base logger)
+  if (serviceName) {
+    context.service = serviceName;
+  }
+
+  return baseLogger.child(context);
+}
+
+/**
+ * Create a service-scoped logger factory for a specific module
+ * This allows each module to have its own service name without hardcoding
+ */
+export function createServiceLoggerFactory(serviceName: string) {
+  return {
+    /**
+     * Create a component logger for this service
+     */
+    createComponentLogger: (baseLogger: Logger, component: string) =>
+      createComponentLogger(baseLogger, component, serviceName),
+
+    /**
+     * Create a service-specific app logger provider
+     */
+    createAppLoggerProvider: () => createAppLoggerProvider(serviceName),
+  };
 }
