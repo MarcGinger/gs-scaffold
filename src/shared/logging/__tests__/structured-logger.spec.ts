@@ -1,4 +1,4 @@
-import { Log, BaseCtx } from '../../structured-logger';
+import { Log, BaseCtx } from '../structured-logger';
 import pino from 'pino';
 
 describe('Log helpers', () => {
@@ -21,8 +21,8 @@ describe('Log helpers', () => {
         service: 'test-service',
         component: 'test-component',
         method: 'test-method',
-        msg: 'Test message',
       }),
+      'Test message',
     );
     spy.mockRestore();
   });

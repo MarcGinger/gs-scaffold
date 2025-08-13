@@ -20,5 +20,5 @@ USER node
 
 EXPOSE 3010
 
-# Use production start to ensure JSON logging and stability
-CMD ["npm", "run", "start:prod"]
+# Use npm script for development with live reload
+CMD ["npm", "run", "start:dev"]

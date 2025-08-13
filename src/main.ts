@@ -8,7 +8,7 @@ async function bootstrap() {
       bufferLogs: true,
     });
     app.useLogger(app.get(Logger));
-    await app.listen(process.env.PORT ?? 3020);
+    await app.listen(process.env.PORT ?? 3010);
   } catch (err) {
     // Use pino directly for startup errors
     // If LoggingModule is not available, fallback to console

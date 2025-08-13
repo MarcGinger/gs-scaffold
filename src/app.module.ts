@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClsModule } from 'nestjs-cls';
 import { LoggingModule } from './shared/logging/logging.module';
-import { TraceMiddleware } from './shared/logging/trace.middleware';
+import { EnhancedTraceMiddleware } from './shared/logging/enhanced-trace.middleware';
 
 @Module({
   imports: [
@@ -18,6 +18,6 @@ import { TraceMiddleware } from './shared/logging/trace.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TraceMiddleware).forRoutes('*');
+    consumer.apply(EnhancedTraceMiddleware).forRoutes('*');
   }
 }

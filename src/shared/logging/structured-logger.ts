@@ -139,6 +139,49 @@ export const Log = {
       `${ctx.method} ${ctx.url} ${ctx.statusCode} failed`,
     );
   },
+
+  // Performance monitoring helpers
+  perfSummary(
+    logger: Logger,
+    operation: string,
+    ctx: BaseCtx & {
+      processed: number;
+      errors: number;
+      timingMs: number;
+      throughputPerSec?: number;
+    },
+  ) {
+    logger.info(
+      {
+        ...ctx,
+        performance: {
+          operation,
+          processed: ctx.processed,
+          errors: ctx.errors,
+          throughputPerSec:
+            ctx.throughputPerSec || ctx.processed / (ctx.timingMs / 1000),
+        },
+      },
+      `Performance summary: ${operation}`,
+    );
+  },
+
+  // Memory usage tracking
+  memoryUsage(logger: Logger, ctx: BaseCtx) {
+    const usage = process.memoryUsage();
+    logger.debug(
+      {
+        ...ctx,
+        memory: {
+          heapUsedMB: Math.round(usage.heapUsed / 1024 / 1024),
+          heapTotalMB: Math.round(usage.heapTotal / 1024 / 1024),
+          externalMB: Math.round(usage.external / 1024 / 1024),
+          rssMB: Math.round(usage.rss / 1024 / 1024),
+        },
+      },
+      'Memory usage snapshot',
+    );
+  },
 };
 
 /**
@@ -154,7 +197,39 @@ export function warnRateLimited(
 ) {
   const now = Date.now();
   if ((lastWarns.get(key) ?? 0) + minMs < now) {
-    Log.warn(logger, msg, ctx);
+    Log.warn(logger, msg, {
+      ...ctx,
+      rateLimited: true,
+      lastWarnedMs: lastWarns.get(key),
+    });
     lastWarns.set(key, now);
+  }
+}
+
+/**
+ * Enhanced rate-limited helper with count tracking
+ */
+const warnCounts = new Map<string, { count: number; lastEmitted: number }>();
+export function warnRateLimitedWithCount(
+  logger: Logger,
+  key: string,
+  msg: string,
+  ctx: BaseCtx & Record<string, any>,
+  minMs = 60000,
+) {
+  const now = Date.now();
+  const current = warnCounts.get(key) || { count: 0, lastEmitted: 0 };
+  current.count++;
+
+  if (current.lastEmitted + minMs < now) {
+    Log.warn(logger, msg, {
+      ...ctx,
+      rateLimited: true,
+      suppressedCount: current.count - 1,
+      suppressedDurationMs: now - current.lastEmitted,
+    });
+    warnCounts.set(key, { count: 0, lastEmitted: now });
+  } else {
+    warnCounts.set(key, current);
   }
 }
