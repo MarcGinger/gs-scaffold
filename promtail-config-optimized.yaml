@@ -1,0 +1,123 @@
+# Optimized Promtail configuration for centralized logging strategy
+# Targets JSON logs from gs-scaffold container with proper parsing
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+
+scrape_configs:
+  # Scrape logs from the gs-scaffold container
+  - job_name: gs-scaffold-app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: gs-scaffold
+          app: gs-scaffold
+          environment: development
+    pipeline_stages:
+      # Match gs-scaffold container logs
+      - match:
+          selector: '{job="gs-scaffold"}'
+          stages:
+            # Parse Docker container log format
+            - regex:
+                expression: '^(?P<timestamp>\S+)\s+(?P<stream>stdout|stderr)\s+(?P<flags>\S+)\s+(?P<content>.*)$'
+            
+            # Try to parse JSON logs
+            - json:
+                expressions:
+                  level: level
+                  msg: msg
+                  time: time
+                  app: app
+                  service: service
+                  component: component
+                  method: method
+                  traceId: traceId
+                  correlationId: correlationId
+                  tenantId: tenantId
+                  userId: userId
+                  expected: expected
+                  timingMs: timingMs
+                source: content
+            
+            # Set timestamp from log entry if available
+            - timestamp:
+                source: time
+                format: RFC3339Nano
+                fallback_formats:
+                  - RFC3339
+                  - "2006-01-02T15:04:05.000Z"
+            
+            # Add labels from parsed JSON
+            - labels:
+                level:
+                app:
+                service:
+                component:
+                environment:
+            
+            # Remove raw content from output
+            - output:
+                source: content
+
+  # Scrape system logs for infrastructure monitoring  
+  - job_name: system-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          source: syslog
+          __path__: /var/log/*.log
+    pipeline_stages:
+      - match:
+          selector: '{job="system"}'
+          stages:
+            - regex:
+                expression: '^(?P<timestamp>\S+\s+\S+\s+\S+)\s+(?P<host>\S+)\s+(?P<service>\S+)(\[(?P<pid>\d+)\])?\:\s+(?P<message>.*)$'
+            - timestamp:
+                source: timestamp
+                format: "Jan 2 15:04:05"
+            - labels:
+                service:
+                host:
+
+  # Scrape Docker container logs for other services (Loki, Grafana)
+  - job_name: docker-containers
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            timestamp: time
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+      - regex:
+          source_labels: [__meta_docker_container_name]
+          expression: '/(.*)'
+          target_label: container_name
+      - labels:
+          container_name:
+          stream:

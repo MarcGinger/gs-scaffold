@@ -1,0 +1,232 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "GS-Scaffold Centralized Logging",
+    "tags": ["logging", "nestjs", "pino"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "title": "Log Level Distribution",
+        "type": "stat",
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "count by (level) (count_over_time({app=\"gs-scaffold\"} [5m]))",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "${DS_LOKI}"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "displayName": "${__field.labels.level}"
+          }
+        }
+      },
+      {
+        "title": "Recent Errors",
+        "type": "logs",
+        "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+        "targets": [
+          {
+            "expr": "{app=\"gs-scaffold\"} | json | level=\"error\"",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "${DS_LOKI}"
+            }
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "showCommonLabels": false,
+          "wrapLogMessage": true,
+          "prettifyLogMessage": true,
+          "enableLogDetails": true,
+          "dedupStrategy": "none",
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "title": "Request Traces",
+        "type": "table",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "{app=\"gs-scaffold\"} | json | service != \"\" | component != \"\" | method != \"\" | line_format \"{{.time}} | {{.traceId}} | {{.service}}.{{.component}}.{{.method}} | {{.msg}}\"",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "${DS_LOKI}"
+            }
+          }
+        ],
+        "transformations": [
+          {
+            "id": "extractFields",
+            "options": {
+              "source": "Line",
+              "format": "auto"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "displayMode": "list",
+              "filterable": true
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "traceId"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": [
+                    {
+                      "title": "View Full Trace",
+                      "url": "/d/trace-detail?var-traceId=${__value.text}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "title": "Component Performance",
+        "type": "stat",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "expr": "avg by (service, component, method) (avg_over_time({app=\"gs-scaffold\"} | json | timingMs > 0 | unwrap timingMs [5m]))",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "${DS_LOKI}"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "displayName": "${__field.labels.service}.${__field.labels.component}.${__field.labels.method}",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 100 },
+                { "color": "red", "value": 500 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "ESDB Events",
+        "type": "logs",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "expr": "{app=\"gs-scaffold\"} | json | esdb_category != \"\"",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "${DS_LOKI}"
+            }
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "wrapLogMessage": true,
+          "prettifyLogMessage": true,
+          "enableLogDetails": true
+        }
+      },
+      {
+        "title": "BullMQ Jobs",
+        "type": "logs",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "targets": [
+          {
+            "expr": "{app=\"gs-scaffold\"} | json | bull_queue != \"\"",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "${DS_LOKI}"
+            }
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "wrapLogMessage": true,
+          "prettifyLogMessage": true,
+          "enableLogDetails": true
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "traceId",
+          "type": "textbox",
+          "label": "Trace ID",
+          "description": "Filter logs by specific trace ID"
+        },
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values({app=\"gs-scaffold\"}, service)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "multi": true,
+          "includeAll": true
+        },
+        {
+          "name": "component",
+          "type": "query",
+          "query": "label_values({app=\"gs-scaffold\", service=~\"$service\"}, component)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{app=\"gs-scaffold\"} | json | msg=~\".*Application started.*\"",
+          "titleFormat": "App Started",
+          "textFormat": "{{msg}}"
+        }
+      ]
+    }
+  }
+}

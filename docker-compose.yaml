@@ -1,0 +1,54 @@
+services:
+  loki:
+    image: grafana/loki:3.4.1
+    # optional: user: "10001:10001"  # runs as 10001 anyway
+    command: ['-config.file=/etc/loki/local-config.yaml']
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - ./loki-data:/var/loki
+
+  promtail:
+    image: grafana/promtail:3.4.1
+    depends_on: [loki]
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail-config-optimized.yaml:/etc/promtail/config.yml:ro
+    command: ['-config.file=/etc/promtail/config.yml']
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - '3000:3000'
+    depends_on: [loki]
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+  gs-scaffold:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./:/usr/src/app
+    environment:
+      - LOG_SINK=loki
+      - LOKI_URL=http://loki:3100
+      - APP_NAME=gs-scaffold
+      - APP_VERSION=0.0.1
+      - NODE_ENV=development
+      - LOG_LEVEL=info
+      - PRETTY_LOGS=false
+    ports:
+      - '3010:3010'
+    depends_on:
+      - loki
+    labels:
+      - 'app=gs-scaffold'
+      - 'service=gs-scaffold'
+      - 'environment=development'

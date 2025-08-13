@@ -2,7 +2,7 @@
 /dist
 /node_modules
 /build
-
+/loki-data
 # Logs
 logs
 *.log
