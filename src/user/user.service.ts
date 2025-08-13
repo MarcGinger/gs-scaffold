@@ -3,6 +3,11 @@ import { Logger } from 'pino';
 import { APP_LOGGER } from '../shared/logging/logging.providers';
 import { createServiceLoggerFactory } from '../shared/logging/logging.providers';
 import { Log } from '../shared/logging/structured-logger';
+import {
+  UserDomainError,
+  UserErrors,
+} from 'src/contexts/user/errors/user.errors';
+import { err, Result, withContext } from 'src/shared/errors';
 
 // Create service-specific logger helpers
 const userLoggerFactory = createServiceLoggerFactory('user-service');
@@ -56,7 +61,7 @@ export class UserService {
     }
   }
 
-  findUser(id: string): User {
+  findUser(id: string): Result<User, UserDomainError> {
     Log.minimal.debug(this.log, 'Finding user by ID', {
       method: 'findUser',
       userId: id,
@@ -72,11 +77,11 @@ export class UserService {
     //   "userId": "123"
     // }
 
-    return {
-      id,
-      name: 'John Doe',
-      email: 'john@example.com',
-      createdAt: new Date(),
-    };
+    return err(
+      withContext(UserErrors.USER_NOT_FOUND, {
+        correlationId: '12346566',
+        userId: id,
+      }),
+    );
   }
 }
