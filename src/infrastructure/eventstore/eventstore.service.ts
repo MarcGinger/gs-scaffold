@@ -37,12 +37,12 @@ export class EventStoreService {
   }
 
   /**
-   * Get EventStore connection string from config
+   * Get EventStore connection string from centralized config
    */
   private getEsdbConnectionString(): string {
     return (
-      process.env.ESDB_CONNECTION_STRING ??
-      process.env.ESDB_ENDPOINT ??
+      this.configManager.get('ESDB_CONNECTION_STRING') ??
+      this.configManager.get('ESDB_ENDPOINT') ??
       'esdb://localhost:2113?tls=false'
     );
   }

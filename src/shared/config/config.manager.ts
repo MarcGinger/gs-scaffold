@@ -148,6 +148,15 @@ export class ConfigManager {
     return AppConfigUtil.getDatabaseConfig();
   }
 
+  /**
+   * Generic environment variable getter with optional default
+   * Centralizes all env var access through ConfigManager
+   */
+  get(key: string, defaultValue?: string): string | undefined {
+    const value = process.env[key];
+    return value ?? defaultValue;
+  }
+
   buildUrl(port?: number, path?: string) {
     return AppConfigUtil.buildUrl(port, path);
   }
