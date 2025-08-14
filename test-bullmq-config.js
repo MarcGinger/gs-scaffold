@@ -11,7 +11,7 @@ async function testBullMQConfiguration() {
 
   // Create Redis connection like in bullmq.module.ts
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-  
+
   let notificationQueue = null;
   let projectionQueue = null;
   let queueEvents = null;
@@ -72,19 +72,25 @@ async function testBullMQConfiguration() {
     // Test queue stats
     const notificationStats = await notificationQueue.getWaiting();
     const projectionStats = await projectionQueue.getWaiting();
-    console.log(`📊 Notification queue waiting jobs: ${notificationStats.length}`);
+    console.log(
+      `📊 Notification queue waiting jobs: ${notificationStats.length}`,
+    );
     console.log(`📊 Projection queue waiting jobs: ${projectionStats.length}`);
 
     // Create a test worker to process the notification job
     console.log('\n🏃 Testing Worker Processing...');
     let jobProcessed = false;
-    
-    testWorker = new Worker('notification', async (job) => {
-      console.log(`🔄 Processing job ${job.id}: ${job.name}`);
-      console.log(`   Data:`, job.data);
-      jobProcessed = true;
-      return { processed: true, timestamp: new Date().toISOString() };
-    }, { connection: redis });
+
+    testWorker = new Worker(
+      'notification',
+      async (job) => {
+        console.log(`🔄 Processing job ${job.id}: ${job.name}`);
+        console.log(`   Data:`, job.data);
+        jobProcessed = true;
+        return { processed: true, timestamp: new Date().toISOString() };
+      },
+      { connection: redis },
+    );
 
     // Wait for job processing
     await new Promise((resolve) => {
@@ -94,7 +100,7 @@ async function testBullMQConfiguration() {
           resolve();
         }
       }, 100);
-      
+
       // Timeout after 5 seconds
       setTimeout(() => {
         clearInterval(checkInterval);
@@ -111,7 +117,7 @@ async function testBullMQConfiguration() {
     // Test queue events
     console.log('\n📡 Testing Queue Events...');
     let eventReceived = false;
-    
+
     queueEvents.on('completed', ({ jobId }) => {
       console.log(`📨 Queue event received: Job ${jobId} completed`);
       eventReceived = true;
@@ -130,48 +136,49 @@ async function testBullMQConfiguration() {
           resolve();
         }
       }, 100);
-      
+
       setTimeout(() => {
         clearInterval(checkInterval);
         resolve();
       }, 3000);
     });
 
-    console.log(`📡 Queue events: ${eventReceived ? '✅ Working' : '⚠️  No events received'}`);
+    console.log(
+      `📡 Queue events: ${eventReceived ? '✅ Working' : '⚠️  No events received'}`,
+    );
 
     console.log('\n🎉 BullMQ Configuration Test Complete!');
     console.log('✅ All BullMQ components are working correctly');
-
   } catch (error) {
     console.log('❌ BullMQ Configuration Error:', error.message);
     console.log('   Stack:', error.stack);
   } finally {
     // Cleanup
     console.log('\n🧹 Cleaning up...');
-    
+
     if (testWorker) {
       await testWorker.close();
       console.log('✅ Worker closed');
     }
-    
+
     if (queueEvents) {
       await queueEvents.close();
       console.log('✅ Queue Events closed');
     }
-    
+
     if (notificationQueue) {
       // Clean up test jobs
       await notificationQueue.obliterate({ force: true });
       await notificationQueue.close();
       console.log('✅ Notification Queue cleaned and closed');
     }
-    
+
     if (projectionQueue) {
       await projectionQueue.obliterate({ force: true });
       await projectionQueue.close();
       console.log('✅ Projection Queue cleaned and closed');
     }
-    
+
     if (redis) {
       await redis.quit();
       console.log('✅ Redis connection closed');

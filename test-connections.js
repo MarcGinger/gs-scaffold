@@ -22,15 +22,17 @@ async function testConnections() {
     });
 
     await redis.connect();
-    
+
     // Test basic operations
     await redis.set('test:connection', 'ok');
     const result = await redis.get('test:connection');
     await redis.del('test:connection');
-    
+
     if (result === 'ok') {
       console.log('✅ Redis: Connected and operational');
-      console.log(`   URL: ${process.env.REDIS_URL || 'redis://localhost:6379'}`);
+      console.log(
+        `   URL: ${process.env.REDIS_URL || 'redis://localhost:6379'}`,
+      );
       redisConnected = true;
     }
   } catch (error) {
@@ -55,8 +57,9 @@ async function testConnections() {
   let client = null;
 
   try {
-    const connectionString = process.env.ESDB_CONNECTION_STRING || 'esdb://localhost:2113?tls=false';
-    
+    const connectionString =
+      process.env.ESDB_CONNECTION_STRING || 'esdb://localhost:2113?tls=false';
+
     client = EventStoreDBClient.connectionString(connectionString);
 
     // Test connection with a simple read operation
@@ -75,17 +78,22 @@ async function testConnections() {
 
     console.log('✅ EventStore DB: Connected and operational');
     console.log(`   URL: ${connectionString}`);
-    console.log(`   Test read: ${eventFound ? 'Found events' : 'No events (empty store)'}`);
+    console.log(
+      `   Test read: ${eventFound ? 'Found events' : 'No events (empty store)'}`,
+    );
     esdbConnected = true;
-
   } catch (error) {
     console.log('❌ EventStore DB: Connection failed');
     console.log(`   Error: ${error.message}`);
-    console.log(`   URL: ${process.env.ESDB_CONNECTION_STRING || 'esdb://localhost:2113?tls=false'}`);
-    
+    console.log(
+      `   URL: ${process.env.ESDB_CONNECTION_STRING || 'esdb://localhost:2113?tls=false'}`,
+    );
+
     // Check if it's a common connection issue
     if (error.message.includes('ECONNREFUSED')) {
-      console.log('   💡 Hint: Make sure EventStore DB is running on port 2113');
+      console.log(
+        '   💡 Hint: Make sure EventStore DB is running on port 2113',
+      );
     } else if (error.message.includes('ENOTFOUND')) {
       console.log('   💡 Hint: Check the hostname in your connection string');
     }
@@ -105,20 +113,26 @@ async function testConnections() {
   console.log('📋 Connection Summary:');
   console.log(`   Redis: ${redisConnected ? '✅ Ready' : '❌ Failed'}`);
   console.log(`   EventStore DB: ${esdbConnected ? '✅ Ready' : '❌ Failed'}`);
-  
+
   if (redisConnected && esdbConnected) {
     console.log('\n🎉 All databases are ready for EventStore infrastructure!');
     return true;
   } else {
-    console.log('\n⚠️  Some databases are not available. Check the errors above.');
+    console.log(
+      '\n⚠️  Some databases are not available. Check the errors above.',
+    );
     return false;
   }
 }
 
 // Environment variable hints
 console.log('🔧 Environment Variables:');
-console.log(`   REDIS_URL: ${process.env.REDIS_URL || 'redis://localhost:6379 (default)'}`);
-console.log(`   ESDB_CONNECTION_STRING: ${process.env.ESDB_CONNECTION_STRING || 'esdb://localhost:2113?tls=false (default)'}`);
+console.log(
+  `   REDIS_URL: ${process.env.REDIS_URL || 'redis://localhost:6379 (default)'}`,
+);
+console.log(
+  `   ESDB_CONNECTION_STRING: ${process.env.ESDB_CONNECTION_STRING || 'esdb://localhost:2113?tls=false (default)'}`,
+);
 console.log('');
 
 // Run the test

@@ -5,6 +5,7 @@
 ### ✅ Full Position Storage (No Precision Loss)
 
 **Before**: Single string that could lose EventStore position semantics
+
 ```typescript
 // OLD - String position (precision issues)
 interface CheckpointStore {
@@ -17,25 +18,27 @@ await store.set('stream', '12345@67890'); // Custom format, parsing needed
 ```
 
 **After**: Full `{commit, prepare}` bigint preservation
+
 ```typescript
 // NEW - Structured position (no precision loss)
 interface CheckpointPosition {
-  commit: string;     // bigint serialized as string
-  prepare: string;    // bigint serialized as string  
+  commit: string; // bigint serialized as string
+  prepare: string; // bigint serialized as string
   updatedAt?: string; // ISO timestamp
 }
 
 // Usage with semantic preservation
 await store.set('stream', {
-  commit: '12345678901234567890',    // Full bigint precision
-  prepare: '12345678901234567891',   // Full bigint precision
-  updatedAt: new Date().toISOString()
+  commit: '12345678901234567890', // Full bigint precision
+  prepare: '12345678901234567891', // Full bigint precision
+  updatedAt: new Date().toISOString(),
 });
 ```
 
 ### ✅ Structured Logging (Pino Integration)
 
 **Before**: NestJS Logger with object parameters that don't serialize properly
+
 ```typescript
 // OLD - Improper log serialization
 this.logger.debug({ key, position }, 'checkpoint.set');
@@ -43,6 +46,7 @@ this.logger.error({ key, error: String(error) }, 'checkpoint.set.failed');
 ```
 
 **After**: Proper Pino structured logging with Log.minimal API
+
 ```typescript
 // NEW - Proper structured logging
 Log.minimal.debug(this.logger, 'Checkpoint set', {
@@ -65,6 +69,7 @@ Log.minimal.error(this.logger, err as Error, 'Failed to set checkpoint', {
 ### ✅ Production Redis Operations
 
 **Before**: Blocking KEYS command and inefficient DEL
+
 ```typescript
 // OLD - Blocking operations (dangerous in production)
 const keys = await this.redis.keys(`${this.keyPrefix}${pattern}`); // O(N) blocking
@@ -72,15 +77,20 @@ const deletedCount = await this.redis.del(...keys); // Blocking delete
 ```
 
 **After**: Non-blocking SCAN with UNLINK
+
 ```typescript
 // NEW - Non-blocking operations
 do {
   const [nextCursor, foundKeys] = await this.redis.scan(
-    cursor, 'MATCH', pattern, 'COUNT', pageSize
+    cursor,
+    'MATCH',
+    pattern,
+    'COUNT',
+    pageSize,
   );
   cursor = nextCursor;
   if (foundKeys.length > 0) {
-    keys.push(...foundKeys.map(k => k.replace(this.prefix, '')));
+    keys.push(...foundKeys.map((k) => k.replace(this.prefix, '')));
   }
 } while (cursor !== '0');
 
@@ -94,6 +104,7 @@ for (const chunk of chunks) {
 ### ✅ Hash Storage vs Plain Strings
 
 **Before**: Plain string storage requiring serialization
+
 ```typescript
 // OLD - String storage (serialization overhead)
 await this.redis.set(this.getKey(key), position);
@@ -101,6 +112,7 @@ const position = await this.redis.get(this.getKey(key));
 ```
 
 **After**: Redis hash for structured data
+
 ```typescript
 // NEW - Hash storage (native structure)
 const payload: Record<string, string> = {
@@ -121,6 +133,7 @@ return {
 ### ✅ Optional TTL & Environment Namespacing
 
 **Before**: Fixed namespace, no TTL support
+
 ```typescript
 // OLD - Fixed prefix, no TTL
 private readonly keyPrefix = 'checkpoint:';
@@ -128,6 +141,7 @@ await this.redis.set(this.getKey(key), position); // No TTL
 ```
 
 **After**: Environment namespacing with optional TTL
+
 ```typescript
 // NEW - Environment-aware with TTL
 constructor(
@@ -149,12 +163,14 @@ await multi.exec();
 ### ✅ Compare-and-Set for Concurrent Writers
 
 **Before**: No protection against concurrent updates
+
 ```typescript
 // OLD - Race conditions possible
 await store.set(key, newPosition); // Could overwrite newer position
 ```
 
 **After**: Monotonic write protection with Lua script
+
 ```typescript
 // NEW - CAS protection
 const updated = await store.setIfNewer(key, newPosition);
@@ -168,16 +184,18 @@ if (updated) {
 ### ✅ Batched/Pipelined Operations
 
 **Before**: Individual operations for bulk scenarios
+
 ```typescript
 // OLD - Sequential operations
 const values = await this.redis.mget(...keys); // Single operation, but limited
 ```
 
 **After**: Pipelined operations for efficiency
+
 ```typescript
 // NEW - Pipelined operations
 const pipeline = this.redis.pipeline();
-keys.forEach(k => pipeline.hgetall(k));
+keys.forEach((k) => pipeline.hgetall(k));
 const replies = await pipeline.exec();
 // Process all results efficiently
 ```
@@ -211,10 +229,14 @@ if (position) {
 await store.set('stream-key', `${commit}@${prepare}`);
 
 // NEW
-await store.set('stream-key', {
-  commit: commit.toString(),
-  prepare: prepare.toString(),
-}, 3600); // Optional 1-hour TTL
+await store.set(
+  'stream-key',
+  {
+    commit: commit.toString(),
+    prepare: prepare.toString(),
+  },
+  3600,
+); // Optional 1-hour TTL
 ```
 
 ### 3. Update Bulk Operations
@@ -237,7 +259,7 @@ const store = new RedisCheckpointStore(redis);
 const store = new RedisCheckpointStore(
   redis,
   pinoLogger,
-  process.env.NODE_ENV === 'production' ? 'prod:' : 'dev:'
+  process.env.NODE_ENV === 'production' ? 'prod:' : 'dev:',
 );
 ```
 
@@ -263,6 +285,7 @@ node test-enhanced-checkpoint.js
 ```
 
 The test validates:
+
 - ✅ Full position storage with bigint precision
 - ✅ TTL functionality with Redis expiration
 - ✅ SCAN operations with pagination

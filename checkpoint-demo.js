@@ -12,9 +12,9 @@ console.log('  position = "12345@67890" // Custom format, parsing needed');
 console.log('');
 console.log('NEW: Structured position with full semantics');
 const position = {
-  commit: '12345678901234567890',    // Full bigint precision
-  prepare: '12345678901234567891',   // Full bigint precision  
-  updatedAt: new Date().toISOString()
+  commit: '12345678901234567890', // Full bigint precision
+  prepare: '12345678901234567891', // Full bigint precision
+  updatedAt: new Date().toISOString(),
 };
 console.log('  position =', JSON.stringify(position, null, 2));
 console.log('✅ No precision loss, semantic clarity\n');
@@ -46,12 +46,16 @@ console.log('');
 console.log('NEW: Non-blocking operations');
 console.log('  // SCAN with pagination (non-blocking)');
 console.log('  do {');
-console.log('    [cursor, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 500);');
+console.log(
+  '    [cursor, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 500);',
+);
 console.log('    // Process batch...');
 console.log('  } while (cursor !== "0");');
 console.log('');
 console.log('  // UNLINK for non-blocking delete');
-console.log('  await redis.unlink(...chunk); // Offloads freeing to background');
+console.log(
+  '  await redis.unlink(...chunk); // Offloads freeing to background',
+);
 console.log('✅ Production-safe, no blocking\n');
 
 // ===== 4. HASH STORAGE =====
@@ -79,7 +83,9 @@ console.log('OLD: Fixed namespace, no cleanup');
 console.log('  keyPrefix = "checkpoint:" // No environment separation');
 console.log('');
 console.log('NEW: Environment-aware with automatic cleanup');
-console.log('  envPrefix = process.env.NODE_ENV === "production" ? "prod:" : "dev:"');
+console.log(
+  '  envPrefix = process.env.NODE_ENV === "production" ? "prod:" : "dev:"',
+);
 console.log('  key = "prod:checkpoint:order-processor"');
 console.log('  TTL = 3600 seconds (1 hour auto-cleanup)');
 console.log('✅ Environment isolation, automatic cleanup\n');
@@ -87,13 +93,15 @@ console.log('✅ Environment isolation, automatic cleanup\n');
 // ===== 6. COMPARE-AND-SET =====
 console.log('🔒 6. Compare-and-Set (CAS) for Concurrency');
 console.log('OLD: Race conditions possible');
-console.log('  await store.set(key, newPosition); // Could overwrite newer data!');
+console.log(
+  '  await store.set(key, newPosition); // Could overwrite newer data!',
+);
 console.log('');
 console.log('NEW: Monotonic write protection');
 const casDemo = {
   currentCommit: '5000',
-  incomingNewer: '6000',  // Should succeed
-  incomingOlder: '4000',  // Should fail
+  incomingNewer: '6000', // Should succeed
+  incomingOlder: '4000', // Should fail
 };
 console.log('  // Only update if incoming commit >= stored commit');
 console.log('  const updated = await store.setIfNewer(key, position);');
@@ -148,7 +156,9 @@ console.log('✅ Performance - Pipelined bulk operations');
 console.log('✅ Type Safety - Full TypeScript interfaces');
 console.log('');
 
-console.log('🚀 The CheckpointStore is now production-ready with enterprise patterns!');
+console.log(
+  '🚀 The CheckpointStore is now production-ready with enterprise patterns!',
+);
 console.log('   Run with Redis to see all features in action.');
 
 // Show interface comparison
@@ -160,11 +170,17 @@ console.log('  set(key: string, position: string): Promise<void>');
 console.log('');
 console.log('NEW Interface:');
 console.log('  get(key: string): Promise<CheckpointPosition | null>');
-console.log('  set(key: string, pos: CheckpointPosition, ttl?: number): Promise<void>');
+console.log(
+  '  set(key: string, pos: CheckpointPosition, ttl?: number): Promise<void>',
+);
 console.log('  scan(prefix?: string, pageSize?: number): Promise<string[]>');
-console.log('  getAll(prefix?: string, pageSize?: number): Promise<Record<string, CheckpointPosition>>');
+console.log(
+  '  getAll(prefix?: string, pageSize?: number): Promise<Record<string, CheckpointPosition>>',
+);
 console.log('  clear(prefix?: string, pageSize?: number): Promise<number>');
-console.log('  setIfNewer(key: string, pos: CheckpointPosition, ttl?: number): Promise<boolean>');
+console.log(
+  '  setIfNewer(key: string, pos: CheckpointPosition, ttl?: number): Promise<boolean>',
+);
 console.log('');
 console.log('CheckpointPosition Interface:');
 console.log('  {');
@@ -173,4 +189,6 @@ console.log('    prepare: string;    // bigint as string');
 console.log('    updatedAt?: string; // ISO timestamp');
 console.log('  }');
 
-console.log('\n✨ Enhancement complete! All production patterns implemented.\n');
+console.log(
+  '\n✨ Enhancement complete! All production patterns implemented.\n',
+);
