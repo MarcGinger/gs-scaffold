@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { type Logger } from 'pino';
 import {
   eventTypeFilter,
@@ -80,9 +80,10 @@ interface CheckpointPosition {
  * - DLQ support for failed events
  * - Retry classification for domain vs infrastructure errors
  * - Backpressure handling and concurrency control
+ * - Graceful shutdown with checkpoint flushing
  */
 @Injectable()
-export class CatchUpRunner {
+export class CatchUpRunner implements OnApplicationShutdown {
   private readonly runningSubscriptions = new Map<string, SubscriptionHandle>();
   private readonly pendingCheckpoints = new Map<string, CheckpointPosition>();
 
@@ -91,6 +92,43 @@ export class CatchUpRunner {
     private readonly checkpoints: CheckpointStore,
     @Inject(APP_LOGGER) private readonly log: Logger,
   ) {}
+
+  /**
+   * Graceful shutdown: stop all subscriptions and flush checkpoints
+   */
+  async onApplicationShutdown(signal?: string): Promise<void> {
+    Log.minimal.info(this.log, 'Shutting down catch-up runner', {
+      component: 'CatchUpRunner',
+      method: 'onApplicationShutdown',
+      signal,
+      activeSubscriptions: this.runningSubscriptions.size,
+    });
+
+    try {
+      // Stop all running subscriptions and flush any pending checkpoints
+      for (const [group] of this.runningSubscriptions.entries()) {
+        // Flush pending checkpoint before stopping
+        await this.flushCheckpoint(group);
+        // Stop the subscription
+        this.stop(group);
+      }
+
+      Log.minimal.info(this.log, 'Catch-up runner shutdown complete', {
+        component: 'CatchUpRunner',
+        method: 'onApplicationShutdown',
+      });
+    } catch (error) {
+      Log.minimal.error(
+        this.log,
+        error instanceof Error ? error : new Error(String(error)),
+        'Error during catch-up runner shutdown',
+        {
+          component: 'CatchUpRunner',
+          method: 'onApplicationShutdown',
+        },
+      );
+    }
+  }
 
   /**
    * Start a catch-up subscription with production patterns
@@ -330,21 +368,11 @@ export class CatchUpRunner {
       const stored = await this.checkpoints.get(group);
       if (!stored) return null;
 
-      // Support both old format (single bigint) and new format (commit:prepare)
-      if (stored.includes(':')) {
-        const [commitStr, prepareStr] = stored.split(':');
-        return {
-          commit: BigInt(commitStr),
-          prepare: BigInt(prepareStr),
-        };
-      } else {
-        // Legacy format - use same value for both
-        const position = BigInt(stored);
-        return {
-          commit: position,
-          prepare: position,
-        };
-      }
+      // The new CheckpointStore returns structured CheckpointPosition objects
+      return {
+        commit: BigInt(stored.commit),
+        prepare: BigInt(stored.prepare),
+      };
     } catch (error) {
       Log.minimal.warn(
         this.log,
@@ -368,8 +396,14 @@ export class CatchUpRunner {
     if (!pending) return;
 
     try {
-      const positionStr = `${pending.commit}:${pending.prepare}`;
-      await this.checkpoints.set(group, positionStr);
+      // Convert bigint positions to structured checkpoint position
+      const checkpointPos: import('./checkpoint.store').CheckpointPosition = {
+        commit: pending.commit.toString(),
+        prepare: pending.prepare.toString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await this.checkpoints.set(group, checkpointPos);
       this.pendingCheckpoints.delete(group);
     } catch (error) {
       Log.minimal.error(this.log, error, 'Failed to flush checkpoint', {

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import type { Logger } from 'pino';
 import { PersistentSubscriptionToStreamSettings } from '@eventstore/db-client';
 import { EventStoreService } from '../eventstore/eventstore.service';
@@ -47,15 +47,51 @@ interface EnhancedSettings
  * - Backpressure control and visibility metrics
  * - Group creation idempotence
  * - Graceful cleanup and final metrics
+ * - Graceful shutdown support
  */
 @Injectable()
-export class PersistentRunner {
+export class PersistentRunner implements OnApplicationShutdown {
   private readonly running = new Map<string, RunnerState>();
 
   constructor(
     private readonly es: EventStoreService,
     @Inject(APP_LOGGER) private readonly log: Logger,
   ) {}
+
+  /**
+   * Graceful shutdown: stop all persistent subscriptions
+   */
+  onApplicationShutdown(signal?: string): void {
+    Log.minimal.info(this.log, 'Shutting down persistent runner', {
+      component: 'PersistentRunner',
+      method: 'onApplicationShutdown',
+      signal,
+      activeSubscriptions: this.running.size,
+    });
+
+    try {
+      // Stop all running persistent subscriptions
+      for (const [subscriptionKey] of this.running.entries()) {
+        const [stream, group] = subscriptionKey.split('::');
+        this.stop(stream, group);
+      }
+
+      Log.minimal.info(this.log, 'Persistent runner shutdown complete', {
+        component: 'PersistentRunner',
+        method: 'onApplicationShutdown',
+      });
+    } catch (error) {
+      Log.minimal.error(
+        this.log,
+        error instanceof Error ? error : new Error(String(error)),
+        'Error during persistent runner shutdown',
+        {
+          component: 'PersistentRunner',
+          method: 'onApplicationShutdown',
+        },
+      );
+    }
+  }
 
   private key(stream: string, group: string): string {
     return `${stream}::${group}`;

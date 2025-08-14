@@ -187,8 +187,16 @@ export class BullMQModule implements OnApplicationShutdown {
 
     return {
       module: BullMQModule,
-      providers,
-      exports: exportsArray,
+      providers: [
+        ...providers,
+        // Add IORedis alias as a provider
+        { provide: 'IORedis', useExisting: 'BullMQ_Redis_Client' },
+      ],
+      exports: [
+        ...exportsArray,
+        // Export IORedis alias
+        'IORedis',
+      ],
       global: true,
     };
   }

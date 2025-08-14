@@ -48,6 +48,14 @@ export class EventStoreService {
   }
 
   /**
+   * Get the underlying EventStoreDBClient for direct access
+   * Used by infrastructure providers that need the raw client
+   */
+  getClient(): EventStoreDBClient {
+    return this.client;
+  }
+
+  /**
    * Append events with optimistic concurrency + structured logging + jittered backoff
    */
   async append<T>(
