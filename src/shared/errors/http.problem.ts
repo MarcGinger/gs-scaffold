@@ -34,7 +34,15 @@ export interface ProblemDetails {
  * @returns Appropriate HTTP status code
  */
 export function httpStatusFor(error: DomainError): HttpStatus {
-  // First check for specific error patterns that need special status codes
+  // First check for context-based status override
+  if (
+    error.context?.httpStatus &&
+    typeof error.context.httpStatus === 'number'
+  ) {
+    return error.context.httpStatus as HttpStatus;
+  }
+
+  // Then check for specific error patterns that need special status codes
   if (error.code.includes('NOT_FOUND')) {
     return HttpStatus.NOT_FOUND;
   }
@@ -92,31 +100,17 @@ export function toProblem(
   const status = httpStatusFor(error);
 
   const problem: ProblemDetails = {
-    type: `https://errors.api.example.com/${error.code.toLowerCase().replace('.', '/')}`,
+    type: `https://errors.api.example.com/${error.code.replace(/\./g, '/').toLowerCase()}`,
     title: error.title,
     status,
     code: error.code,
+    ...(error.detail && { detail: error.detail }),
+    ...(instance && { instance }),
   };
 
-  // Add optional fields if present
-  if (error.detail) {
-    problem.detail = error.detail;
-  }
-
-  if (instance) {
-    problem.instance = instance;
-  }
-
-  // Add context as additional properties (flatten one level)
+  // Add context as extensions to avoid field collisions
   if (error.context) {
-    Object.entries(error.context).forEach(([key, value]) => {
-      // Avoid conflicts with standard Problem Details fields
-      if (
-        !['type', 'title', 'status', 'detail', 'instance', 'code'].includes(key)
-      ) {
-        problem[key] = value;
-      }
-    });
+    problem.extensions = { ...error.context };
   }
 
   return problem;
@@ -126,12 +120,12 @@ export function toProblem(
  * Creates a Problem Details response for multiple validation errors.
  * Useful when multiple field validation errors occur simultaneously.
  *
- * @param errors Array of field validation errors
+ * @param errors Array of field validation errors with required error codes
  * @param instance Optional URI identifying this specific occurrence
  * @returns Problem Details object with validation error details
  */
 export function toValidationProblem(
-  errors: Array<{ field: string; message: string; code?: string }>,
+  errors: Array<{ field: string; message: string; code: string }>,
   instance?: string,
 ): ProblemDetails {
   return {
@@ -141,7 +135,7 @@ export function toValidationProblem(
     detail: `${errors.length} validation error(s) occurred`,
     instance,
     code: 'VALIDATION.MULTIPLE_ERRORS',
-    errors,
+    extensions: { errors },
   };
 }
 
@@ -189,15 +183,24 @@ export function toSanitizedProblem(
     infrastructure: 'A system error occurred. Please try again later.',
   };
 
+  // Mask sensitive error codes in production
+  const shouldMaskCode =
+    (error.category === 'security' || error.category === 'infrastructure') &&
+    process.env.NODE_ENV === 'production';
+
+  const sanitizedCode = shouldMaskCode
+    ? `GENERIC.${error.category.toUpperCase()}_ERROR`
+    : error.code;
+
   return {
     type: `https://errors.api.example.com/generic/${error.category}`,
     title:
       sanitizedMessages[error.category as keyof typeof sanitizedMessages] ||
       error.title,
     status,
-    code: error.code,
+    code: sanitizedCode,
     instance,
-    // Remove detailed information and context
+    // Remove detailed information and context for security
   };
 }
 
@@ -248,6 +251,7 @@ export function httpStatusToProblem(
 
 /**
  * Type guard to check if an object is a Problem Details response.
+ * Includes validation of HTTP status codes for stricter type checking.
  *
  * @param obj Object to check
  * @returns True if object conforms to Problem Details interface
@@ -258,12 +262,27 @@ export function isProblemDetails(obj: unknown): obj is ProblemDetails {
   }
 
   const problem = obj as Record<string, unknown>;
-  return (
-    'title' in problem &&
-    'status' in problem &&
-    'code' in problem &&
-    typeof problem.title === 'string' &&
-    typeof problem.status === 'number' &&
-    typeof problem.code === 'string'
-  );
+
+  // Check required fields and their types
+  if (
+    !('title' in problem) ||
+    !('status' in problem) ||
+    !('code' in problem) ||
+    typeof problem.title !== 'string' ||
+    typeof problem.status !== 'number' ||
+    typeof problem.code !== 'string'
+  ) {
+    return false;
+  }
+
+  // Validate that status is a valid HTTP status code
+  const validHttpStatuses = Object.values(HttpStatus).filter(
+    (value) => typeof value === 'number',
+  ) as number[];
+
+  if (!validHttpStatuses.includes(problem.status)) {
+    return false;
+  }
+
+  return true;
 }

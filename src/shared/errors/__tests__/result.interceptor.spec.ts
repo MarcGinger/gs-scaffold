@@ -116,7 +116,7 @@ describe('ResultInterceptor', () => {
             detail: 'The specified user does not exist or is not accessible.',
             instance: '/api/users/123',
             code: 'USER.USER_NOT_FOUND',
-            userId: '123',
+            extensions: { userId: '123' },
           });
           done();
         });
@@ -145,9 +145,11 @@ describe('ResultInterceptor', () => {
             detail: 'Not enough inventory available to fulfill this order.',
             instance: '/api/users/123',
             code: 'ORDER.INSUFFICIENT_INVENTORY',
-            itemId: 'ITEM123',
-            requested: 5,
-            available: 2,
+            extensions: {
+              itemId: 'ITEM123',
+              requested: 5,
+              available: 2,
+            },
           });
           done();
         });
@@ -198,7 +200,7 @@ describe('ResultInterceptor', () => {
           const problemDetails = result as Record<string, unknown>;
           // Check that the request passed through correctly despite missing URL fields
           expect(problemDetails.code).toBe('USER.USER_NOT_FOUND');
-          expect(problemDetails.userId).toBe('123');
+          expect(problemDetails.extensions).toEqual({ userId: '123' });
           done();
         });
     });

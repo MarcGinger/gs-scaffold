@@ -130,7 +130,7 @@ describe('HTTP Problem Details', () => {
       expect(problem.instance).toBe('/api/users/123');
     });
 
-    it('should flatten context into problem details', () => {
+    it('should place context in extensions field to avoid collisions', () => {
       const error: DomainError = {
         code: 'USER.NOT_FOUND',
         title: 'User not found',
@@ -144,9 +144,16 @@ describe('HTTP Problem Details', () => {
 
       const problem = toProblem(error);
 
-      expect(problem.userId).toBe('123');
-      expect(problem.correlationId).toBe('abc-def');
-      expect(problem.operation).toBe('getUserById');
+      expect(problem.extensions).toEqual({
+        userId: '123',
+        correlationId: 'abc-def',
+        operation: 'getUserById',
+      });
+
+      // Should not have top-level context fields
+      expect(problem.userId).toBeUndefined();
+      expect(problem.correlationId).toBeUndefined();
+      expect(problem.operation).toBeUndefined();
     });
 
     it('should not override standard problem details fields with context', () => {
@@ -167,14 +174,29 @@ describe('HTTP Problem Details', () => {
       expect(problem.title).toBe('User not found');
       expect(problem.status).toBe(404);
       expect(problem.code).toBe('USER.NOT_FOUND');
+
+      // Context values should be safely stored in extensions
+      expect(problem.extensions).toEqual({
+        title: 'Context Title',
+        status: 'Context Status',
+        code: 'Context Code',
+      });
     });
   });
 
   describe('toValidationProblem', () => {
     it('should create validation problem details for multiple errors', () => {
       const validationErrors = [
-        { field: 'email', message: 'Invalid email format' },
-        { field: 'name', message: 'Name is required' },
+        {
+          field: 'email',
+          message: 'Invalid email format',
+          code: 'VALIDATION.INVALID_EMAIL',
+        },
+        {
+          field: 'name',
+          message: 'Name is required',
+          code: 'VALIDATION.REQUIRED_FIELD',
+        },
       ];
 
       const problem = toValidationProblem(validationErrors);
@@ -185,13 +207,17 @@ describe('HTTP Problem Details', () => {
         status: 400,
         detail: '2 validation error(s) occurred',
         code: 'VALIDATION.MULTIPLE_ERRORS',
-        errors: validationErrors,
+        extensions: { errors: validationErrors },
       });
     });
 
     it('should include instance when provided', () => {
       const validationErrors = [
-        { field: 'email', message: 'Invalid email format' },
+        {
+          field: 'email',
+          message: 'Invalid email format',
+          code: 'VALIDATION.INVALID_EMAIL',
+        },
       ];
 
       const problem = toValidationProblem(validationErrors, '/api/users');

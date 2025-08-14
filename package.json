@@ -24,6 +24,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.2.0",
     "@nestjs/terminus": "^11.0.0",
     "bullmq": "^5.56.10",
     "nestjs-cls": "^6.0.1",
