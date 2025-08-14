@@ -126,6 +126,21 @@ export class ProductAggregate extends AggregateRootBase {
   }
 
   /**
+   * Restore aggregate from snapshot
+   */
+  restoreFromSnapshot(snapshot: ProductState, version: number): void {
+    this.state = snapshot;
+    this._version = version;
+  }
+
+  /**
+   * Get snapshot of current state
+   */
+  getSnapshot(): ProductState | null {
+    return this.state;
+  }
+
+  /**
    * Apply domain events to update aggregate state
    */
   protected when(event: DomainEvent): void {
