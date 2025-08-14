@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { AppDataSource } from './app.datasource';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseHealthService } from './database-health.service';
+import { LoggingModule } from 'src/shared/logging';
 
 /**
  * TypeORM Database Module
@@ -19,6 +20,7 @@ import { DatabaseHealthService } from './database-health.service';
 @Module({
   imports: [
     ConfigModule,
+    LoggingModule,
     TypeOrmModule.forRootAsync({
       useFactory: () => AppDataSource.options,
       dataSourceFactory: async () => {

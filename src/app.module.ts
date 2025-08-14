@@ -11,12 +11,17 @@ import { HealthModule } from './health';
 import { TypeOrmDatabaseModule } from './shared/infrastructure/database';
 import { SecurityModule } from './security/security.module';
 import { AuthTestModule } from './auth-test/auth-test.module';
+import { ConfigModule } from '@nestjs/config';
 
 // Create service-specific logger factory for the main app
 const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // makes config available app-wide
+      envFilePath: '.env', // can be array for multiple files
+    }),
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true, generateId: true },
