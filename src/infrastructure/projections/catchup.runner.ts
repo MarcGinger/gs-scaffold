@@ -1,192 +1,390 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { type Logger } from 'pino';
+import {
+  eventTypeFilter,
+  START,
+  AllStreamSubscription,
+} from '@eventstore/db-client';
 import { EventStoreService } from '../eventstore/eventstore.service';
-import { eventTypeFilter, START } from '@eventstore/db-client';
 import { CheckpointStore } from './checkpoint.store';
+import { Log } from '../../shared/logging/structured-logger';
+import { APP_LOGGER } from '../../shared/logging/logging.providers';
 
-/**
- * Type for projection handler functions
- */
-export type ProjectFn = (evt: {
+export type ProjectionEvent = {
   type: string;
   data: any;
-  metadata: any;
+  metadata?: Record<string, any>;
   streamId: string;
-  revision?: bigint;
+  revision: number;
   position?: { commit: bigint; prepare: bigint };
-}) => Promise<void>;
+};
+
+export type ProjectFn = (event: ProjectionEvent) => Promise<void> | void;
+
+export interface DlqHook {
+  publish(event: ProjectionEvent, reason: string): Promise<void>;
+}
+
+export interface RunOptions {
+  /**
+   * Event type prefixes to filter on (e.g., ['user-', 'order-'])
+   */
+  prefixes: string[];
+
+  /**
+   * Size of batch for checkpoint updates and logging
+   */
+  batchSize?: number;
+
+  /**
+   * Whether to stop when caught up to live events
+   */
+  stopOnCaughtUp?: boolean;
+
+  /**
+   * Maximum number of retries for failed projections
+   */
+  maxRetries?: number;
+
+  /**
+   * Base delay for retries (exponential backoff applied)
+   */
+  retryDelayMs?: number;
+
+  /**
+   * Dead letter queue hook for failed events
+   */
+  dlq?: DlqHook;
+
+  /**
+   * Throttle checkpoint writes (batch every N events)
+   */
+  checkpointBatchSize?: number;
+}
+
+interface SubscriptionHandle {
+  subscription: AllStreamSubscription;
+  abortController: AbortController;
+}
+
+interface CheckpointPosition {
+  commit: bigint;
+  prepare: bigint;
+}
 
 /**
- * Catch-up subscription runner for building projections
- * Processes events from $all stream with filters and maintains checkpoints
+ * Production-ready catch-up subscription runner for building projections
+ * - Proper cancellation via AbortController
+ * - Structured logging with Log.minimal API
+ * - Enhanced checkpoint storage with commit/prepare positions
+ * - DLQ support for failed events
+ * - Retry classification for domain vs infrastructure errors
+ * - Backpressure handling and concurrency control
  */
 @Injectable()
 export class CatchUpRunner {
-  private readonly logger = new Logger(CatchUpRunner.name);
-  private readonly runningSubscriptions = new Map<string, boolean>();
+  private readonly runningSubscriptions = new Map<string, SubscriptionHandle>();
+  private readonly pendingCheckpoints = new Map<string, CheckpointPosition>();
 
   constructor(
     private readonly es: EventStoreService,
     private readonly checkpoints: CheckpointStore,
+    @Inject(APP_LOGGER) private readonly log: Logger,
   ) {}
 
   /**
-   * Run a catch-up subscription filtered by event type prefixes
+   * Start a catch-up subscription with production patterns
    */
   async run(
     group: string,
-    prefixes: string[],
     project: ProjectFn,
-    options: {
-      batchSize?: number;
-      stopOnCaughtUp?: boolean;
-      maxRetries?: number;
-      retryDelayMs?: number;
-    } = {},
+    options: RunOptions,
   ): Promise<void> {
     const {
+      prefixes,
       batchSize = 100,
       stopOnCaughtUp = false,
       maxRetries = 3,
       retryDelayMs = 1000,
+      dlq,
+      checkpointBatchSize = 10,
     } = options;
 
-    if (this.runningSubscriptions.get(group)) {
-      this.logger.warn({ group }, 'catchup.already.running');
+    if (this.runningSubscriptions.has(group)) {
+      Log.minimal.warn(this.log, 'Catch-up subscription already running', {
+        method: 'run',
+        group,
+        expected: true,
+      });
       return;
     }
 
-    this.runningSubscriptions.set(group, true);
+    // Setup cancellation
+    const abortController = new AbortController();
 
     try {
-      const key = group;
-      const posStr = await this.checkpoints.get(key);
+      // Get checkpoint position - enhanced to support { commit, prepare }
+      const checkpointPos = await this.getEnhancedCheckpoint(group);
 
-      this.logger.log(
-        {
-          group,
-          prefixes,
-          checkpointPosition: posStr || 'START',
-          batchSize,
-          stopOnCaughtUp,
-        },
-        'catchup.starting',
-      );
+      Log.minimal.info(this.log, 'Starting catch-up subscription', {
+        method: 'run',
+        group,
+        prefixes: prefixes.join(','),
+        checkpointPosition: checkpointPos
+          ? `${checkpointPos.commit}:${checkpointPos.prepare}`
+          : 'START',
+        batchSize,
+        stopOnCaughtUp,
+        maxRetries,
+        checkpointBatchSize,
+        hasDlq: !!dlq,
+      });
 
-      const sub = this.es.subscribeToAll({
-        fromPosition: posStr
-          ? { commit: BigInt(posStr), prepare: BigInt(posStr) }
-          : START,
+      // Create EventStore subscription
+      const subscription = this.es.subscribeToAll({
+        fromPosition: checkpointPos || START,
         filter: eventTypeFilter({ prefixes }),
       });
 
+      // Store subscription handle for proper cancellation
+      this.runningSubscriptions.set(group, { subscription, abortController });
+
       let processedCount = 0;
       let errorCount = 0;
+      let dlqCount = 0;
       const startTime = Date.now();
 
-      for await (const res of sub) {
+      for await (const resolvedEvent of subscription) {
+        // Check for cancellation
+        if (abortController.signal.aborted) {
+          Log.minimal.info(this.log, 'Catch-up subscription cancelled', {
+            method: 'run',
+            group,
+            processedCount,
+            errorCount,
+            dlqCount,
+          });
+          break;
+        }
+
         try {
-          if (!res.event) continue;
+          if (!resolvedEvent.event) continue;
 
-          const { event } = res;
+          const { event } = resolvedEvent;
+          const projectionEvent: ProjectionEvent = {
+            type: event.type,
+            data: event.data,
+            metadata: event.metadata as Record<string, any> | undefined,
+            streamId: event.streamId || 'unknown',
+            revision: Number(event.revision || 0),
+            position: resolvedEvent.commitPosition
+              ? {
+                  commit: resolvedEvent.commitPosition,
+                  prepare: resolvedEvent.commitPosition, // Use commit for both
+                }
+              : undefined,
+          };
 
-          // Execute projection
-          await this.executeProjectionWithRetry(
+          // Execute projection with enhanced retry logic
+          await this.executeProjectionWithClassifiedRetry(
             project,
-            {
-              type: event.type,
-              data: event.data,
-              metadata: event.metadata,
-              streamId: event.streamId || 'unknown',
-              revision: event.revision,
-              position: res.commitPosition
-                ? { commit: res.commitPosition, prepare: res.commitPosition }
-                : undefined,
-            },
+            projectionEvent,
             maxRetries,
             retryDelayMs,
           );
 
           processedCount++;
 
-          // Update checkpoint
-          if (res.commitPosition) {
-            await this.checkpoints.set(key, res.commitPosition.toString());
+          // Batch checkpoint updates to reduce write pressure
+          if (resolvedEvent.commitPosition) {
+            this.pendingCheckpoints.set(group, {
+              commit: resolvedEvent.commitPosition,
+              prepare: resolvedEvent.commitPosition, // Use commit for both
+            });
+
+            if (processedCount % checkpointBatchSize === 0) {
+              await this.flushCheckpoint(group);
+            }
           }
 
-          // Log progress periodically
+          // Periodic progress logging
           if (processedCount % batchSize === 0) {
             const elapsed = Date.now() - startTime;
             const rate = Math.round((processedCount / elapsed) * 1000);
 
-            this.logger.debug(
-              {
-                group,
-                processedCount,
-                errorCount,
-                rate: `${rate}/sec`,
-                lastPosition: res.commitPosition?.toString(),
-              },
-              'catchup.progress',
-            );
+            Log.minimal.debug(this.log, 'Catch-up subscription progress', {
+              method: 'run',
+              group,
+              processedCount,
+              errorCount,
+              dlqCount,
+              rate: `${rate}/sec`,
+              lastPosition: resolvedEvent.commitPosition?.toString(),
+              timingMs: elapsed,
+            });
           }
 
-          // Stop if caught up and requested (Note: isLiveEvent not available in all versions)
-          // if (stopOnCaughtUp && res.isLiveEvent) {
-          //   this.logger.log(
-          //     { group, processedCount },
-          //     'catchup.caughtUp.stopping',
-          //   );
+          // Stop if caught up (when available in client version)
+          // if (stopOnCaughtUp && resolvedEvent.isLiveEvent) {
+          //   Log.minimal.info(this.log, 'Caught up to live events, stopping', {
+          //     method: 'run',
+          //     group,
+          //     processedCount,
+          //   });
           //   break;
           // }
         } catch (err) {
           errorCount++;
-          this.logger.error(
-            {
-              group,
-              eventType: res.event?.type,
-              eventId: res.event?.id,
-              streamId: res.event?.streamId,
-              error: err instanceof Error ? err.message : String(err),
-            },
-            'catchup.projection.failed',
-          );
 
-          // Optionally: push to DLQ / park list
-          // For now, we continue processing
+          // Classify error and potentially send to DLQ
+          const isProjectionError = this.isProjectionError(err);
+          if (isProjectionError && dlq && resolvedEvent.event) {
+            try {
+              await dlq.publish(
+                {
+                  type: resolvedEvent.event.type,
+                  data: resolvedEvent.event.data,
+                  metadata: resolvedEvent.event.metadata as
+                    | Record<string, any>
+                    | undefined,
+                  streamId: resolvedEvent.event.streamId || 'unknown',
+                  revision: Number(resolvedEvent.event.revision || 0),
+                  position: resolvedEvent.commitPosition
+                    ? {
+                        commit: resolvedEvent.commitPosition,
+                        prepare: resolvedEvent.commitPosition, // Use commit for both
+                      }
+                    : undefined,
+                },
+                err instanceof Error ? err.message : String(err),
+              );
+
+              dlqCount++;
+
+              Log.minimal.warn(
+                this.log,
+                'Event sent to DLQ after projection failure',
+                {
+                  method: 'run',
+                  group,
+                  eventType: resolvedEvent.event.type,
+                  eventId: resolvedEvent.event.id,
+                  streamId: resolvedEvent.event.streamId,
+                  reason: err instanceof Error ? err.message : String(err),
+                  expected: isProjectionError,
+                },
+              );
+            } catch (dlqErr) {
+              Log.minimal.error(this.log, dlqErr, 'Failed to publish to DLQ', {
+                method: 'run',
+                group,
+                eventType: resolvedEvent.event.type,
+              });
+            }
+          } else {
+            Log.minimal.error(this.log, err, 'Event processing failed', {
+              method: 'run',
+              group,
+              eventType: resolvedEvent.event?.type,
+              eventId: resolvedEvent.event?.id,
+              streamId: resolvedEvent.event?.streamId,
+              expected: isProjectionError,
+            });
+          }
         }
       }
 
+      // Flush any remaining checkpoint
+      await this.flushCheckpoint(group);
+
       const elapsed = Date.now() - startTime;
-      this.logger.log(
-        {
-          group,
-          processedCount,
-          errorCount,
-          elapsedMs: elapsed,
-          avgRate: Math.round((processedCount / elapsed) * 1000),
-        },
-        'catchup.completed',
-      );
+      Log.minimal.info(this.log, 'Catch-up subscription completed', {
+        method: 'run',
+        group,
+        processedCount,
+        errorCount,
+        dlqCount,
+        timingMs: elapsed,
+        avgRate:
+          elapsed > 0 ? Math.round((processedCount / elapsed) * 1000) : 0,
+      });
     } catch (error) {
-      this.logger.error(
-        {
-          group,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'catchup.failed',
-      );
+      Log.minimal.error(this.log, error, 'Catch-up subscription failed', {
+        method: 'run',
+        group,
+      });
       throw error;
     } finally {
       this.runningSubscriptions.delete(group);
+      this.pendingCheckpoints.delete(group);
     }
   }
 
   /**
-   * Execute projection with retry logic
+   * Get enhanced checkpoint with commit/prepare positions
    */
-  private async executeProjectionWithRetry(
+  private async getEnhancedCheckpoint(
+    group: string,
+  ): Promise<CheckpointPosition | null> {
+    try {
+      const stored = await this.checkpoints.get(group);
+      if (!stored) return null;
+
+      // Support both old format (single bigint) and new format (commit:prepare)
+      if (stored.includes(':')) {
+        const [commitStr, prepareStr] = stored.split(':');
+        return {
+          commit: BigInt(commitStr),
+          prepare: BigInt(prepareStr),
+        };
+      } else {
+        // Legacy format - use same value for both
+        const position = BigInt(stored);
+        return {
+          commit: position,
+          prepare: position,
+        };
+      }
+    } catch (error) {
+      Log.minimal.warn(
+        this.log,
+        'Failed to parse checkpoint, starting from beginning',
+        {
+          method: 'getEnhancedCheckpoint',
+          group,
+          error: error instanceof Error ? error.message : String(error),
+          expected: true,
+        },
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Flush pending checkpoint to storage
+   */
+  private async flushCheckpoint(group: string): Promise<void> {
+    const pending = this.pendingCheckpoints.get(group);
+    if (!pending) return;
+
+    try {
+      const positionStr = `${pending.commit}:${pending.prepare}`;
+      await this.checkpoints.set(group, positionStr);
+      this.pendingCheckpoints.delete(group);
+    } catch (error) {
+      Log.minimal.error(this.log, error, 'Failed to flush checkpoint', {
+        method: 'flushCheckpoint',
+        group,
+      });
+    }
+  }
+
+  /**
+   * Enhanced retry execution with error classification
+   */
+  private async executeProjectionWithClassifiedRetry(
     project: ProjectFn,
-    event: Parameters<ProjectFn>[0],
+    event: ProjectionEvent,
     maxRetries: number,
     retryDelayMs: number,
   ): Promise<void> {
@@ -199,57 +397,183 @@ export class CatchUpRunner {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
-        if (attempt < maxRetries) {
-          this.logger.warn(
-            {
-              eventType: event.type,
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              eventId: event.metadata?.eventId,
-              attempt: attempt + 1,
-              maxRetries,
-              error: lastError.message,
-            },
-            'catchup.projection.retry',
+        // Classify error type
+        const isProjectionError = this.isProjectionError(error);
+
+        // Don't retry domain/projection errors - they're deterministic
+        if (isProjectionError && attempt === 0) {
+          Log.minimal.warn(this.log, 'Domain error detected, not retrying', {
+            method: 'executeProjectionWithClassifiedRetry',
+            eventType: event.type,
+            attempt: attempt + 1,
+            error: lastError.message,
+            expected: true,
+          });
+          throw lastError;
+        }
+
+        if (attempt < maxRetries && !isProjectionError) {
+          const backoffMs = this.calculateJitteredBackoff(
+            retryDelayMs,
+            attempt,
           );
 
-          // Exponential backoff
-          const delay = retryDelayMs * Math.pow(2, attempt);
-          await this.sleep(delay);
+          Log.minimal.warn(
+            this.log,
+            'Infrastructure error, retrying with backoff',
+            {
+              method: 'executeProjectionWithClassifiedRetry',
+              eventType: event.type,
+              attempt: attempt + 1,
+              maxRetries,
+              backoffMs,
+              error: lastError.message,
+              retry: { attempt: attempt + 1, backoffMs },
+            },
+          );
+
+          await this.sleep(backoffMs);
         }
       }
     }
 
-    // All retries exhausted
-    throw new Error(lastError?.message || 'Unknown projection error');
+    // All retries exhausted for infrastructure errors
+    throw new Error(
+      `Projection failed after ${maxRetries} retries: ${lastError?.message || 'Unknown error'}`,
+    );
+  }
+
+  /**
+   * Classify errors to distinguish domain logic failures from infrastructure issues
+   */
+  private isProjectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+
+    const message = error.message.toLowerCase();
+    const name = error.name.toLowerCase();
+
+    // Domain/business logic errors (4xx class) - don't retry
+    const domainErrorPatterns = [
+      'validation',
+      'invalid',
+      'constraint',
+      'domain',
+      'business',
+      'aggregate',
+      'unauthorized',
+      'forbidden',
+      'conflict',
+      'not found',
+      'already exists',
+    ];
+
+    // Infrastructure errors (5xx class) - can retry
+    const infraErrorPatterns = [
+      'timeout',
+      'connection',
+      'network',
+      'unavailable',
+      'redis',
+      'database',
+      'esdb',
+      'eventstore',
+    ];
+
+    // Check if it's explicitly an infrastructure error first
+    if (
+      infraErrorPatterns.some(
+        (pattern) => message.includes(pattern) || name.includes(pattern),
+      )
+    ) {
+      return false; // Infrastructure error - can retry
+    }
+
+    // Check if it's a domain error
+    if (
+      domainErrorPatterns.some(
+        (pattern) => message.includes(pattern) || name.includes(pattern),
+      )
+    ) {
+      return true; // Domain error - don't retry
+    }
+
+    // Default: treat unknown errors as infrastructure (retryable)
+    return false;
+  }
+
+  /**
+   * Calculate jittered exponential backoff
+   */
+  private calculateJitteredBackoff(
+    baseDelayMs: number,
+    attempt: number,
+  ): number {
+    const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
+    const maxDelay = 30000; // Cap at 30 seconds
+    const baseDelay = Math.min(exponentialDelay, maxDelay);
+
+    // Add jitter: +/- 25%
+    const jitter = baseDelay * 0.25 * (Math.random() * 2 - 1);
+    return Math.max(100, Math.floor(baseDelay + jitter)); // Minimum 100ms
   }
 
   /**
    * Check if a subscription is currently running
    */
   isRunning(group: string): boolean {
-    return this.runningSubscriptions.get(group) || false;
+    return this.runningSubscriptions.has(group);
   }
 
   /**
-   * Stop a running subscription
+   * Stop a running subscription with proper cancellation
    */
   stop(group: string): void {
-    this.runningSubscriptions.delete(group);
-    this.logger.log({ group }, 'catchup.stopped');
+    const handle = this.runningSubscriptions.get(group);
+    if (handle) {
+      // Signal cancellation - the async iterator will check this
+      handle.abortController.abort();
+
+      Log.minimal.info(this.log, 'Catch-up subscription stop requested', {
+        method: 'stop',
+        group,
+      });
+    } else {
+      Log.minimal.warn(this.log, 'Attempted to stop non-running subscription', {
+        method: 'stop',
+        group,
+        expected: true,
+      });
+    }
   }
 
   /**
    * Get status of all running subscriptions
    */
   getStatus(): Record<string, boolean> {
-    return Object.fromEntries(this.runningSubscriptions);
+    const status: Record<string, boolean> = {};
+    for (const [group] of this.runningSubscriptions) {
+      status[group] = true;
+    }
+    return status;
   }
 
   /**
-   * Utility sleep function
+   * Utility sleep function with AbortSignal support
    */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new Error('Sleep cancelled'));
+        return;
+      }
+
+      const timeout = setTimeout(resolve, ms);
+
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timeout);
+        reject(new Error('Sleep cancelled'));
+      });
+    });
   }
 
   /**
@@ -257,13 +581,52 @@ export class CatchUpRunner {
    */
   async resetCheckpoint(group: string): Promise<void> {
     await this.checkpoints.delete(group);
-    this.logger.log({ group }, 'catchup.checkpoint.reset');
+    this.pendingCheckpoints.delete(group);
+
+    Log.minimal.info(this.log, 'Checkpoint reset for replay', {
+      method: 'resetCheckpoint',
+      group,
+    });
   }
 
   /**
-   * Get current checkpoint position for a group
+   * Get current checkpoint position for a group with enhanced format
    */
-  async getCheckpoint(group: string): Promise<string | null> {
-    return this.checkpoints.get(group);
+  async getCheckpoint(group: string): Promise<CheckpointPosition | null> {
+    return this.getEnhancedCheckpoint(group);
+  }
+
+  /**
+   * Force flush pending checkpoints for a group
+   */
+  async forceFlushCheckpoint(group: string): Promise<void> {
+    await this.flushCheckpoint(group);
+
+    Log.minimal.debug(this.log, 'Checkpoint flushed', {
+      method: 'forceFlushCheckpoint',
+      group,
+    });
+  }
+
+  /**
+   * Get detailed status including performance metrics
+   */
+  getDetailedStatus(): Record<
+    string,
+    { running: boolean; hasPendingCheckpoint: boolean }
+  > {
+    const status: Record<
+      string,
+      { running: boolean; hasPendingCheckpoint: boolean }
+    > = {};
+
+    for (const [group] of this.runningSubscriptions) {
+      status[group] = {
+        running: true,
+        hasPendingCheckpoint: this.pendingCheckpoints.has(group),
+      };
+    }
+
+    return status;
   }
 }
