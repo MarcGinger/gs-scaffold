@@ -19,18 +19,36 @@ import { EventEnvelope } from '../../domain/common/events';
 
 @Injectable()
 export class EventStoreService {
-  private readonly logger = new Logger(EventStoreService.name);
   private readonly client: EventStoreDBClient;
 
-  constructor() {
-    // Prefer connection via env (gRPC/TLS) and service discovery in prod
-    this.client = new EventStoreDBClient({
-      endpoint: process.env.ESDB_ENDPOINT || 'esdb://localhost:2113?tls=false',
+  constructor(
+    private readonly configManager: ConfigManager,
+    @Inject(APP_LOGGER) private readonly baseLogger: Logger,
+  ) {
+    // Get EventStore connection from centralized config
+    const esdbConn = this.getEsdbConnectionString();
+    this.client = new EventStoreDBClient({ endpoint: esdbConn });
+
+    Log.info(this.baseLogger, 'EventStoreService initialized', {
+      component: 'EventStoreService',
+      method: 'constructor',
+      esdbEndpoint: esdbConn.replace(/\/\/.*@/, '//***@'), // Hide credentials if any
     });
   }
 
   /**
-   * Append events with optimistic concurrency + structured logging
+   * Get EventStore connection string from config
+   */
+  private getEsdbConnectionString(): string {
+    return (
+      process.env.ESDB_CONNECTION_STRING ??
+      process.env.ESDB_ENDPOINT ??
+      'esdb://localhost:2113?tls=false'
+    );
+  }
+
+  /**
+   * Append events with optimistic concurrency + structured logging + jittered backoff
    */
   async append<T>(
     streamId: string,
@@ -45,6 +63,8 @@ export class EventStoreService {
         metadata: e.metadata,
       });
 
+    const correlationId = events[0]?.metadata?.correlationId;
+
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const result = await this.client.appendToStream(
@@ -52,55 +72,73 @@ export class EventStoreService {
           events.map(toJson),
           { expectedRevision },
         );
-        this.logger.debug(
-          {
-            streamId,
-            nextExpectedRevision: result.nextExpectedRevision?.toString(),
-            correlationId: events[0]?.metadata?.correlationId,
-          },
-          'append.success',
-        );
+
+        Log.debug(this.baseLogger, 'append.success', {
+          component: 'EventStoreService',
+          method: 'append',
+          streamId,
+          nextExpectedRevision: result.nextExpectedRevision?.toString(),
+          correlationId,
+          eventCount: events.length,
+        });
+
         return result;
       } catch (err) {
         if (err instanceof WrongExpectedVersionError && attempt < retries) {
-          this.logger.warn(
-            {
-              streamId,
-              attempt,
-              correlationId: events[0]?.metadata?.correlationId,
-            },
-            'append.retry.wrongExpectedVersion',
-          );
-          continue; // let caller reload aggregate and retry or bump snapshot policy
-        }
-        this.logger.error(
-          {
+          Log.warn(this.baseLogger, 'append.retry.wrongExpectedVersion', {
+            component: 'EventStoreService',
+            method: 'append',
             streamId,
-            err: err instanceof Error ? err.message : String(err),
-            correlationId: events[0]?.metadata?.correlationId,
-          },
-          'append.failed',
-        );
+            attempt,
+            retries,
+            correlationId,
+          });
+
+          // Jittered exponential backoff to reduce contention
+          const baseDelay = 50 * Math.pow(2, attempt);
+          const jitter = Math.random() * 0.3; // +/- 30% jitter
+          const delay = Math.min(baseDelay * (1 + jitter), 500);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        Log.error(this.baseLogger, err as Error, 'append.failed', {
+          component: 'EventStoreService',
+          method: 'append',
+          streamId,
+          correlationId,
+          attempt,
+        });
         throw err;
       }
     }
   }
 
   /**
-   * Read a stream forward from a given revision
+   * Read a stream forward (default direction)
    */
   readStream(streamId: string, options?: ReadStreamOptions) {
-    return this.client.readStream(streamId, options);
+    return this.client.readStream(streamId, {
+      direction: FORWARDS,
+      ...options,
+    });
   }
 
   /**
-   * Read stream backwards (useful for getting latest events)
+   * Read stream backwards (tail-first) using typed constant
    */
   readStreamBackwards(streamId: string, options?: ReadStreamOptions) {
     return this.client.readStream(streamId, {
+      direction: BACKWARDS,
       ...options,
-      direction: 'backwards',
     });
+  }
+
+  /**
+   * Read $all stream (lightweight; useful for health/checkpoint)
+   */
+  readAll(options?: ReadAllOptions) {
+    return this.client.readAll({ direction: FORWARDS, ...options });
   }
 
   /**
@@ -111,45 +149,46 @@ export class EventStoreService {
   }
 
   /**
-   * Get stream metadata
+   * Get stream metadata (typed pass-through)
    */
   async getStreamMetadata(streamId: string) {
     return this.client.getStreamMetadata(streamId);
   }
 
   /**
-   * Set stream metadata
+   * Set stream metadata (typed pass-through)
    */
   async setStreamMetadata(streamId: string, metadata: Record<string, any>) {
     return this.client.setStreamMetadata(streamId, metadata);
   }
 
   /**
-   * Persistent subscription utilities
+   * Persistent subscription utilities with proper typing
    */
   persistent = {
-    create: (stream: string, group: string, settings = {}) =>
+    create: (
+      stream: string,
+      group: string,
+      settings?: Partial<PersistentSubscriptionToStreamSettings>,
+    ) =>
       this.client.createPersistentSubscriptionToStream(
         stream,
         group,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        settings as any,
+        settings as PersistentSubscriptionToStreamSettings,
       ),
 
-    connect: (stream: string, group: string, options?: any) =>
-      this.client.subscribeToPersistentSubscriptionToStream(
-        stream,
-        group,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unnecessary-type-assertion
-        options as any,
-      ),
+    connect: (stream: string, group: string) =>
+      this.client.subscribeToPersistentSubscriptionToStream(stream, group),
 
-    update: (stream: string, group: string, settings: any) =>
+    update: (
+      stream: string,
+      group: string,
+      settings: Partial<PersistentSubscriptionToStreamSettings>,
+    ) =>
       this.client.updatePersistentSubscriptionToStream(
         stream,
         group,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unnecessary-type-assertion
-        settings as any,
+        settings as PersistentSubscriptionToStreamSettings,
       ),
 
     delete: (stream: string, group: string) =>
@@ -157,35 +196,37 @@ export class EventStoreService {
   };
 
   /**
-   * Health check - ping the EventStore connection
+   * Health check - avoids $stats (may be disabled/privileged)
+   * Uses lightweight readAll instead
    */
   async ping(): Promise<boolean> {
     try {
-      // Try to read from $stats to check connection
-      const read = this.client.readStream('$stats', {
-        fromRevision: START,
-        maxCount: 1,
-      });
-
-      // Just attempt to get the first event or handle if stream doesn't exist
+      const iter = this.readAll({ fromPosition: START, maxCount: 1 });
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for await (const _event of read) {
-        break;
-      }
+      for await (const _ of iter) break;
+
+      Log.debug(this.baseLogger, 'eventstore.ping.success', {
+        component: 'EventStoreService',
+        method: 'ping',
+      });
       return true;
     } catch (error) {
-      this.logger.error(
-        { error: error instanceof Error ? error.message : String(error) },
-        'eventstore.ping.failed',
-      );
+      Log.error(this.baseLogger, error as Error, 'eventstore.ping.failed', {
+        component: 'EventStoreService',
+        method: 'ping',
+      });
       return false;
     }
   }
 
   /**
-   * Close the EventStore connection
+   * Close the EventStore connection gracefully
    */
   async close(): Promise<void> {
     await this.client.dispose();
+    Log.info(this.baseLogger, 'EventStoreService disposed', {
+      component: 'EventStoreService',
+      method: 'close',
+    });
   }
 }

@@ -87,9 +87,7 @@ export class PersistentRunner {
       );
 
       // Connect to persistent subscription
-      const sub = this.es.persistent.connect(stream, group, {
-        bufferSize: defaultSettings.bufferSize,
-      });
+      const sub = this.es.persistent.connect(stream, group);
 
       let processedCount = 0;
       let errorCount = 0;
