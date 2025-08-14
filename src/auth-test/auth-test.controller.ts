@@ -1,5 +1,11 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../security/auth/jwt-auth.guard';
+import { CompositeSecurityGuard } from '../security/guards/composite-security.guard';
+import {
+  ProductResource,
+  OrderResource,
+  UserResource,
+} from '../security/opa/resource.decorator';
 import {
   CurrentUser,
   CurrentUserId,
@@ -76,6 +82,46 @@ export class AuthTestController {
         userCount: 100,
         systemHealth: 'OK',
       },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // New OPA-protected endpoints
+  @Get('products/:id')
+  @UseGuards(CompositeSecurityGuard)
+  @ProductResource('view')
+  getProduct(@Param('id') id: string, @CurrentUser() user: IUserToken) {
+    return {
+      message: 'Product data (OPA authorized)',
+      productId: id,
+      user: user.sub,
+      tenant: user.tenant,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('orders/:id')
+  @UseGuards(CompositeSecurityGuard)
+  @OrderResource('view')
+  getOrder(@Param('id') id: string, @CurrentUser() user: IUserToken) {
+    return {
+      message: 'Order data (OPA authorized)',
+      orderId: id,
+      user: user.sub,
+      tenant: user.tenant,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('users/:id')
+  @UseGuards(CompositeSecurityGuard)
+  @UserResource('view')
+  getUser(@Param('id') id: string, @CurrentUser() user: IUserToken) {
+    return {
+      message: 'User data (OPA authorized)',
+      userId: id,
+      requestedBy: user.sub,
+      tenant: user.tenant,
       timestamp: new Date().toISOString(),
     };
   }
