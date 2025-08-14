@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
-import { ProductQueryService } from '../../../../infrastructure/projections/product-query.service';
-import { EventSubscriptionService } from '../../../../infrastructure/projections/event-subscription.service';
+import { ProductQueryService } from '../projections/product-query.service';
+import { ProductEventSubscriptionService } from '../projections/product-event-subscription.service';
 
 /**
  * Product Controller using Redis Projections
@@ -14,7 +14,7 @@ import { EventSubscriptionService } from '../../../../infrastructure/projections
 export class ProductProjectionsController {
   constructor(
     private readonly productQueryService: ProductQueryService,
-    private readonly eventSubscriptionService: EventSubscriptionService,
+    private readonly eventSubscriptionService: ProductEventSubscriptionService,
   ) {}
 
   /**

@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { ProductService } from './application/services/product.service';
 import { ProductController } from './infrastructure/http/product.controller';
 import { ProductProjectionsController } from './infrastructure/http/product-projections.controller';
-import { RedisProjectionsModule } from '../../infrastructure/projections/redis-projections.module';
+import { ProductProjectionsModule } from './infrastructure/projections/product-projections.module';
 
 @Module({
-  imports: [RedisProjectionsModule],
+  imports: [ProductProjectionsModule],
   controllers: [ProductController, ProductProjectionsController],
   providers: [ProductService],
 })
