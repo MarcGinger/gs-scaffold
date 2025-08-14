@@ -1,11 +1,10 @@
-import { AggregateRootBase } from '../../../domain/aggregates/aggregate-root.base';
-import { DomainEvent } from '../../../domain/events/events';
-import { Result, failure } from '../../../domain/events/events';
+import { AggregateRootBase } from 'src/shared/domain/aggregates';
 import {
   ProductCreatedEvent,
   ProductPriceUpdatedEvent,
   ProductDeactivatedEvent,
 } from './product.events';
+import { DomainEvent, failure, Result } from 'src/shared/domain/events';
 
 /**
  * Product aggregate state interface

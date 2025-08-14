@@ -2,8 +2,7 @@ import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import type { Logger } from 'pino';
 import { PersistentSubscriptionToStreamSettings } from '@eventstore/db-client';
 import { EventStoreService } from '../eventstore/eventstore.service';
-import { Log } from '../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
+import { APP_LOGGER, Log } from '../../logging';
 
 export type PersistentProjectFn = (event: {
   type: string;

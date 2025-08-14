@@ -2,9 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import Ajv, { ErrorObject, ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
 import type { Logger } from 'pino';
-
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
-import { Log } from '../../shared/logging/structured-logger';
+import { APP_LOGGER, Log } from '../../logging';
 
 /** AJV Error parameters interface for better type safety */
 interface AjvErrorParams {

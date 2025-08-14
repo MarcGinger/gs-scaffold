@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ProductCommandHandler } from './product.command-handler';
-import { EventStoreModule } from '../../../../infrastructure/eventstore/eventstore.module';
-import { LoggingModule } from '../../../../shared/logging/logging.module';
+
+import { EventStoreModule } from 'src/shared/infrastructure/eventstore';
+import { LoggingModule } from 'src/shared/logging';
 
 /**
  * Product Commands Module - Contains command handlers for product write operations

@@ -9,9 +9,8 @@ import type { Logger } from 'pino';
 import Redis from 'ioredis';
 import { gzipSync, gunzipSync } from 'zlib';
 
-import { Snapshot } from '../../domain/events/events';
-import { Log } from '../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
+import { Snapshot } from 'src/shared/domain/events';
+import { APP_LOGGER, Log } from 'src/shared/logging';
 
 /**
  * Domain-specific error for snapshot operation failures

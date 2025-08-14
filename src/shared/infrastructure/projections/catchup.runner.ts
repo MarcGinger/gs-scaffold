@@ -7,8 +7,7 @@ import {
 } from '@eventstore/db-client';
 import { EventStoreService } from '../eventstore/eventstore.service';
 import { CheckpointStore } from './checkpoint.store';
-import { Log } from '../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
+import { APP_LOGGER, Log } from '../../logging';
 
 export type ProjectionEvent = {
   type: string;

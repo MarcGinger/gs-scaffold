@@ -9,10 +9,9 @@ import type { Logger } from 'pino';
 
 import { EventStoreService } from './eventstore.service';
 import { SnapshotRepository } from './snapshot.repository';
-import { Reducer } from '../../domain/aggregates/aggregate-root.base';
-import { Snapshot } from '../../domain/events/events';
-import { Log } from '../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
+import { Reducer } from '../../domain/aggregates';
+import { Snapshot } from '../../domain/events';
+import { APP_LOGGER, Log } from '../../logging';
 
 type StreamIds = { streamId: string; snapId: string };
 

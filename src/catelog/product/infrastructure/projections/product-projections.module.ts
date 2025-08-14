@@ -7,9 +7,9 @@ import { ProductCatalogProjection } from './product-catalog.projection';
 import { ActiveProductsProjection } from './active-products.projection';
 import { ProductQueryService } from './product-query.service';
 import { ProductEventSubscriptionService } from './product-event-subscription.service';
-import { EventStoreModule } from 'src/infrastructure/eventstore/eventstore.module';
-import { PersistentRunner } from 'src/infrastructure/projections/persistent.runner';
 import { LoggingModule } from 'src/shared/logging/logging.module';
+import { EventStoreModule } from 'src/shared/infrastructure/eventstore';
+import { PersistentRunner } from 'src/shared/infrastructure/projections';
 
 /**
  * Product Projections Module

@@ -16,7 +16,7 @@ import { OutboxPublisher } from '../application/outbox/outbox.publisher';
 import Redis from 'ioredis';
 import { EventStoreDBClient } from '@eventstore/db-client';
 import type { Logger } from 'pino';
-import { APP_LOGGER } from '../shared/logging/logging.providers';
+import { APP_LOGGER } from '../logging';
 
 // ===== INTERFACE TOKENS FOR DEPENDENCY INJECTION =====
 export const CHECKPOINT_STORE = 'CHECKPOINT_STORE';

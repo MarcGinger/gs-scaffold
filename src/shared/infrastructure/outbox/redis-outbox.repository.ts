@@ -3,8 +3,7 @@ import { OutboxRecord, OutboxRepository } from './outbox.entity';
 import Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import type { Logger } from 'pino';
-import { Log } from '../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
+import { APP_LOGGER, Log } from '../../logging';
 
 /**
  * Production-ready Redis outbox repository with:

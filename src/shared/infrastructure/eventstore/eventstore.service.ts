@@ -12,10 +12,10 @@ import {
 } from '@eventstore/db-client';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Logger } from 'pino';
-import { ConfigManager } from '../../shared/config/config.manager';
-import { Log } from '../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../shared/logging/logging.providers';
-import { EventEnvelope } from '../../domain/events/events';
+import { ConfigManager } from 'src/shared/config';
+
+import { EventEnvelope } from '../../domain/events';
+import { APP_LOGGER, Log } from '../../logging';
 
 @Injectable()
 export class EventStoreService {

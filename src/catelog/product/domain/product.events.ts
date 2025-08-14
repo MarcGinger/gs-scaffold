@@ -1,8 +1,8 @@
-import { DomainEvent } from '../../../domain/events/events';
-
 /**
  * Product domain events for the Product bounded context
  */
+
+import { DomainEvent } from 'src/shared/domain/events';
 
 export class ProductCreatedEvent implements DomainEvent {
   readonly type = 'ecommerce.product.created.v1';

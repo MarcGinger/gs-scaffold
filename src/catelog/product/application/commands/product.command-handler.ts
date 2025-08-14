@@ -2,16 +2,15 @@ import { Injectable, Inject } from '@nestjs/common';
 import crypto from 'crypto';
 import type { Logger } from 'pino';
 import { NO_STREAM } from '@eventstore/db-client';
-import { EventStoreService } from '../../../../infrastructure/eventstore/eventstore.service';
 import { ProductAggregate } from '../../domain/product.aggregate';
-import { Result, success, failure } from '../../../../domain/events/events';
-import { Log } from '../../../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../../../shared/logging/logging.providers';
 import {
   CreateProductCommand,
   UpdateProductPriceCommand,
   DeactivateProductCommand,
 } from './product.commands';
+import { failure, Result, success } from 'src/shared/domain/events';
+import { EventStoreService } from 'src/shared/infrastructure/eventstore';
+import { APP_LOGGER, Log } from 'src/shared/logging';
 
 /**
  * Product Command Handler - Write-side of CQRS for Product domain

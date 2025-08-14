@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Logger } from 'pino';
 import Redis from 'ioredis';
-import { Log } from '../../shared/logging/structured-logger';
+import { Log } from '../../logging';
 
 const APP_LOGGER = 'APP_LOGGER';
 

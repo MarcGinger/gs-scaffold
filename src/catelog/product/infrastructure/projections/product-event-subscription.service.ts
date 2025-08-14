@@ -7,10 +7,10 @@ import {
 import type { Logger } from 'pino';
 import { ProductCatalogProjection } from './product-catalog.projection';
 import { ActiveProductsProjection } from './active-products.projection';
-import { EventStoreService } from 'src/infrastructure/eventstore/eventstore.service';
-import { PersistentRunner } from 'src/infrastructure/projections/persistent.runner';
 import { APP_LOGGER } from 'src/shared/logging/logging.providers';
 import { Log } from 'src/shared/logging/structured-logger';
+import { EventStoreService } from 'src/shared/infrastructure/eventstore';
+import { PersistentRunner } from 'src/shared/infrastructure/projections';
 
 export interface EventEnvelope<T = unknown> {
   type: string;
