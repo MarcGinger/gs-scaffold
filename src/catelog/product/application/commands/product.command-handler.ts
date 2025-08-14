@@ -4,7 +4,7 @@ import type { Logger } from 'pino';
 import { NO_STREAM } from '@eventstore/db-client';
 import { EventStoreService } from '../../../../infrastructure/eventstore/eventstore.service';
 import { ProductAggregate } from '../../domain/product.aggregate';
-import { Result, success, failure } from '../../../../domain/common/events';
+import { Result, success, failure } from '../../../../domain/events/events';
 import { Log } from '../../../../shared/logging/structured-logger';
 import { APP_LOGGER } from '../../../../shared/logging/logging.providers';
 import {

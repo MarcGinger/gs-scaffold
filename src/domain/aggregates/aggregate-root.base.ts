@@ -1,5 +1,5 @@
-import { DomainEvent } from './events';
-import { Result, failure } from './events';
+import { DomainEvent } from '../events/events';
+import { Result, failure } from '../events/events';
 
 /**
  * Base class for all aggregates following DDD patterns

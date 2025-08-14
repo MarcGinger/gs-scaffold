@@ -9,7 +9,7 @@ import type { Logger } from 'pino';
 import Redis from 'ioredis';
 import { gzipSync, gunzipSync } from 'zlib';
 
-import { Snapshot } from '../../domain/common/events';
+import { Snapshot } from '../../domain/events/events';
 import { Log } from '../../shared/logging/structured-logger';
 import { APP_LOGGER } from '../../shared/logging/logging.providers';
 
