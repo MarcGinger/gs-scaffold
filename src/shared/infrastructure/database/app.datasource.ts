@@ -53,7 +53,11 @@ export const AppDataSource = new DataSource({
   maxQueryExecutionTime: Number(process.env.DB_SLOW_QUERY_THRESHOLD) || 500, // ms
 
   // Entity and migration discovery
-  entities: [__dirname + '/../entities/*.entity.{ts,js}'],
+  entities: [
+    __dirname + '/../entities/*.entity.{ts,js}',
+    __dirname +
+      '/../../../catelog/product/infrastructure/typeorm/entities/*.entity.{ts,js}',
+  ],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 
   // PostgreSQL specific optimizations

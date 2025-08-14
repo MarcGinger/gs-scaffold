@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { ProductEntity } from '../../../../shared/infrastructure/entities/product.entity';
+import { ProductEntity } from './entities/product.entity';
 import { ProjectionWriter } from '../../../../shared/infrastructure/database/projection-writer.service';
 
 /**

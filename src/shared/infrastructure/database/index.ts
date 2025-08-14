@@ -7,4 +7,4 @@ export * from './projection-writer.service';
 // Entity exports
 export * from '../entities/projection-checkpoint.entity';
 export * from '../entities/processed-event.entity';
-export * from '../entities/product.entity';
+// ProductEntity moved to product module: src/catelog/product/infrastructure/typeorm/entities/product.entity
