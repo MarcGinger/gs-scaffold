@@ -10,6 +10,10 @@ import Redis from 'ioredis';
       useFactory: () => {
         const redis = new Redis(
           process.env.REDIS_URL || 'redis://localhost:6379',
+          {
+            // BullMQ requires maxRetriesPerRequest to be null for blocking operations
+            maxRetriesPerRequest: null,
+          },
         );
         return redis;
       },
