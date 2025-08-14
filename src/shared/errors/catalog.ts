@@ -1,5 +1,3 @@
-// src/shared/errors/catalog.ts
-
 import { DomainError } from './error.types';
 
 /**
@@ -7,6 +5,9 @@ import { DomainError } from './error.types';
  *
  * This helper function takes a set of error definitions and a namespace,
  * then creates a catalog where each error gets a prefixed code.
+ *
+ * In development environments, this will automatically validate naming
+ * conventions and log warnings for any violations.
  *
  * @param definitions Object containing error definitions without codes
  * @param namespace Prefix for all error codes (e.g., 'USER', 'ORDER')
@@ -33,6 +34,17 @@ import { DomainError } from './error.types';
 export function makeCatalog<
   T extends Record<string, Omit<DomainError, 'code'>>,
 >(definitions: T, namespace: string) {
+  // Auto-validate in development environments
+  if (process.env.NODE_ENV !== 'production') {
+    const validationErrors = validateCatalogNaming(definitions);
+    if (validationErrors.length > 0) {
+      console.warn(
+        `[Error Catalog Warning] Namespace "${namespace}" has naming violations:\n` +
+          validationErrors.map((err) => `  - ${err}`).join('\n'),
+      );
+    }
+  }
+
   return Object.fromEntries(
     Object.entries(definitions).map(([key, errorDef]) => {
       const code = `${namespace}.${key}` as const;
@@ -74,7 +86,7 @@ export type CatalogError<T extends Record<string, DomainError>> = T[keyof T];
  * Checks that error keys are UPPER_SNAKE_CASE.
  *
  * @param definitions Error definitions to validate
- * @returns Array of validation errors, empty if all valid
+ * @returns Array of validation errors with detailed feedback, empty if all valid
  */
 export function validateCatalogNaming<
   T extends Record<string, Omit<DomainError, 'code'>>,
@@ -84,8 +96,18 @@ export function validateCatalogNaming<
 
   Object.keys(definitions).forEach((key) => {
     if (!upperSnakeCasePattern.test(key)) {
+      // Convert the key to suggested UPPER_SNAKE_CASE format
+      const suggested = key
+        .replace(/([a-z])([A-Z])/g, '$1_$2') // Handle camelCase: camelCase -> camel_Case
+        .replace(/[^A-Za-z0-9_]/g, '_') // Replace invalid chars with underscore
+        .replace(/_+/g, '_') // Collapse multiple underscores
+        .replace(/^_+|_+$/g, '') // Remove leading/trailing underscores
+        .toUpperCase();
+
       errors.push(
-        `Error key "${key}" should be UPPER_SNAKE_CASE (e.g., "USER_NOT_FOUND")`,
+        `Error key "${key}" should be UPPER_SNAKE_CASE. ` +
+          `Suggestion: "${suggested}". ` +
+          `Pattern: ${upperSnakeCasePattern.toString()}`,
       );
     }
   });
@@ -121,6 +143,10 @@ export function makeValidatedCatalog<
  * Merges multiple error catalogs into a single catalog.
  * Useful when you need to combine errors from different domains.
  *
+ * Performs comprehensive collision detection:
+ * - Checks for duplicate catalog keys
+ * - Checks for duplicate error codes across different catalogs
+ *
  * @param catalogs Multiple error catalogs to merge
  * @returns Combined catalog with all errors
  *
@@ -136,12 +162,26 @@ export function mergeCatalogs<
 
   catalogs.forEach((catalog) => {
     Object.entries(catalog).forEach(([key, error]) => {
+      // Check for duplicate catalog keys
       if (merged[key]) {
         throw new Error(
-          `Duplicate error key "${key}" found when merging catalogs. ` +
+          `Duplicate catalog key "${key}" found when merging catalogs. ` +
             `Existing: ${merged[key].code}, New: ${error.code}`,
         );
       }
+
+      // Check for duplicate error codes (same code from different catalogs)
+      const existingErrorWithSameCode = Object.values(merged).find(
+        (existingError) => existingError.code === error.code,
+      );
+
+      if (existingErrorWithSameCode) {
+        throw new Error(
+          `Duplicate error code "${error.code}" found when merging catalogs. ` +
+            `This error code already exists in the merged catalog.`,
+        );
+      }
+
       merged[key] = error;
     });
   });

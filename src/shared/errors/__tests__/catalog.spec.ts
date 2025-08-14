@@ -232,7 +232,7 @@ describe('Catalog Builder', () => {
       expect(() => {
         mergeCatalogs(UserCatalog, ConflictCatalog);
       }).toThrow(
-        'Duplicate error key "USER_NOT_FOUND" found when merging catalogs',
+        'Duplicate catalog key "USER_NOT_FOUND" found when merging catalogs',
       );
     });
 
