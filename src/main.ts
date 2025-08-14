@@ -1,8 +1,3 @@
-// Load environment variables from .env file early
-// This is needed because TypeORM DataSource is created at import time
-// before NestJS ConfigModule can load the .env file
-import * as dotenv from 'dotenv';
-dotenv.config();
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger as NestPinoLogger } from 'nestjs-pino';

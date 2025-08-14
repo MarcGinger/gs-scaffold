@@ -123,7 +123,7 @@ export class AppConfigUtil {
       port: Number.isFinite(port) ? port : 5432,
       database: process.env.DATABASE_NAME || 'postgres',
       username: process.env.DATABASE_USER || 'postgres',
-      password: process.env.DATABASE_PASSWORD ?? '',
+      password: process.env.DATABASE_PASSWORD || 'postgres',
       // Common extras
       ssl:
         process.env.DATABASE_SSL?.toLowerCase() === 'true'
