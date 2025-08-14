@@ -1,3 +1,9 @@
+// Safe correlationId accessor for event metadata
+function getCorrelationId(meta: unknown): string | undefined {
+  return typeof meta === 'object' && meta !== null && 'correlationId' in meta
+    ? ((meta as Record<string, unknown>).correlationId as string | undefined)
+    : undefined;
+}
 import { Inject, Injectable } from '@nestjs/common';
 import {
   START,
@@ -94,8 +100,17 @@ export class AggregateRepository<State> {
     });
 
     try {
-      // 1) Load snapshot
-      const { snapshot: snap } = await this.snapshots.loadLatest(snapId);
+      // 1) Load snapshot (+ cache flag if you want to log it)
+      const { snapshot: snap, cacheHit } =
+        await this.snapshots.loadLatest(snapId);
+      Log.debug(this.logger, 'aggregate.load.snapshot', {
+        component: 'AggregateRepository',
+        method: 'load',
+        snapId,
+        hasSnapshot: !!snap,
+        cacheHit,
+        correlationId: options?.correlationId,
+      });
       let state = snap?.state ?? reducer.initial();
       let version = snap?.version ?? -1; // domain version; -1 means no events applied
       let eventsProcessed = 0;
@@ -148,7 +163,9 @@ export class AggregateRepository<State> {
               eventType: event.type,
               eventId: event.id,
               version,
-              correlationId: options?.correlationId,
+              correlationId:
+                options?.correlationId ?? getCorrelationId(event.metadata),
+              eventStreamId: event.streamId,
             },
           );
           throw new AggregateRebuildFailedError(
@@ -286,7 +303,7 @@ export class AggregateRepository<State> {
     entityId: string,
   ): Promise<{
     streamExists: boolean;
-    version: number; // domain version estimate
+    version: bigint; // domain version estimate
     streamPosition?: bigint; // ESDB stream revision
     snapshotExists: boolean;
     snapshotVersion?: number;
@@ -323,12 +340,16 @@ export class AggregateRepository<State> {
 
     // Assuming domain version == revision for simplicity
     // In practice, you might need to adjust this mapping
-    const version = streamExists ? Number(latestRevision) : -1;
+    const version = streamExists ? latestRevision : -1n;
+    const snapVer = snapshotStats.version;
     const eventsSinceSnapshot =
-      snapshotStats.version != null
-        ? Math.max(0, version - snapshotStats.version)
+      snapVer != null && streamExists
+        ? (() => {
+            const diff = version - BigInt(snapVer);
+            return diff < 0n ? 0 : Number(diff); // return as number for UI, safe if bounded
+          })()
         : streamExists
-          ? version + 1
+          ? 1 // at least the head event exists
           : 0;
 
     return {
