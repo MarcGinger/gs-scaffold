@@ -80,9 +80,9 @@ export const EVENTSTORE_CLIENT = 'EVENTSTORE_CLIENT';
     // RedisOutboxRepository with explicit Redis injection
     {
       provide: RedisOutboxRepository,
-      inject: ['IORedis'],
-      useFactory: (redis: Redis) => {
-        return new RedisOutboxRepository(redis);
+      inject: ['IORedis', APP_LOGGER],
+      useFactory: (redis: Redis, logger: Logger) => {
+        return new RedisOutboxRepository(redis, logger);
       },
     },
     { provide: OUTBOX_REPOSITORY, useExisting: RedisOutboxRepository },

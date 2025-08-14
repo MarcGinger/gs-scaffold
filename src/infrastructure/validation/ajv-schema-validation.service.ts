@@ -1,26 +1,60 @@
-/**
- * Copyright (c) 2025 Marc Ginger. All rights reserved.
- *
- * This file is part of a proprietary NestJS system developed by Marc Ginger.
- * Unauthorized copying, modification, distribution, or use of this file,
- * via any medium, is strictly prohibited and may result in legal action.
- *
- * Confidential and proprietary.
- */
-
-import { Injectable, Logger } from '@nestjs/common';
-import Ajv, { ErrorObject } from 'ajv';
+import { Inject, Injectable } from '@nestjs/common';
+import Ajv, { ErrorObject, ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
+import type { Logger } from 'pino';
 
+import { APP_LOGGER } from '../../shared/logging/logging.providers';
+import { Log } from '../../shared/logging/structured-logger';
+
+/** AJV Error parameters interface for better type safety */
+interface AjvErrorParams {
+  missingProperty?: string;
+  type?: string;
+  allowedValues?: any[];
+}
+
+/** Type guard to check if object has a valid type property */
+function hasValidType(obj: unknown): obj is { type: string } {
+  if (obj === null || typeof obj !== 'object' || !('type' in obj)) {
+    return false;
+  }
+  const typeValue = (obj as Record<string, unknown>).type;
+  return (
+    typeof typeValue === 'string' &&
+    [
+      'string',
+      'number',
+      'integer',
+      'boolean',
+      'object',
+      'array',
+      'null',
+    ].includes(typeValue)
+  );
+}
+
+/** Type guard to safely access AJV error params */
+function getAjvErrorParams(params: unknown): AjvErrorParams {
+  if (!params || typeof params !== 'object') {
+    return {};
+  }
+  const p = params as Record<string, unknown>;
+  return {
+    missingProperty:
+      typeof p.missingProperty === 'string' ? p.missingProperty : undefined,
+    type: typeof p.type === 'string' ? p.type : undefined,
+    allowedValues: Array.isArray(p.allowedValues) ? p.allowedValues : undefined,
+  };
+}
+
+/** Results returned by schema/data validation */
 export interface SchemaValidationResult {
   isValid: boolean;
   errors: string[];
   details?: ErrorObject[];
 }
 
-/**
- * Interface representing a JSON Schema property definition
- */
+/** JSON Schema property definition (narrow but practical) */
 export interface JsonSchemaProperty {
   type:
     | 'string'
@@ -41,335 +75,264 @@ export interface JsonSchemaProperty {
   default?: any;
   properties?: Record<string, JsonSchemaProperty>;
   items?: JsonSchemaProperty;
-  required?: string[];
+  required?: string[]; // valid only for object types
   additionalProperties?: boolean | JsonSchemaProperty;
 }
 
-/**
- * Interface representing a complete JSON Schema
- */
+/** Top-level JSON Schema */
 export interface JsonSchema extends JsonSchemaProperty {
   $schema?: string;
-  $id?: string;
+  $id?: string; // recommended for caching
   title?: string;
 }
 
-/**
- * Service for JSON Schema validation using AJV
- * Provides comprehensive validation for template payload schemas
- */
 @Injectable()
 export class AjvSchemaValidationService {
-  private readonly logger = new Logger(AjvSchemaValidationService.name);
   private readonly ajv: Ajv;
+  private readonly cache = new Map<string, ValidateFunction>(); // key -> compiled validator
 
-  constructor() {
-    // Initialize AJV with comprehensive options
+  constructor(@Inject(APP_LOGGER) private readonly logger: Logger) {
     this.ajv = new Ajv({
-      allErrors: true, // Collect all errors, not just the first one
-      removeAdditional: false, // Don't remove additional properties
-      useDefaults: true, // Apply default values
-      coerceTypes: false, // Don't coerce types automatically
-      strict: true, // Strict mode for better error reporting
-      verbose: true, // Include schema and data in errors
+      allErrors: true,
+      removeAdditional: false,
+      useDefaults: true,
+      coerceTypes: false,
+      strict: true,
+      allowUnionTypes: true,
     });
-
-    // Add common formats (email, date, uri, etc.)
     addFormats(this.ajv);
-
-    // Add custom keywords if needed
     this.addCustomKeywords();
   }
 
-  /**
-   * Validates a JSON schema itself to ensure it's well-formed
-   * @param schema - The JSON schema to validate
-   * @returns SchemaValidationResult
-   */
+  /** Validate the schema itself (compiles once) */
   validateSchema(schema: JsonSchema): SchemaValidationResult {
     try {
-      // Check if the schema can be compiled
-      this.ajv.compile(schema);
-
-      return {
-        isValid: true,
-        errors: [],
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Unknown schema validation error';
-
-      this.logger.warn(
-        {
-          method: 'validateSchema',
-          error: errorMessage,
-          schema: JSON.stringify(schema, null, 2),
-        },
-        `Invalid JSON schema: ${errorMessage}`,
-      );
-
-      return {
-        isValid: false,
-        errors: [errorMessage],
-      };
+      this.getOrCompile(schema); // throws if invalid
+      return { isValid: true, errors: [] };
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Unknown schema validation error';
+      Log.minimal.warn(this.logger, 'ajv.schema.invalid', {
+        method: 'validateSchema',
+        component: 'AjvSchemaValidationService',
+        error: msg,
+        schemaId: schema.$id,
+      });
+      return { isValid: false, errors: [msg] };
     }
   }
 
-  /**
-   * Validates data against a JSON schema
-   * @param schema - The JSON schema to validate against
-   * @param data - The data to validate
-   * @returns SchemaValidationResult
-   */
+  /** Validate data against a given schema */
   validateData(
     schema: JsonSchema | Record<string, any>,
-    data: any,
+    data: unknown,
   ): SchemaValidationResult {
     try {
-      // First validate the schema itself
-      const schemaValidation = this.validateSchema(schema as JsonSchema);
-      if (!schemaValidation.isValid) {
-        return {
-          isValid: false,
-          errors: [`Invalid schema: ${schemaValidation.errors.join(', ')}`],
-        };
-      }
+      const validate = this.getOrCompile(schema as JsonSchema);
+      const ok = validate(data);
 
-      // Compile and validate the data
-      const validate = this.ajv.compile(schema);
-      const isValid = validate(data);
-
-      if (!isValid && validate.errors) {
-        const errors = validate.errors.map((error) =>
-          this.formatErrorMessage(error),
-        );
-
-        this.logger.debug(
-          {
-            method: 'validateData',
-            isValid,
-            errorCount: errors.length,
-            errors: validate.errors,
-          },
-          `Data validation failed with ${errors.length} errors`,
-        );
-
-        return {
-          isValid: false,
-          errors,
-          details: validate.errors,
-        };
-      }
-
-      return {
-        isValid: true,
-        errors: [],
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown validation error';
-
-      this.logger.error(
-        {
+      if (!ok) {
+        const details = validate.errors ?? [];
+        const errors = details.map((e) => this.formatErrorMessage(e));
+        Log.minimal.debug(this.logger, 'ajv.data.invalid', {
           method: 'validateData',
-          error: errorMessage,
-          schema: JSON.stringify(schema, null, 2),
-          data: JSON.stringify(data, null, 2),
-        },
-        `Data validation error: ${errorMessage}`,
-      );
+          component: 'AjvSchemaValidationService',
+          errorCount: errors.length,
+          schemaId: (schema as JsonSchema).$id,
+        });
+        return { isValid: false, errors, details };
+      }
 
-      return {
-        isValid: false,
-        errors: [errorMessage],
-      };
+      return { isValid: true, errors: [] };
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Unknown validation error';
+      Log.minimal.error(this.logger, err as Error, 'ajv.data.error', {
+        method: 'validateData',
+        component: 'AjvSchemaValidationService',
+        schemaId: (schema as JsonSchema).$id,
+      });
+      return { isValid: false, errors: [msg] };
     }
   }
 
   /**
-   * Validates a template payload schema specifically
-   * Includes template-specific validation rules
-   * @param payloadSchema - The payload schema to validate
-   * @returns SchemaValidationResult
+   * Template-specific schema validation:
+   * - root must be "object"
+   * - properties must exist
+   * - "required" only on objects & must reference defined props
    */
   validateTemplatePayloadSchema(
-    payloadSchema: JsonSchema | Record<string, any>,
+    schema: JsonSchema | Record<string, any>,
   ): SchemaValidationResult {
-    // First perform basic schema validation
-    const basicValidation = this.validateSchema(payloadSchema as JsonSchema);
-    if (!basicValidation.isValid) {
-      return basicValidation;
-    }
+    const basic = this.validateSchema(schema as JsonSchema);
+    if (!basic.isValid) return basic;
 
-    // Additional template-specific validations
-    const errors: string[] = [];
+    const s = schema as JsonSchema;
+    const errs: string[] = [];
 
-    // Ensure the schema has a type definition
-    if (!payloadSchema.type) {
-      errors.push('Payload schema must define a root type');
-    }
-
-    // Ensure the schema is an object type for template variables
-    if (payloadSchema.type !== 'object') {
-      errors.push(
+    if (!s.type) errs.push('Payload schema must define a root type');
+    if (s.type !== 'object')
+      errs.push(
         'Payload schema root type must be "object" for template variables',
       );
+    if (s.type === 'object' && !s.properties)
+      errs.push('Object schemas must define properties');
+
+    // required: only valid on object schemas, all keys must exist
+    if (s.required && s.type !== 'object') {
+      errs.push('The "required" keyword is only valid on object schemas');
+    }
+    if (s.type === 'object' && s.properties && s.required) {
+      const keys = new Set(Object.keys(s.properties));
+      for (const r of s.required) {
+        if (!keys.has(r))
+          errs.push(`"required" references unknown property "${r}"`);
+      }
     }
 
-    // Validate properties exist for object schemas
-    if (payloadSchema.type === 'object' && !payloadSchema.properties) {
-      errors.push('Object schemas must define properties');
+    // Recursively check nested properties
+    if (s.properties && this.isJsonSchemaProperties(s.properties)) {
+      this.validateTemplateProperties(s.properties, errs);
     }
 
-    // Check for common template variable patterns
-    if (
-      payloadSchema.properties &&
-      this.isJsonSchemaProperties(payloadSchema.properties)
-    ) {
-      this.validateTemplateProperties(payloadSchema.properties, errors);
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
+    return { isValid: errs.length === 0, errors: errs };
   }
 
-  /**
-   * Type guard to check if an object is a valid JsonSchemaProperty record
-   */
+  // --------------------- internals ---------------------
+
+  /** Compile (or fetch cached) validator */
+  private getOrCompile(schema: JsonSchema): ValidateFunction {
+    const key = schema.$id ?? this.inlineKey(schema);
+    const cached = this.cache.get(key);
+    if (cached) return cached;
+
+    // If $id present, register & reuse by id
+    if (schema.$id) {
+      this.ajv.removeSchema(schema.$id); // allow hot-reload/update
+      this.ajv.addSchema(schema, schema.$id);
+      const v = this.ajv.getSchema(schema.$id);
+      if (!v) throw new Error(`Failed to load schema with $id=${schema.$id}`);
+      this.cache.set(key, v);
+      return v;
+    }
+
+    const v = this.ajv.compile(schema);
+    this.cache.set(key, v);
+    return v;
+  }
+
+  /** Simple stable key; swap to a sha256 hash if schema bodies are large */
+  private inlineKey(schema: JsonSchema): string {
+    return JSON.stringify(schema);
+  }
+
   private isJsonSchemaProperties(
     obj: unknown,
   ): obj is Record<string, JsonSchemaProperty> {
-    if (!obj || typeof obj !== 'object' || obj === null) return false;
-
-    // Type assertion after null check for safety
-    const objRecord = obj as Record<string, unknown>;
-
-    // Check if all values have the basic structure of JsonSchemaProperty
-    return Object.values(objRecord).every(
+    if (!obj || typeof obj !== 'object') return false;
+    return Object.values(obj as Record<string, unknown>).every(
       (prop: unknown): prop is JsonSchemaProperty => {
-        if (!prop || typeof prop !== 'object' || prop === null) return false;
-
-        const propObj = prop as Record<string, unknown>;
-
-        return (
-          'type' in propObj &&
-          typeof propObj.type === 'string' &&
-          [
-            'string',
-            'number',
-            'integer',
-            'boolean',
-            'object',
-            'array',
-            'null',
-          ].includes(propObj.type)
-        );
+        return hasValidType(prop);
       },
     );
   }
 
-  /**
-   * Validates template properties for common patterns and best practices
-   */
+  /** Recursively validate nested properties + provide recommendations */
   private validateTemplateProperties(
     properties: Record<string, JsonSchemaProperty>,
     errors: string[],
     path = '',
   ): void {
-    for (const [key, property] of Object.entries(properties)) {
-      const currentPath = path ? `${path}.${key}` : key;
+    for (const [key, prop] of Object.entries(properties)) {
+      const p = path ? `${path}.${key}` : key;
 
-      // Check for required type definition
-      if (!property.type) {
-        errors.push(`Property "${currentPath}" must define a type`);
+      if (!prop.type) {
+        errors.push(`Property "${p}" must define a type`);
         continue;
       }
 
-      // Validate nested objects
-      if (property.type === 'object' && property.properties) {
-        this.validateTemplateProperties(
-          property.properties,
-          errors,
-          currentPath,
-        );
+      if (prop.type === 'object' && prop.properties) {
+        if (prop.required) {
+          const keys = new Set(Object.keys(prop.properties));
+          for (const r of prop.required) {
+            if (!keys.has(r))
+              errors.push(`"${p}.required" references unknown property "${r}"`);
+          }
+        }
+        this.validateTemplateProperties(prop.properties, errors, p);
       }
 
-      // Validate array items
-      if (property.type === 'array' && property.items) {
-        if (property.items.type === 'object' && property.items.properties) {
-          this.validateTemplateProperties(
-            property.items.properties,
-            errors,
-            `${currentPath}[]`,
-          );
+      if (prop.type === 'array' && prop.items) {
+        const it = prop.items;
+        if (it.type === 'object' && it.properties) {
+          this.validateTemplateProperties(it.properties, errors, `${p}[]`);
         }
       }
 
-      // Recommend descriptions for template variables
-      if (!property.description) {
-        this.logger.debug(
-          `Consider adding description for template property "${currentPath}"`,
-        );
+      if (!prop.description) {
+        Log.minimal.debug(this.logger, 'ajv.template.desc.recommendation', {
+          method: 'validateTemplateProperties',
+          component: 'AjvSchemaValidationService',
+          property: p,
+        });
       }
     }
   }
 
-  /**
-   * Formats AJV error messages for better readability
-   */
-  private formatErrorMessage(error: ErrorObject): string {
-    const path = error.instancePath || 'root';
-    const message = error.message || 'Unknown error';
+  /** Human-friendly error messages */
+  private formatErrorMessage(e: ErrorObject): string {
+    const path = e.instancePath
+      ? e.instancePath.replace(/^\//, '').replace(/\//g, '.') || 'root'
+      : 'root';
+    const msg = e.message || 'Validation error';
+    const params = getAjvErrorParams(e.params);
 
-    switch (error.keyword) {
+    switch (e.keyword) {
       case 'required':
-        return `Missing required property "${error.params?.missingProperty}" at ${path}`;
+        return `Missing required property "${params.missingProperty ?? 'unknown'}" at ${path}`;
       case 'type':
-        return `Invalid type at ${path}: expected ${error.params?.type}, got ${typeof error.data}`;
+        return `Invalid type at ${path}: expected ${params.type ?? 'unknown'}`;
       case 'format':
-        return `Invalid format at ${path}: ${message}`;
+        return `Invalid format at ${path}: ${msg}`;
       case 'enum': {
-        const allowedValues = error.params?.allowedValues;
-        const joinedValues = Array.isArray(allowedValues)
-          ? allowedValues.join(', ')
+        const allowed = params.allowedValues;
+        const joined = Array.isArray(allowed)
+          ? allowed.join(', ')
           : 'unknown values';
-        return `Invalid value at ${path}: must be one of [${joinedValues}]`;
+        return `Invalid value at ${path}: must be one of [${joined}]`;
       }
       case 'minimum':
-        return `Value at ${path} must be >= ${error.params?.limit}`;
       case 'maximum':
-        return `Value at ${path} must be <= ${error.params?.limit}`;
       case 'minLength':
-        return `Value at ${path} must be at least ${error.params?.limit} characters`;
       case 'maxLength':
-        return `Value at ${path} must be at most ${error.params?.limit} characters`;
+        return `${msg} at ${path}`;
       default:
-        return `Validation error at ${path}: ${message}`;
+        return `Validation error at ${path}: ${msg}`;
     }
   }
 
-  /**
-   * Add custom AJV keywords for template-specific validation
-   */
+  /** Custom keywords (template variables etc.) */
   private addCustomKeywords(): void {
-    // Add custom keyword for template variable validation
+    // Accept: foo, foo_bar9, {{ foo }}, {{foo.bar}}, ${foo}, ${foo.bar}
+    const bareIdent = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+    const moustache =
+      /^\{\{\s*[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*\s*\}\}$/;
+    const templateStr =
+      /^\$\{\s*[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*\s*\}$/;
+
     this.ajv.addKeyword({
       keyword: 'templateVariable',
       type: 'string',
       schemaType: 'boolean',
-      compile: (schemaValue: boolean) => {
-        return (data: string): boolean => {
-          if (!schemaValue) return true;
-
-          // Template variables should match common patterns like {{variable}} or ${variable}
-          const templateVariablePattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-          return templateVariablePattern.test(data);
-        };
+      validate: (flag: boolean, data: unknown) => {
+        if (!flag) return true;
+        if (typeof data !== 'string') return false;
+        return (
+          bareIdent.test(data) || moustache.test(data) || templateStr.test(data)
+        );
       },
+      errors: false,
     });
   }
 }

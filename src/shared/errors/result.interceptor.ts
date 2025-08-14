@@ -56,10 +56,10 @@ export class ResultInterceptor implements NestInterceptor {
           if (isErr(data)) {
             // Handle error case with context preservation and logging
             const errorWithCtx = withContext(data.error, {
-              correlationId: request.headers['x-correlation-id'],
-              tenantId: request.headers['x-tenant-id'],
-              traceId: request.headers['x-trace-id'],
-              userAgent: request.headers['user-agent'],
+              correlationId: request.headers?.['x-correlation-id'] as string,
+              tenantId: request.headers?.['x-tenant-id'] as string,
+              traceId: request.headers?.['x-trace-id'] as string,
+              userAgent: request.headers?.['user-agent'] as string,
               ipAddress: request.ip || undefined,
               ...data.error.context, // Preserve any existing context
             });
