@@ -1,21 +1,65 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  START,
+  FORWARDS,
+  BACKWARDS,
+  ReadStreamOptions,
+} from '@eventstore/db-client';
+import type { Logger } from 'pino';
+
 import { EventStoreService } from './eventstore.service';
 import { SnapshotRepository } from './snapshot.repository';
-import { START } from '@eventstore/db-client';
 import { Reducer } from '../../domain/common/aggregate-root.base';
 import { Snapshot } from '../../domain/common/events';
+import { Log } from '../../shared/logging/structured-logger';
+import { APP_LOGGER } from '../../shared/logging/logging.providers';
+
+type StreamIds = { streamId: string; snapId: string };
+
+/**
+ * Centralized stream ID builder to avoid drift across the codebase
+ */
+function buildStreamIds(
+  context: string,
+  aggregate: string,
+  aggSchema: number,
+  tenant: string,
+  entityId: string,
+): StreamIds {
+  const base = `${context}.${aggregate}.v${aggSchema}-${tenant}-${entityId}`;
+  return { streamId: base, snapId: `snap.${base}` };
+}
+
+/**
+ * Domain-specific error for aggregate rebuild failures
+ */
+export class AggregateRebuildFailedError extends Error {
+  constructor(
+    public readonly streamId: string,
+    public readonly context: string,
+    public readonly aggregate: string,
+    public readonly entityId: string,
+    cause: Error,
+  ) {
+    super(
+      `Failed to rebuild aggregate ${aggregate}/${entityId}: ${cause.message}`,
+    );
+    this.name = 'AggregateRebuildFailedError';
+    this.cause = cause;
+  }
+}
 
 @Injectable()
 export class AggregateRepository<State> {
-  private readonly logger = new Logger(AggregateRepository.name);
-
   constructor(
     private readonly es: EventStoreService,
     private readonly snapshots: SnapshotRepository<State>,
+    @Inject(APP_LOGGER) private readonly logger: Logger,
   ) {}
 
   /**
-   * Load aggregate state with snapshot catch-up optimization
+   * Load aggregate state with snapshot catch-up optimization.
+   * Returns the aggregate version (domain event index, starting at -1).
    */
   async load(
     context: string,
@@ -24,42 +68,67 @@ export class AggregateRepository<State> {
     tenant: string,
     entityId: string,
     reducer: Reducer<State>,
+    options?: {
+      signal?: AbortSignal;
+      readOptions?: Omit<ReadStreamOptions, 'direction'>;
+      correlationId?: string;
+    },
   ): Promise<{ state: State; version: number }> {
-    const streamId = `${context}.${aggregate}.v${aggSchema}-${tenant}-${entityId}`;
-    const snapId = `snap.${context}.${aggregate}.v${aggSchema}-${tenant}-${entityId}`;
-
-    this.logger.debug(
-      { streamId, snapId, context, aggregate, tenant, entityId },
-      'aggregate.load.start',
+    const { streamId, snapId } = buildStreamIds(
+      context,
+      aggregate,
+      aggSchema,
+      tenant,
+      entityId,
     );
 
+    Log.debug(this.logger, 'aggregate.load.start', {
+      component: 'AggregateRepository',
+      method: 'load',
+      streamId,
+      snapId,
+      context,
+      aggregate,
+      tenant,
+      entityId,
+      correlationId: options?.correlationId,
+    });
+
     try {
-      // Try to load latest snapshot
+      // 1) Load snapshot
       const snap = await this.snapshots.loadLatest(snapId);
       let state = snap?.state ?? reducer.initial();
-      let version = snap?.version ?? -1;
+      let version = snap?.version ?? -1; // domain version; -1 means no events applied
       let eventsProcessed = 0;
 
-      // Determine starting revision for event replay
+      // 2) Replay events since snapshot
       const fromRevision = snap ? BigInt(snap.version + 1) : START;
+      Log.debug(this.logger, 'aggregate.load.replayStart', {
+        component: 'AggregateRepository',
+        method: 'load',
+        streamId,
+        hasSnapshot: !!snap,
+        snapshotVersion: snap?.version,
+        fromRevision:
+          fromRevision === START ? 'START' : fromRevision.toString(),
+        correlationId: options?.correlationId,
+      });
 
-      this.logger.debug(
-        {
-          streamId,
-          hasSnapshot: !!snap,
-          snapshotVersion: snap?.version,
-          fromRevision: fromRevision.toString(),
-        },
-        'aggregate.load.replayStart',
-      );
+      const iter = this.es.readStream(streamId, {
+        direction: FORWARDS,
+        fromRevision,
+        ...options?.readOptions,
+      });
 
-      // Read and apply events since snapshot
-      const read = this.es.readStream(streamId, { fromRevision });
+      for await (const resolved of iter) {
+        // Check for cancellation
+        if (options?.signal?.aborted) {
+          throw new Error('Aggregate load cancelled by signal');
+        }
 
-      for await (const resolved of read) {
-        if (!resolved.event) continue;
+        const event = resolved.event;
+        if (!event) continue;
 
-        const { event } = resolved;
         try {
           state = reducer.apply(state, {
             type: event.type,
@@ -69,49 +138,70 @@ export class AggregateRepository<State> {
           version++;
           eventsProcessed++;
         } catch (error) {
-          this.logger.error(
+          Log.error(
+            this.logger,
+            error as Error,
+            'aggregate.load.eventApplyFailed',
             {
+              component: 'AggregateRepository',
+              method: 'load',
               streamId,
               eventType: event.type,
               eventId: event.id,
               version,
-              error: error instanceof Error ? error.message : String(error),
+              correlationId: options?.correlationId,
             },
-            'aggregate.load.eventApplyFailed',
           );
-          throw error;
+          throw new AggregateRebuildFailedError(
+            streamId,
+            context,
+            aggregate,
+            entityId,
+            error as Error,
+          );
         }
       }
 
-      this.logger.debug(
-        {
-          streamId,
-          finalVersion: version,
-          eventsProcessed,
-          hasSnapshot: !!snap,
-        },
-        'aggregate.load.complete',
-      );
+      Log.debug(this.logger, 'aggregate.load.complete', {
+        component: 'AggregateRepository',
+        method: 'load',
+        streamId,
+        finalVersion: version,
+        eventsProcessed,
+        hasSnapshot: !!snap,
+        correlationId: options?.correlationId,
+      });
 
       return { state, version };
     } catch (error) {
-      this.logger.error(
-        {
-          streamId,
-          context,
-          aggregate,
-          tenant,
-          entityId,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'aggregate.load.failed',
+      if (error instanceof AggregateRebuildFailedError) {
+        throw error; // Re-throw domain errors as-is
+      }
+
+      Log.error(this.logger, error as Error, 'aggregate.load.failed', {
+        component: 'AggregateRepository',
+        method: 'load',
+        streamId,
+        context,
+        aggregate,
+        tenant,
+        entityId,
+        correlationId: options?.correlationId,
+      });
+      throw new AggregateRebuildFailedError(
+        streamId,
+        context,
+        aggregate,
+        entityId,
+        error as Error,
       );
-      throw error;
     }
   }
 
   /**
-   * Save a snapshot for an aggregate
+   * Save a snapshot for an aggregate.
+   * `version` is the aggregate's domain version (event index).
+   * `streamPosition` is the ESDB stream revision to which this snapshot corresponds.
    */
   async saveSnapshot(
     context: string,
@@ -122,8 +212,15 @@ export class AggregateRepository<State> {
     state: State,
     version: number,
     streamPosition: bigint,
+    correlationId?: string,
   ): Promise<void> {
-    const snapId = `snap.${context}.${aggregate}.v${aggSchema}-${tenant}-${entityId}`;
+    const { snapId } = buildStreamIds(
+      context,
+      aggregate,
+      aggSchema,
+      tenant,
+      entityId,
+    );
 
     const snapshot: Snapshot<State> = {
       aggregate: `${context}.${aggregate}`,
@@ -131,66 +228,56 @@ export class AggregateRepository<State> {
       tenant,
       entityId,
       state,
-      version,
-      streamPosition,
+      version, // domain version
+      streamPosition, // ESDB revision
       takenAt: new Date().toISOString(),
     };
 
-    try {
-      await this.snapshots.save(snapId, snapshot);
+    await this.snapshots.save(snapId, snapshot);
 
-      this.logger.debug(
-        {
-          snapId,
-          version,
-          context,
-          aggregate,
-          tenant,
-          entityId,
-        },
-        'aggregate.snapshot.saved',
-      );
-    } catch (error) {
-      this.logger.error(
-        {
-          snapId,
-          version,
-          context,
-          aggregate,
-          tenant,
-          entityId,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'aggregate.snapshot.failed',
-      );
-      throw error;
-    }
+    Log.debug(this.logger, 'aggregate.snapshot.saved', {
+      component: 'AggregateRepository',
+      method: 'saveSnapshot',
+      snapId,
+      version,
+      streamPosition: streamPosition.toString(),
+      context,
+      aggregate,
+      tenant,
+      entityId,
+      correlationId,
+    });
   }
 
   /**
-   * Check if snapshot should be taken based on configurable thresholds
+   * Decide if we should take a snapshot.
+   * Computes `timeSinceLastSnapshot` automatically from snapshot's `takenAt`.
    */
   shouldTakeSnapshot(
     eventsProcessed: number,
-    timeSinceLastSnapshot?: number,
-    thresholds = {
-      eventCount: 200,
-      timeInMs: 5 * 60 * 1000, // 5 minutes
-    },
+    lastSnapshot?: { takenAt: string },
+    thresholds = { eventCount: 200, timeInMs: 5 * 60 * 1000 },
   ): boolean {
+    // Check event count threshold
     if (eventsProcessed >= thresholds.eventCount) {
       return true;
     }
 
-    if (timeSinceLastSnapshot && timeSinceLastSnapshot >= thresholds.timeInMs) {
-      return true;
+    // Check time threshold
+    if (lastSnapshot?.takenAt) {
+      const timeSinceLastSnapshot =
+        Date.now() - new Date(lastSnapshot.takenAt).getTime();
+      if (timeSinceLastSnapshot >= thresholds.timeInMs) {
+        return true;
+      }
     }
 
     return false;
   }
 
   /**
-   * Get aggregate statistics for monitoring
+   * Lightweight aggregate stats using tail read to avoid full replay.
+   * Returns both domain version and stream position for clarity.
    */
   async getStats(
     context: string,
@@ -200,44 +287,58 @@ export class AggregateRepository<State> {
     entityId: string,
   ): Promise<{
     streamExists: boolean;
-    version: number;
+    version: number; // domain version estimate
+    streamPosition?: bigint; // ESDB stream revision
     snapshotExists: boolean;
     snapshotVersion?: number;
     eventsSinceSnapshot: number;
   }> {
-    const snapId = `snap.${context}.${aggregate}.v${aggSchema}-${tenant}-${entityId}`;
+    const { streamId, snapId } = buildStreamIds(
+      context,
+      aggregate,
+      aggSchema,
+      tenant,
+      entityId,
+    );
 
+    // 1) Latest stream revision via single backward read
+    let latestRevision = -1n;
+    let streamExists = false;
     try {
-      // Get current aggregate version
-      const { version } = await this.load(
-        context,
-        aggregate,
-        aggSchema,
-        tenant,
-        entityId,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        { initial: () => null as any, apply: (s) => s },
-      );
-
-      // Get snapshot info
-      const snapshotStats = await this.snapshots.getStats(snapId);
-
-      return {
-        streamExists: version >= 0,
-        version,
-        snapshotExists: snapshotStats.exists,
-        snapshotVersion: snapshotStats.version,
-        eventsSinceSnapshot: snapshotStats.version
-          ? version - snapshotStats.version
-          : version + 1,
-      };
+      const iter = this.es.readStream(streamId, {
+        direction: BACKWARDS,
+        maxCount: 1,
+      });
+      for await (const resolved of iter) {
+        // If we read one event, its revision == current head
+        latestRevision = resolved.event?.revision ?? -1n;
+        streamExists = true;
+        break;
+      }
     } catch {
-      return {
-        streamExists: false,
-        version: -1,
-        snapshotExists: false,
-        eventsSinceSnapshot: 0,
-      };
+      // stream may not exist
     }
+
+    // 2) Snapshot info
+    const snapshotStats = await this.snapshots.getStats(snapId);
+
+    // Assuming domain version == revision for simplicity
+    // In practice, you might need to adjust this mapping
+    const version = streamExists ? Number(latestRevision) : -1;
+    const eventsSinceSnapshot =
+      snapshotStats.version != null
+        ? Math.max(0, version - snapshotStats.version)
+        : streamExists
+          ? version + 1
+          : 0;
+
+    return {
+      streamExists,
+      version,
+      streamPosition: streamExists ? latestRevision : undefined,
+      snapshotExists: snapshotStats.exists,
+      snapshotVersion: snapshotStats.version,
+      eventsSinceSnapshot,
+    };
   }
 }
