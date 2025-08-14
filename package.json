@@ -20,20 +20,25 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@eventstore/db-client": "^6.2.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/terminus": "^11.0.0",
+    "@types/ioredis": "^4.28.10",
+    "@types/uuid": "^10.0.0",
     "bullmq": "^5.56.10",
+    "ioredis": "^5.7.0",
     "nestjs-cls": "^6.0.1",
     "nestjs-pino": "^4.4.0",
     "pino-elasticsearch": "^8.1.0",
     "pino-loki": "^2.6.0",
     "pino-pretty": "^13.1.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
