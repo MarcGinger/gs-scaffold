@@ -54,7 +54,7 @@ export function appendEventWithMetadata(
 
 // ESDB consumer: set CLS from event metadata
 export function setClsFromEventMetadata(cls: ClsService, resolvedEvent: any) {
-  const meta = resolvedEvent?.event?.metadata as any;
+  const meta = resolvedEvent?.event?.metadata;
   cls.set('traceId', meta?.traceId);
   cls.set('correlationId', meta?.correlationId);
   cls.set('tenantId', meta?.user?.tenantId);

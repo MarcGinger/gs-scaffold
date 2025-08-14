@@ -1,6 +1,6 @@
-import { AggregateRootBase } from '../../domain/common/aggregate-root.base';
-import { DomainEvent } from '../../domain/common/events';
-import { Result, failure } from '../../domain/common/events';
+import { AggregateRootBase } from '../../../domain/common/aggregate-root.base';
+import { DomainEvent } from '../../../domain/common/events';
+import { Result, failure } from '../../../domain/common/events';
 import {
   ProductCreatedEvent,
   ProductPriceUpdatedEvent,

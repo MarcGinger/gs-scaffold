@@ -101,7 +101,6 @@ export class AppConfigUtil {
   /** Best-effort containerized detection */
   static isContainerized(): boolean {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const fs = require('fs');
       if (fs.existsSync('/.dockerenv')) return true;
       const cgroup = fs.readFileSync('/proc/1/cgroup', 'utf8');

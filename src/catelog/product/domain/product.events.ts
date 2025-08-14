@@ -1,7 +1,7 @@
-import { DomainEvent } from '../../domain/common/events';
+import { DomainEvent } from '../../../domain/common/events';
 
 /**
- * Example domain events for a Product aggregate
+ * Product domain events for the Product bounded context
  */
 
 export class ProductCreatedEvent implements DomainEvent {

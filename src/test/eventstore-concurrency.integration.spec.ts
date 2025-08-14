@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { LoggingModule } from '../../shared/logging/logging.module';
-import { ProductAggregate } from '../../domain/product/product.aggregate';
+import { EventStoreService } from '../../infrastructure/eventstore/eventstore.service';
+import { AggregateRepository } from '../../infrastructure/eventstore/aggregate.repository';
+import { createTestApplicationContext } from '../../shared/testing/test-app.setup';
+import { ProductAggregate } from '../catelog/product/domain/product.aggregate';
 
 describe('EventStore Concurrency Control Smoke Test', () => {
   let module: TestingModule;

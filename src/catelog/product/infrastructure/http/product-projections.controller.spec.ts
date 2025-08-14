@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductProjectionsController } from './product-projections.controller';
-import { ProductQueryService } from '../../../../infrastructure/projections/product-query.service';
-import { EventSubscriptionService } from '../../../../infrastructure/projections/event-subscription.service';
+import { ProductQueryService } from '../projections/product-query.service';
+import { ProductEventSubscriptionService } from '../projections/product-event-subscription.service';
 
 describe('ProductProjectionsController', () => {
   let controller: ProductProjectionsController;
   let productQueryService: jest.Mocked<ProductQueryService>;
-  let eventSubscriptionService: jest.Mocked<EventSubscriptionService>;
+  let eventSubscriptionService: jest.Mocked<ProductEventSubscriptionService>;
 
   beforeEach(async () => {
     const mockProductQueryService = {
@@ -35,7 +35,7 @@ describe('ProductProjectionsController', () => {
           useValue: mockProductQueryService,
         },
         {
-          provide: EventSubscriptionService,
+          provide: ProductEventSubscriptionService,
           useValue: mockEventSubscriptionService,
         },
       ],
@@ -45,7 +45,7 @@ describe('ProductProjectionsController', () => {
       ProductProjectionsController,
     );
     productQueryService = module.get(ProductQueryService);
-    eventSubscriptionService = module.get(EventSubscriptionService);
+    eventSubscriptionService = module.get(ProductEventSubscriptionService);
   });
 
   it('should be defined', () => {
@@ -168,7 +168,11 @@ describe('ProductProjectionsController', () => {
   describe('getSubscriptionStatus', () => {
     it('should return subscription status', () => {
       const mockStatus = {
-        subscriptions: ['product-catalog', 'active-products'],
+        isRunning: true,
+        subscriptions: [
+          { name: 'product-catalog', status: 'running' },
+          { name: 'active-products', status: 'running' },
+        ],
       };
       eventSubscriptionService.getSubscriptionStatus.mockReturnValue(
         mockStatus,

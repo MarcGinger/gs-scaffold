@@ -1,8 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
 import type { Logger } from 'pino';
 import { ProductRedisProjectionService } from './product-redis-projection.service';
-import { Log } from '../../../../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../../../../shared/logging/logging.providers';
+import { APP_LOGGER } from 'src/shared/logging/logging.providers';
+import { Log } from 'src/shared/logging/structured-logger';
 
 export interface ProductCatalogItem {
   productId: string;

@@ -1,4 +1,4 @@
-import { ProductAggregate } from './src/domain/product/product.aggregate';
+import { ProductAggregate } from './src/catelog/product/domain/product.aggregate';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

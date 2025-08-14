@@ -50,7 +50,7 @@ describe('E2E Logging & Trace Integration', () => {
 
   it('should echo x-request-id and include traceId in logs', async () => {
     const traceId = 'test-trace-id-12345';
-    const res = await request(app.getHttpServer() as any)
+    const res = await request(app.getHttpServer())
       .get('/')
       .set('x-request-id', traceId);
 
@@ -60,7 +60,7 @@ describe('E2E Logging & Trace Integration', () => {
   });
 
   it('should generate traceId when none provided', async () => {
-    const res = await request(app.getHttpServer() as any).get('/');
+    const res = await request(app.getHttpServer()).get('/');
 
     expect(res.headers['x-request-id']).toBeDefined();
     expect(res.headers['x-request-id']).toMatch(
@@ -71,7 +71,7 @@ describe('E2E Logging & Trace Integration', () => {
   it('should handle W3C traceparent header', async () => {
     const traceparent =
       '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
-    const res = await request(app.getHttpServer() as any)
+    const res = await request(app.getHttpServer())
       .get('/')
       .set('traceparent', traceparent);
 

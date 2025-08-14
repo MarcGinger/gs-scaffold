@@ -5,16 +5,16 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import type { Logger } from 'pino';
-import { EventStoreService } from '../../../../../infrastructure/eventstore/eventstore.service';
-import { PersistentRunner } from '../../../../../infrastructure/projections/persistent.runner';
 import { ProductCatalogProjection } from './product-catalog.projection';
 import { ActiveProductsProjection } from './active-products.projection';
-import { Log } from '../../../../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../../../../shared/logging/logging.providers';
+import { EventStoreService } from 'src/infrastructure/eventstore/eventstore.service';
+import { PersistentRunner } from 'src/infrastructure/projections/persistent.runner';
+import { APP_LOGGER } from 'src/shared/logging/logging.providers';
+import { Log } from 'src/shared/logging/structured-logger';
 
-export interface EventEnvelope {
+export interface EventEnvelope<T = unknown> {
   type: string;
-  data: any;
+  data: T;
   metadata: {
     eventId: string;
     streamId: string;
@@ -24,6 +24,29 @@ export interface EventEnvelope {
     correlationId?: string;
     causationId?: string;
   };
+}
+
+interface SubscriptionInfo {
+  stream: string;
+  group: string;
+  stop: () => void;
+}
+
+interface RawEvent {
+  type: string;
+  data: unknown;
+  metadata?: EventMetadata;
+  streamId: string;
+  revision?: bigint;
+}
+
+interface EventMetadata {
+  eventId?: string;
+  id?: string;
+  occurredAt?: string;
+  correlationId?: string;
+  causationId?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -38,7 +61,7 @@ export interface EventEnvelope {
 export class ProductEventSubscriptionService
   implements OnModuleInit, OnModuleDestroy
 {
-  private readonly subscriptions: Map<string, any> = new Map();
+  private readonly subscriptions: Map<string, SubscriptionInfo> = new Map();
   private isRunning = false;
 
   constructor(
@@ -53,8 +76,8 @@ export class ProductEventSubscriptionService
     await this.startProjectionSubscriptions();
   }
 
-  async onModuleDestroy() {
-    await this.stopProjectionSubscriptions();
+  onModuleDestroy() {
+    this.stopProjectionSubscriptions();
   }
 
   /**
@@ -108,14 +131,14 @@ export class ProductEventSubscriptionService
   /**
    * Stop all projection subscriptions
    */
-  async stopProjectionSubscriptions(): Promise<void> {
+  stopProjectionSubscriptions(): void {
     if (!this.isRunning) {
       return;
     }
 
     for (const [name, subscription] of this.subscriptions) {
       try {
-        await subscription.stop();
+        subscription.stop();
         Log.info(
           this.baseLogger,
           `Stopped product projection subscription: ${name}`,
@@ -155,30 +178,41 @@ export class ProductEventSubscriptionService
     const subscriptionName = 'product-catalog-projection';
     const streamPattern = 'product-*'; // Subscribe to all product streams
 
-    const projectFn = async (event: {
-      type: string;
-      data: any;
-      metadata: any;
-      streamId: string;
-      revision?: bigint;
-    }) => {
+    const projectFn = async (event: RawEvent) => {
       const envelope = this.mapToEventEnvelope(event);
 
       try {
         switch (envelope.type) {
           case 'ecommerce.product.created.v1':
-            await this.productCatalogProjection.handleProductCreated(envelope);
+            await this.productCatalogProjection.handleProductCreated(
+              envelope as EventEnvelope<{
+                productId: string;
+                name: string;
+                description: string;
+                price: number;
+                categoryId: string;
+                sku: string;
+              }>,
+            );
             break;
 
           case 'ecommerce.product.price-updated.v1':
             await this.productCatalogProjection.handleProductPriceUpdated(
-              envelope,
+              envelope as EventEnvelope<{
+                productId: string;
+                oldPrice: number;
+                newPrice: number;
+                reason?: string;
+              }>,
             );
             break;
 
           case 'ecommerce.product.deactivated.v1':
             await this.productCatalogProjection.handleProductDeactivated(
-              envelope,
+              envelope as EventEnvelope<{
+                productId: string;
+                reason: string;
+              }>,
             );
             break;
 
@@ -221,35 +255,22 @@ export class ProductEventSubscriptionService
 
     // Note: This uses the global persistent runner infrastructure
     // In a full modular approach, each module might have its own runner
-    const subscription = await this.persistentRunner.startStream(
+    await this.persistentRunner.ensureAndRun(
       streamPattern,
       subscriptionName,
       projectFn,
       {
         progressEvery: 100,
         maxRetryCount: 5,
-        checkpointAfter: 1000, // Checkpoint every 1000 events
-        messageTimeout: 30000, // 30 second timeout
-        onFailure: async (ctx) => {
-          Log.error(
-            this.baseLogger,
-            ctx.error,
-            'Product catalog projection persistent failure',
-            {
-              component: 'ProductEventSubscriptionService',
-              method: 'startProductCatalogSubscription',
-              stream: ctx.stream,
-              group: ctx.group,
-              eventId: ctx.event.id,
-              eventType: ctx.event.type,
-            },
-          );
-          return 'retry'; // Retry failed events
-        },
+        messageTimeout: 30000,
       },
     );
 
-    this.subscriptions.set(subscriptionName, subscription);
+    this.subscriptions.set(subscriptionName, {
+      stream: streamPattern,
+      group: subscriptionName,
+      stop: () => this.persistentRunner.stop(streamPattern, subscriptionName),
+    });
 
     Log.info(this.baseLogger, 'Product catalog subscription started', {
       component: 'ProductEventSubscriptionService',
@@ -266,30 +287,38 @@ export class ProductEventSubscriptionService
     const subscriptionName = 'active-products-projection';
     const streamPattern = 'product-*'; // Subscribe to all product streams
 
-    const projectFn = async (event: {
-      type: string;
-      data: any;
-      metadata: any;
-      streamId: string;
-      revision?: bigint;
-    }) => {
+    const projectFn = async (event: RawEvent) => {
       const envelope = this.mapToEventEnvelope(event);
 
       try {
         switch (envelope.type) {
           case 'ecommerce.product.created.v1':
-            await this.activeProductsProjection.handleProductCreated(envelope);
+            await this.activeProductsProjection.handleProductCreated(
+              envelope as EventEnvelope<{
+                productId: string;
+                name: string;
+                sku: string;
+                price: number;
+                categoryId: string;
+              }>,
+            );
             break;
 
           case 'ecommerce.product.price-updated.v1':
             await this.activeProductsProjection.handleProductPriceUpdated(
-              envelope,
+              envelope as EventEnvelope<{
+                productId: string;
+                newPrice: number;
+              }>,
             );
             break;
 
           case 'ecommerce.product.deactivated.v1':
             await this.activeProductsProjection.handleProductDeactivated(
-              envelope,
+              envelope as EventEnvelope<{
+                productId: string;
+                reason: string;
+              }>,
             );
             break;
 
@@ -330,35 +359,22 @@ export class ProductEventSubscriptionService
       }
     };
 
-    const subscription = await this.persistentRunner.startStream(
+    await this.persistentRunner.ensureAndRun(
       streamPattern,
       subscriptionName,
       projectFn,
       {
         progressEvery: 100,
         maxRetryCount: 5,
-        checkpointAfter: 1000,
         messageTimeout: 30000,
-        onFailure: async (ctx) => {
-          Log.error(
-            this.baseLogger,
-            ctx.error,
-            'Active products projection persistent failure',
-            {
-              component: 'ProductEventSubscriptionService',
-              method: 'startActiveProductsSubscription',
-              stream: ctx.stream,
-              group: ctx.group,
-              eventId: ctx.event.id,
-              eventType: ctx.event.type,
-            },
-          );
-          return 'retry';
-        },
       },
     );
 
-    this.subscriptions.set(subscriptionName, subscription);
+    this.subscriptions.set(subscriptionName, {
+      stream: streamPattern,
+      group: subscriptionName,
+      stop: () => this.persistentRunner.stop(streamPattern, subscriptionName),
+    });
 
     Log.info(this.baseLogger, 'Active products subscription started', {
       component: 'ProductEventSubscriptionService',
@@ -371,24 +387,23 @@ export class ProductEventSubscriptionService
   /**
    * Map EventStore event to standardized envelope
    */
-  private mapToEventEnvelope(event: {
-    type: string;
-    data: any;
-    metadata: any;
-    streamId: string;
-    revision?: bigint;
-  }): EventEnvelope {
+  private mapToEventEnvelope(event: RawEvent): EventEnvelope {
+    const metadata = event.metadata ?? {};
     return {
       type: event.type,
       data: event.data,
       metadata: {
-        eventId: event.metadata?.eventId || event.metadata?.id || 'unknown',
+        eventId: String(metadata.eventId ?? metadata.id ?? 'unknown'),
         streamId: event.streamId,
-        revision: event.revision?.toString() || '0',
-        eventSequence: parseInt(event.revision?.toString() || '0', 10),
-        occurredAt: event.metadata?.occurredAt || new Date().toISOString(),
-        correlationId: event.metadata?.correlationId,
-        causationId: event.metadata?.causationId,
+        revision: event.revision?.toString() ?? '0',
+        eventSequence: parseInt(event.revision?.toString() ?? '0', 10),
+        occurredAt: String(metadata.occurredAt ?? new Date().toISOString()),
+        correlationId: metadata.correlationId
+          ? String(metadata.correlationId)
+          : undefined,
+        causationId: metadata.causationId
+          ? String(metadata.causationId)
+          : undefined,
       },
     };
   }
@@ -418,7 +433,7 @@ export class ProductEventSubscriptionService
   async restartSubscription(subscriptionName: string): Promise<void> {
     const subscription = this.subscriptions.get(subscriptionName);
     if (subscription) {
-      await subscription.stop();
+      subscription.stop();
       this.subscriptions.delete(subscriptionName);
     }
 

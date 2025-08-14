@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { LoggingModule } from '../../../../../shared/logging/logging.module';
-import { EventStoreModule } from '../../../../../infrastructure/eventstore/eventstore.module';
-import { PersistentRunner } from '../../../../../infrastructure/projections/persistent.runner';
 
 // Product-specific projection services
 import { ProductRedisProjectionService } from './product-redis-projection.service';
@@ -10,6 +7,9 @@ import { ProductCatalogProjection } from './product-catalog.projection';
 import { ActiveProductsProjection } from './active-products.projection';
 import { ProductQueryService } from './product-query.service';
 import { ProductEventSubscriptionService } from './product-event-subscription.service';
+import { EventStoreModule } from 'src/infrastructure/eventstore/eventstore.module';
+import { PersistentRunner } from 'src/infrastructure/projections/persistent.runner';
+import { LoggingModule } from 'src/shared/logging/logging.module';
 
 /**
  * Product Projections Module

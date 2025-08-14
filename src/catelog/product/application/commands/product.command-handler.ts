@@ -1,36 +1,45 @@
 import { Injectable, Inject } from '@nestjs/common';
+import crypto from 'crypto';
 import type { Logger } from 'pino';
-import { ProductAggregate } from '../../../domain/product/product.aggregate';
-import { EventStoreService } from '../../../infrastructure/eventstore/eventstore.service';
-import { Log } from '../../../shared/logging/structured-logger';
-import { APP_LOGGER } from '../../../shared/logging/logging.providers';
-import { Result, success, failure } from '../../../domain/common/events';
+import { NO_STREAM } from '@eventstore/db-client';
+import { EventStoreService } from '../../../../infrastructure/eventstore/eventstore.service';
+import { ProductAggregate } from '../../domain/product.aggregate';
+import { Result, success, failure } from '../../../../domain/common/events';
+import { Log } from '../../../../shared/logging/structured-logger';
+import { APP_LOGGER } from '../../../../shared/logging/logging.providers';
 import {
   CreateProductCommand,
   UpdateProductPriceCommand,
   DeactivateProductCommand,
 } from './product.commands';
-import { NO_STREAM } from '@eventstore/db-client';
 
 /**
- * Product command handlers implementing CQRS pattern
- * Simplified version for basic functionality
+ * Product Command Handler - Write-side of CQRS for Product domain
+ * Handles commands that modify product state and persist events
  */
 @Injectable()
 export class ProductCommandHandler {
   constructor(
-    private readonly eventStore: EventStoreService,
     @Inject(APP_LOGGER) private readonly logger: Logger,
+    private readonly eventStore: EventStoreService,
   ) {}
 
   /**
-   * Handle CreateProductCommand
+   * Handle CreateProductCommand - Create new product aggregate and persist events
    */
-  async handle(command: CreateProductCommand): Promise<Result<string, string>> {
-    try {
-      const { payload, metadata } = command;
+  async handle(command: CreateProductCommand): Promise<Result<string, Error>> {
+    const { payload, metadata } = command;
 
-      // Create new product aggregate
+    try {
+      Log.info(this.logger, 'Handling CreateProductCommand', {
+        component: 'ProductCommandHandler',
+        method: 'handle.CreateProduct',
+        correlationId: metadata.correlationId,
+        tenantId: metadata.tenantId,
+        productId: payload.id,
+      });
+
+      // Create product aggregate
       const createResult = ProductAggregate.create(
         payload.id,
         payload.name,
@@ -41,14 +50,17 @@ export class ProductCommandHandler {
       );
 
       if (!createResult.success) {
-        Log.warn(this.logger, 'Product creation failed validation', {
-          component: 'ProductCommandHandler',
-          method: 'handle.CreateProduct',
-          correlationId: metadata.correlationId,
-          tenantId: metadata.tenantId,
-          error: createResult.error,
-        });
-        return failure(createResult.error);
+        Log.error(
+          this.logger,
+          new Error(createResult.error),
+          'Failed to create ProductAggregate',
+          {
+            component: 'ProductCommandHandler',
+            method: 'handle.CreateProduct',
+            correlationId: metadata.correlationId,
+          },
+        );
+        return failure(new Error(createResult.error));
       }
 
       const aggregate = createResult.data;
@@ -106,7 +118,7 @@ export class ProductCommandHandler {
    */
   executeCommand(
     command: UpdateProductPriceCommand | DeactivateProductCommand,
-  ): Result<void, string> {
+  ): Result<void, Error> {
     // Simplified implementation - load from events would go here
     Log.info(this.logger, 'Command received (simplified handler)', {
       component: 'ProductCommandHandler',

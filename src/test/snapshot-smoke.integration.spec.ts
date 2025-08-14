@@ -1,4 +1,4 @@
-import { ProductAggregate } from '../../domain/product/product.aggregate';
+import { ProductAggregate } from '../catelog/product/domain/product.aggregate';
 
 describe('EventStore Snapshot Smoke Test', () => {
   describe('Snapshot Save and Load', () => {
