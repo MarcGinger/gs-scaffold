@@ -96,7 +96,7 @@ export class AggregateRepository<State> {
 
     try {
       // 1) Load snapshot
-      const snap = await this.snapshots.loadLatest(snapId);
+      const { snapshot: snap } = await this.snapshots.loadLatest(snapId);
       let state = snap?.state ?? reducer.initial();
       let version = snap?.version ?? -1; // domain version; -1 means no events applied
       let eventsProcessed = 0;
