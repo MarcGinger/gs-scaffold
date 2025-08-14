@@ -17,7 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typeorm:ts": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
+    "migration:create": "npm run typeorm:ts -- migration:create src/shared/infrastructure/migrations/manual",
+    "migration:generate": "npm run typeorm:ts -- migration:generate src/shared/infrastructure/migrations/auto -d src/shared/infrastructure/database/app.datasource.ts",
+    "migration:run": "ts-node -r tsconfig-paths/register src/shared/infrastructure/migrations/run.ts",
+    "migration:revert": "npm run typeorm:ts -- migration:revert -d src/shared/infrastructure/database/app.datasource.ts"
   },
   "dependencies": {
     "@eventstore/db-client": "^6.2.1",
@@ -27,6 +32,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/terminus": "^11.0.0",
+    "@nestjs/typeorm": "^11.0.0",
     "@types/ioredis": "^4.28.10",
     "@types/uuid": "^10.0.0",
     "ajv": "^8.17.1",
@@ -36,11 +42,13 @@
     "nestjs-cls": "^6.0.1",
     "nestjs-pino": "^4.4.0",
     "node-fetch": "^3.3.2",
+    "pg": "^8.16.3",
     "pino-elasticsearch": "^8.1.0",
     "pino-loki": "^2.6.0",
     "pino-pretty": "^13.1.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "typeorm": "^0.3.25",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -55,6 +63,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
+    "@types/pg": "^8.15.5",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",

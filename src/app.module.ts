@@ -8,6 +8,7 @@ import { createServiceLoggerFactory } from './shared/logging/logging.providers';
 import { UserModule } from './user/user.module';
 import { OrderModule } from './order/order.module';
 import { HealthModule } from './health';
+import { TypeOrmDatabaseModule } from './shared/infrastructure/database';
 
 // Create service-specific logger factory for the main app
 const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
@@ -19,6 +20,7 @@ const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
       middleware: { mount: true, generateId: true },
     }),
     LoggingModule,
+    TypeOrmDatabaseModule,
     HealthModule,
     UserModule,
     OrderModule,

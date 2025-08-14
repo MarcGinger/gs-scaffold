@@ -34,10 +34,37 @@ export class HealthDetailMemoryResource {
   rss: string;
 }
 
+export class HealthDetailDatabaseResource {
+  @ApiProperty({ description: 'Database connectivity status' })
+  healthy: boolean;
+
+  @ApiProperty({ description: 'Database schema name', required: false })
+  schema?: string;
+
+  @ApiProperty({ description: 'Database connection status' })
+  isConnected: boolean;
+
+  @ApiProperty({ description: 'Last health check timestamp' })
+  lastCheck: string;
+
+  @ApiProperty({ description: 'Migration status information' })
+  migrations: {
+    migrationsTableExists: boolean;
+    lastCheck: string;
+  };
+}
+
 export class HealthDetailResource {
   @ApiProperty({
     type: () => HealthDetailMemoryResource,
     description: 'Detailed memory usage statistics of the process.',
   })
   memory: HealthDetailMemoryResource;
+
+  @ApiProperty({
+    type: () => HealthDetailDatabaseResource,
+    description: 'Detailed database health information.',
+    required: false,
+  })
+  database?: HealthDetailDatabaseResource;
 }

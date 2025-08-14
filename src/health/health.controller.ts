@@ -14,16 +14,17 @@ import {
   HealthCheck,
   HealthCheckService,
   MemoryHealthIndicator,
-  // TypeOrmHealthIndicator,
+  HealthIndicatorResult,
 } from '@nestjs/terminus';
 import { HealthDetailResource } from './health.dto';
+import { DatabaseHealthService } from '../shared/infrastructure/database';
 @Controller('actuator')
 @ApiTags('Health check')
 export class HealthController {
   constructor(
     private readonly healthCheckService: HealthCheckService,
     private readonly memoryHealthIndicator: MemoryHealthIndicator,
-    // private readonly db: TypeOrmHealthIndicator,
+    private readonly databaseHealthService: DatabaseHealthService,
   ) {}
 
   /**
@@ -45,8 +46,27 @@ export class HealthController {
       () =>
         this.memoryHealthIndicator.checkRSS('memory RSS', 300 * 1024 * 1024),
 
-      // () => this.db.pingCheck('database'),
+      // Database connectivity check
+      () => this.checkDatabase(),
     ]);
+  }
+
+  /**
+   * Custom database health indicator
+   */
+  private async checkDatabase(): Promise<HealthIndicatorResult> {
+    const isHealthy = await this.databaseHealthService.isHealthy();
+    const result: HealthIndicatorResult = {
+      database: {
+        status: isHealthy ? 'up' : 'down',
+      },
+    };
+
+    if (!isHealthy) {
+      throw new Error('Database health check failed');
+    }
+
+    return result;
   }
 
   /**
@@ -56,22 +76,36 @@ export class HealthController {
   @Get('/detail')
   @ApiOperation({
     summary: 'Deep health scan',
-    description: 'Returns detailed memory usage information',
+    description: 'Returns detailed memory usage and database information',
   })
   @ApiResponse({ type: HealthDetailResource, isArray: false })
-  healthDetails(): HealthDetailResource {
+  async healthDetails(): Promise<HealthDetailResource> {
     const memoryUsage = process.memoryUsage();
 
     const heapUsed = memoryUsage.heapUsed / 1024 / 1024;
     const heapTotal = memoryUsage.heapTotal / 1024 / 1024;
     const arrayBuffers = memoryUsage.arrayBuffers / 1024 / 1024;
     const rss = memoryUsage.rss / 1024 / 1024;
+
+    // Get detailed database health
+    const dbHealth = await this.databaseHealthService.getHealthDetails();
+
+    const migrationStatus =
+      await this.databaseHealthService.getMigrationStatus();
+
     return {
       memory: {
         heapUsed: `${Math.round(heapUsed * 100) / 100} MB`,
         heapTotal: `${Math.round(heapTotal * 100) / 100} MB`,
         arrayBuffers: `${Math.round(arrayBuffers * 100) / 100} MB`,
         rss: `${Math.round(rss * 100) / 100} MB`,
+      },
+      database: {
+        healthy: dbHealth.healthy,
+        schema: dbHealth.schema,
+        isConnected: dbHealth.isConnected,
+        lastCheck: dbHealth.lastCheck,
+        migrations: migrationStatus,
       },
     };
   }
