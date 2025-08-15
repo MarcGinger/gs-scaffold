@@ -1,57 +1,77 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { Logger } from 'pino';
 import { APP_LOGGER } from '../../logging/logging.providers';
-import { Log } from '../../logging/structured-logger';
 import { OpaInput, OpaDecision } from '../opa/opa.types';
 import { IUserToken } from '../types/user-token.interface';
+import {
+  IClock,
+  IIdGenerator,
+  SystemClock,
+  UuidGenerator,
+  AuditConfig,
+} from './audit.interfaces';
+import { RedactionUtil } from './redaction.util';
+import {
+  TypedAuditLogEntry,
+  SecurityObligation,
+  SecurityReasonCode,
+  AuditEventType,
+} from './audit.types';
 
 /**
- * Audit event types for security decision logging
- */
-export enum AuditEventType {
-  AUTHORIZATION_DECISION = 'authorization_decision',
-  AUTHENTICATION_SUCCESS = 'authentication_success',
-  AUTHENTICATION_FAILURE = 'authentication_failure',
-  ACCESS_DENIED = 'access_denied',
-  ELEVATED_ACCESS = 'elevated_access',
-  POLICY_VIOLATION = 'policy_violation',
-  EMERGENCY_ACCESS = 'emergency_access',
-}
-
-/**
- * Structured audit log entry
- */
-export interface AuditLogEntry {
-  readonly eventType: AuditEventType;
-  readonly timestamp: string;
-  readonly correlationId: string;
-  readonly userId?: string;
-  readonly tenantId?: string;
-  readonly resourceType?: string;
-  readonly resourceId?: string;
-  readonly action?: string;
-  readonly decision: 'ALLOW' | 'DENY' | 'ERROR';
-  readonly reasonCode: string;
-  readonly reason?: string;
-  readonly obligations?: readonly unknown[];
-  readonly ipAddress?: string;
-  readonly userAgent?: string;
-  readonly metadata?: Record<string, unknown>;
-  readonly policyVersion?: string;
-  readonly emergency?: boolean;
-  readonly sensitiveOperation?: boolean;
-}
-
-/**
- * Decision logging service for security audit trails
- * Provides comprehensive audit logging for authorization decisions and security events
+ * Enhanced decision logging service for security audit trails
+ * Production-ready with PII protection, sampling, and bounded logging
  */
 @Injectable()
 export class DecisionLoggerService {
-  constructor(@Inject(APP_LOGGER) private readonly logger: Logger) {}
+  private readonly auditLogger: Logger;
+  private readonly redactionUtil: RedactionUtil;
+  private readonly config: Required<AuditConfig>;
+
+  constructor(
+    @Inject(APP_LOGGER) private readonly logger: Logger,
+    @Optional()
+    @Inject('CLOCK')
+    private readonly clock: IClock = new SystemClock(),
+    @Optional()
+    @Inject('ID_GENERATOR')
+    private readonly idGenerator: IIdGenerator = new UuidGenerator(),
+    @Optional() @Inject('AUDIT_CONFIG') auditConfig?: AuditConfig,
+  ) {
+    // Create child logger with base bindings for security audit
+    this.auditLogger = logger.child({
+      component: 'DecisionLoggerService',
+      auditType: 'security',
+    });
+
+    // Default configuration with production-safe defaults
+    this.config = {
+      sampling: {
+        allowDecisions: 10, // 10% sampling for ALLOW decisions
+        denyDecisions: 100, // Log all DENY decisions
+        errorDecisions: 100, // Log all ERROR decisions
+        ...(auditConfig?.sampling || {}),
+      },
+      limits: {
+        maxReasonLength: 500,
+        maxMetadataSize: 8192, // 8KB max
+        maxPayloadSize: 16384, // 16KB max per log entry
+        ...(auditConfig?.limits || {}),
+      },
+      redaction: {
+        maskIpAddresses: true,
+        maskUserAgents: true,
+        maskEmails: true,
+        preserveNetworkPrefix: true,
+        ...(auditConfig?.redaction || {}),
+      },
+    };
+
+    this.redactionUtil = new RedactionUtil(this.config.redaction);
+  }
 
   /**
-   * Log an authorization decision with full context
+   * Log an authorization decision with full context, PII protection, and sampling
    */
   logAuthorizationDecision(
     input: OpaInput,
@@ -63,44 +83,48 @@ export class DecisionLoggerService {
       emergency?: boolean;
     },
   ): void {
-    const auditEntry: AuditLogEntry = {
+    const reasonCode = this.mapToSecurityReasonCode(decision);
+    const isSampled = this.shouldSample(decision.allow ? 'ALLOW' : 'DENY');
+
+    if (!isSampled) return;
+
+    const auditEntry: TypedAuditLogEntry = {
       eventType: AuditEventType.AUTHORIZATION_DECISION,
-      timestamp: new Date().toISOString(),
-      correlationId: context?.correlationId || input.context.correlationId,
+      timestamp: this.clock.toISOString(),
+      correlationId:
+        context?.correlationId ||
+        input.context.correlationId ||
+        this.idGenerator.generateCorrelationId(),
       userId: input.subject.id,
       tenantId: input.subject.tenant || input.resource.tenant,
       resourceType: input.resource.type,
       resourceId: input.resource.id,
       action: `${input.action.type}.${input.action.name}`,
       decision: decision.allow ? 'ALLOW' : 'DENY',
-      reasonCode: decision.reason_code || 'UNKNOWN',
-      reason: decision.reason,
-      obligations: decision.obligations,
-      ipAddress: context?.ipAddress,
-      userAgent: context?.userAgent,
-      metadata: input.context.metadata,
+      reasonCode,
+      reason: decision.reason
+        ? this.redactionUtil.truncateText(
+            decision.reason,
+            this.config.limits.maxReasonLength,
+          )
+        : undefined,
+      obligations: this.mapObligations(decision.obligations || []),
+      obligationsCount: decision.obligations?.length || 0,
+      rolesCount: input.subject.roles?.length || 0,
+      ipAddressHash: this.redactionUtil.redactIpAddress(context?.ipAddress),
+      userAgentFamily: this.redactionUtil.redactUserAgent(context?.userAgent),
+      metadata: this.redactionUtil.redactMetadata(
+        input.context.metadata || {},
+        this.config.limits.maxMetadataSize,
+      ),
       policyVersion: decision.policy_version,
       emergency: context?.emergency || !!input.context.emergency_token,
       sensitiveOperation: this.isSensitiveOperation(input),
+      requiresReview: context?.emergency || !!input.context.emergency_token,
+      sampling: isSampled,
     };
 
-    // Use different log levels based on decision and sensitivity
-    if (
-      !decision.allow ||
-      auditEntry.emergency ||
-      auditEntry.sensitiveOperation
-    ) {
-      Log.minimal.warn(this.logger, 'Security decision logged', {
-        method: 'logAuthorizationDecision',
-        audit: auditEntry,
-        alertLevel: this.getAlertLevel(auditEntry),
-      });
-    } else {
-      Log.minimal.info(this.logger, 'Authorization decision logged', {
-        method: 'logAuthorizationDecision',
-        audit: auditEntry,
-      });
-    }
+    this.logWithBindings(auditEntry);
   }
 
   /**
@@ -115,27 +139,28 @@ export class DecisionLoggerService {
       authMethod?: string;
     },
   ): void {
-    const auditEntry: AuditLogEntry = {
+    const auditEntry: TypedAuditLogEntry = {
       eventType: AuditEventType.AUTHENTICATION_SUCCESS,
-      timestamp: new Date().toISOString(),
-      correlationId: context?.correlationId || this.generateCorrelationId(),
+      timestamp: this.clock.toISOString(),
+      correlationId:
+        context?.correlationId || this.idGenerator.generateCorrelationId(),
       userId: user.sub,
       tenantId: user.tenant,
       decision: 'ALLOW',
-      reasonCode: 'AUTHENTICATION_SUCCESS',
-      ipAddress: context?.ipAddress,
-      userAgent: context?.userAgent,
-      metadata: {
-        authMethod: context?.authMethod,
-        roles: user.roles,
-        permissions: user.permissions,
-      },
+      reasonCode: SecurityReasonCode.AUTHENTICATION_SUCCESS,
+      ipAddressHash: this.redactionUtil.redactIpAddress(context?.ipAddress),
+      userAgentFamily: this.redactionUtil.redactUserAgent(context?.userAgent),
+      rolesCount: user.roles?.length || 0,
+      metadata: this.redactionUtil.redactMetadata(
+        {
+          authMethod: context?.authMethod,
+          permissionsCount: user.permissions?.length || 0,
+        },
+        this.config.limits.maxMetadataSize,
+      ),
     };
 
-    Log.minimal.info(this.logger, 'Authentication success logged', {
-      method: 'logAuthenticationSuccess',
-      audit: auditEntry,
-    });
+    this.logWithBindings(auditEntry);
   }
 
   /**
@@ -151,26 +176,29 @@ export class DecisionLoggerService {
       authMethod?: string;
     },
   ): void {
-    const auditEntry: AuditLogEntry = {
+    const auditEntry: TypedAuditLogEntry = {
       eventType: AuditEventType.AUTHENTICATION_FAILURE,
-      timestamp: new Date().toISOString(),
-      correlationId: context?.correlationId || this.generateCorrelationId(),
+      timestamp: this.clock.toISOString(),
+      correlationId:
+        context?.correlationId || this.idGenerator.generateCorrelationId(),
       userId: context?.attemptedUserId,
       decision: 'DENY',
-      reasonCode: 'AUTHENTICATION_FAILED',
-      reason,
-      ipAddress: context?.ipAddress,
-      userAgent: context?.userAgent,
-      metadata: {
-        authMethod: context?.authMethod,
-      },
+      reasonCode: SecurityReasonCode.AUTHENTICATION_FAILED,
+      reason: this.redactionUtil.truncateText(
+        reason,
+        this.config.limits.maxReasonLength,
+      ),
+      ipAddressHash: this.redactionUtil.redactIpAddress(context?.ipAddress),
+      userAgentFamily: this.redactionUtil.redactUserAgent(context?.userAgent),
+      metadata: this.redactionUtil.redactMetadata(
+        {
+          authMethod: context?.authMethod,
+        },
+        this.config.limits.maxMetadataSize,
+      ),
     };
 
-    Log.minimal.warn(this.logger, 'Authentication failure logged', {
-      method: 'logAuthenticationFailure',
-      audit: auditEntry,
-      alertLevel: 'medium',
-    });
+    this.logWithBindings(auditEntry);
   }
 
   /**
@@ -188,26 +216,26 @@ export class DecisionLoggerService {
       userAgent?: string;
     },
   ): void {
-    const auditEntry: AuditLogEntry = {
+    const auditEntry: TypedAuditLogEntry = {
       eventType: AuditEventType.ACCESS_DENIED,
-      timestamp: new Date().toISOString(),
-      correlationId: context?.correlationId || this.generateCorrelationId(),
+      timestamp: this.clock.toISOString(),
+      correlationId:
+        context?.correlationId || this.idGenerator.generateCorrelationId(),
       userId,
       tenantId: context?.tenantId,
       resourceType: resource,
       action,
       decision: 'DENY',
-      reasonCode: 'ACCESS_DENIED',
-      reason,
-      ipAddress: context?.ipAddress,
-      userAgent: context?.userAgent,
+      reasonCode: SecurityReasonCode.ACCESS_DENIED,
+      reason: this.redactionUtil.truncateText(
+        reason,
+        this.config.limits.maxReasonLength,
+      ),
+      ipAddressHash: this.redactionUtil.redactIpAddress(context?.ipAddress),
+      userAgentFamily: this.redactionUtil.redactUserAgent(context?.userAgent),
     };
 
-    Log.minimal.warn(this.logger, 'Access denied logged', {
-      method: 'logAccessDenied',
-      audit: auditEntry,
-      alertLevel: 'medium',
-    });
+    this.logWithBindings(auditEntry);
   }
 
   /**
@@ -226,32 +254,32 @@ export class DecisionLoggerService {
       approvalReference?: string;
     },
   ): void {
-    const auditEntry: AuditLogEntry = {
+    const auditEntry: TypedAuditLogEntry = {
       eventType: AuditEventType.EMERGENCY_ACCESS,
-      timestamp: new Date().toISOString(),
-      correlationId: context?.correlationId || this.generateCorrelationId(),
+      timestamp: this.clock.toISOString(),
+      correlationId:
+        context?.correlationId || this.idGenerator.generateCorrelationId(),
       userId,
       tenantId: context?.tenantId,
       resourceType: resource,
       action,
       decision: 'ALLOW',
-      reasonCode: 'EMERGENCY_ACCESS_GRANTED',
-      ipAddress: context?.ipAddress,
-      userAgent: context?.userAgent,
+      reasonCode: SecurityReasonCode.EMERGENCY_ACCESS_GRANTED,
+      ipAddressHash: this.redactionUtil.redactIpAddress(context?.ipAddress),
+      userAgentFamily: this.redactionUtil.redactUserAgent(context?.userAgent),
       emergency: true,
       sensitiveOperation: true,
-      metadata: {
-        emergencyToken: this.maskToken(emergencyToken),
-        approvalReference: context?.approvalReference,
-      },
+      requiresReview: true,
+      metadata: this.redactionUtil.redactMetadata(
+        {
+          emergencyToken: this.redactionUtil.maskToken(emergencyToken),
+          approvalReference: context?.approvalReference,
+        },
+        this.config.limits.maxMetadataSize,
+      ),
     };
 
-    Log.minimal.warn(this.logger, 'Emergency access granted - AUDIT CRITICAL', {
-      method: 'logEmergencyAccess',
-      audit: auditEntry,
-      alertLevel: 'critical',
-      requiresReview: true,
-    });
+    this.logWithBindings(auditEntry);
   }
 
   /**
@@ -270,10 +298,133 @@ export class DecisionLoggerService {
   }
 
   /**
+   * Map OPA decision to security reason code
+   */
+  private mapToSecurityReasonCode(decision: OpaDecision): SecurityReasonCode {
+    if (decision.allow) {
+      return decision.obligations && decision.obligations.length > 0
+        ? SecurityReasonCode.CONDITIONAL_ALLOW
+        : SecurityReasonCode.ALLOW;
+    }
+
+    // Map common OPA reason codes to security codes
+    switch (decision.reason_code) {
+      case 'INSUFFICIENT_PERMISSIONS':
+        return SecurityReasonCode.INSUFFICIENT_PERMISSIONS;
+      case 'INVALID_RESOURCE':
+        return SecurityReasonCode.INVALID_RESOURCE;
+      case 'INVALID_ACTION':
+        return SecurityReasonCode.INVALID_ACTION;
+      case 'TENANT_MISMATCH':
+        return SecurityReasonCode.TENANT_MISMATCH;
+      case 'TIME_RESTRICTION':
+        return SecurityReasonCode.TIME_RESTRICTION;
+      case 'LOCATION_RESTRICTION':
+        return SecurityReasonCode.LOCATION_RESTRICTION;
+      case 'POLICY_ERROR':
+        return SecurityReasonCode.POLICY_ERROR;
+      case 'SERVICE_UNAVAILABLE':
+        return SecurityReasonCode.SERVICE_UNAVAILABLE;
+      default:
+        return SecurityReasonCode.DENY;
+    }
+  }
+
+  /**
+   * Map unknown obligations to typed security obligations
+   */
+  private mapObligations(
+    obligations: readonly unknown[],
+  ): readonly SecurityObligation[] {
+    return obligations
+      .map((obligation): SecurityObligation | null => {
+        if (typeof obligation === 'object' && obligation !== null) {
+          const obj = obligation as Record<string, unknown>;
+
+          if (obj.type === 'mask' && Array.isArray(obj.fields)) {
+            return { type: 'mask', fields: obj.fields as string[] };
+          }
+
+          if (obj.type === 'redact' && Array.isArray(obj.fields)) {
+            return { type: 'redact', fields: obj.fields as string[] };
+          }
+
+          if (obj.type === 'limit' && typeof obj.count === 'number') {
+            return { type: 'limit', count: obj.count };
+          }
+
+          if (
+            obj.type === 'audit' &&
+            (obj.level === 'standard' || obj.level === 'enhanced')
+          ) {
+            return { type: 'audit', level: obj.level };
+          }
+
+          if (obj.type === 'approval' && typeof obj.required === 'boolean') {
+            return { type: 'approval', required: obj.required };
+          }
+        }
+
+        // Default to audit obligation for unknown types
+        return { type: 'audit', level: 'standard' };
+      })
+      .filter(
+        (obligation): obligation is SecurityObligation => obligation !== null,
+      );
+  }
+
+  /**
+   * Determine if decision should be sampled
+   */
+  private shouldSample(decisionType: 'ALLOW' | 'DENY' | 'ERROR'): boolean {
+    const rate =
+      this.config.sampling[
+        `${decisionType.toLowerCase()}Decisions` as keyof typeof this.config.sampling
+      ] || 100;
+    return Math.random() * 100 < rate;
+  }
+
+  /**
+   * Log audit entry with proper bindings and alert levels
+   */
+  private logWithBindings(entry: TypedAuditLogEntry): void {
+    const alertLevel = this.getAlertLevel(entry);
+    const logLevel = this.getLogLevel(entry);
+
+    // Create per-entry bindings for better querying
+    const entryLogger = this.auditLogger.child({
+      correlationId: entry.correlationId,
+      tenantId: entry.tenantId,
+      userId: entry.userId,
+      eventType: entry.eventType,
+    });
+
+    const logData = {
+      method: 'audit',
+      audit: entry,
+      alertLevel,
+      requiresReview: entry.requiresReview,
+    };
+
+    switch (logLevel) {
+      case 'error':
+        entryLogger.error(logData, this.getLogMessage(entry));
+        break;
+      case 'warn':
+        entryLogger.warn(logData, this.getLogMessage(entry));
+        break;
+      case 'info':
+      default:
+        entryLogger.info(logData, this.getLogMessage(entry));
+        break;
+    }
+  }
+
+  /**
    * Get alert level based on audit entry characteristics
    */
   private getAlertLevel(
-    entry: AuditLogEntry,
+    entry: TypedAuditLogEntry,
   ): 'low' | 'medium' | 'high' | 'critical' {
     if (entry.emergency) return 'critical';
     if (entry.sensitiveOperation && entry.decision === 'DENY') return 'high';
@@ -283,17 +434,31 @@ export class DecisionLoggerService {
   }
 
   /**
-   * Generate correlation ID if not provided
+   * Get log level based on audit entry
    */
-  private generateCorrelationId(): string {
-    return `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private getLogLevel(entry: TypedAuditLogEntry): 'info' | 'warn' | 'error' {
+    if (entry.emergency || entry.decision === 'ERROR') return 'error';
+    if (entry.decision === 'DENY' || entry.sensitiveOperation) return 'warn';
+    return 'info';
   }
 
   /**
-   * Mask sensitive tokens for logging
+   * Generate human-readable log message
    */
-  private maskToken(token: string): string {
-    if (token.length <= 8) return '***';
-    return `${token.substring(0, 4)}...${token.substring(token.length - 4)}`;
+  private getLogMessage(entry: TypedAuditLogEntry): string {
+    switch (entry.eventType) {
+      case AuditEventType.AUTHORIZATION_DECISION:
+        return `Authorization ${entry.decision} for ${entry.action} on ${entry.resourceType}`;
+      case AuditEventType.AUTHENTICATION_SUCCESS:
+        return `Authentication success for user ${entry.userId}`;
+      case AuditEventType.AUTHENTICATION_FAILURE:
+        return `Authentication failure: ${entry.reason}`;
+      case AuditEventType.ACCESS_DENIED:
+        return `Access denied for ${entry.action} on ${entry.resourceType}`;
+      case AuditEventType.EMERGENCY_ACCESS:
+        return `CRITICAL: Emergency access granted for ${entry.action} on ${entry.resourceType}`;
+      default:
+        return `Security event: ${entry.eventType}`;
+    }
   }
 }
