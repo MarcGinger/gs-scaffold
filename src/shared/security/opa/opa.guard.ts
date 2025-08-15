@@ -11,6 +11,7 @@ import { RESOURCE_KEY, ResourceOptions } from './resource.decorator';
 import { IUserToken } from '../types/user-token.interface';
 import { OpaInput } from './opa.types';
 import { AuthErrors } from '../errors/auth.errors';
+import { DecisionLoggerService } from '../audit/decision-logger.service';
 
 type HeaderValue = string | string[] | undefined;
 
@@ -32,6 +33,7 @@ export class OpaGuard implements CanActivate {
   constructor(
     private readonly opaClient: OpaClient,
     private readonly reflector: Reflector,
+    private readonly decisionLogger: DecisionLoggerService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -81,6 +83,14 @@ export class OpaGuard implements CanActivate {
         opaInput,
         { correlationId, tenantId: user.tenant, userId: user.sub },
       );
+
+      // Log authorization decision for audit trail
+      this.decisionLogger.logAuthorizationDecision(opaInput, decision, {
+        correlationId,
+        ipAddress: request.ip,
+        userAgent: this.getHeader(request, 'user-agent') as string,
+        emergency: !!opaInput.context.emergency_token,
+      });
 
       if (!decision.allow) {
         this.logger.warn('Access denied by authorization policy', {

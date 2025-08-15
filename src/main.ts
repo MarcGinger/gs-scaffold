@@ -2,11 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger as NestPinoLogger } from 'nestjs-pino';
 import { Logger as PinoLogger } from 'pino';
+import helmet from 'helmet';
 import { AppConfigUtil } from './shared/config/app-config.util';
 import { ConfigManager } from './shared/config/config.manager';
 import { APP_LOGGER } from './shared/logging/logging.providers';
 import { Log } from './shared/logging/structured-logger';
 import { ResultInterceptor } from './shared/errors/result.interceptor';
+import { SecurityConfigService } from './shared/security/config/security-config.service';
+import { INestApplication } from '@nestjs/common';
 
 async function bootstrap() {
   let baseLogger: PinoLogger | undefined;
@@ -70,6 +73,9 @@ async function bootstrap() {
       feature: 'error_management',
       description: 'Automatic Result<T,E> to HTTP response conversion enabled',
     });
+
+    // Configure security headers and CORS
+    configureApplicationSecurity(app, baseLogger);
 
     await app.listen(port);
 
@@ -182,6 +188,130 @@ function setupGracefulShutdown(app: any, logger: PinoLogger) {
     });
     process.exit(1);
   });
+}
+
+/**
+ * Configure application security headers and CORS
+ */
+function configureApplicationSecurity(
+  app: INestApplication,
+  logger: PinoLogger,
+): void {
+  try {
+    // Get security configuration
+    const securityConfigService = app.get(SecurityConfigService);
+    const corsConfig = securityConfigService.getValidatedCorsConfig();
+    const environment = ConfigManager.getInstance().getEnvironment();
+    const isProduction = environment === 'production';
+
+    // Configure Helmet security headers
+    app.use(
+      helmet({
+        // Content Security Policy - strict for production
+        contentSecurityPolicy: isProduction
+          ? {
+              directives: {
+                defaultSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc: ["'self'"],
+                imgSrc: ["'self'", 'data:', 'https:'],
+                connectSrc: ["'self'"],
+                fontSrc: ["'self'"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                frameSrc: ["'none'"],
+              },
+            }
+          : false, // Disable in development for easier debugging
+
+        // Cross Origin Embedder Policy
+        crossOriginEmbedderPolicy: isProduction,
+
+        // Cross Origin Opener Policy
+        crossOriginOpenerPolicy: { policy: 'same-origin' },
+
+        // Cross Origin Resource Policy
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+
+        // DNS Prefetch Control
+        dnsPrefetchControl: { allow: false },
+
+        // Frame guard
+        frameguard: { action: 'deny' },
+
+        // Hide powered by header
+        hidePoweredBy: true,
+
+        // HSTS - only in production with HTTPS
+        hsts: isProduction
+          ? {
+              maxAge: 31536000, // 1 year
+              includeSubDomains: true,
+              preload: true,
+            }
+          : false,
+
+        // IE No Open
+        ieNoOpen: true,
+
+        // No Sniff
+        noSniff: true,
+
+        // Origin Agent Cluster
+        originAgentCluster: true,
+
+        // Permitted Cross Domain Policies
+        permittedCrossDomainPolicies: false,
+
+        // Referrer Policy
+        referrerPolicy: { policy: 'no-referrer' },
+
+        // X-XSS-Protection
+        xssFilter: true,
+      }),
+    );
+
+    // Configure CORS
+    app.enableCors({
+      origin: corsConfig.allowedOrigins,
+      credentials: corsConfig.allowCredentials,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'X-Correlation-ID',
+        'X-Tenant-ID',
+      ],
+      exposedHeaders: ['X-Correlation-ID', 'X-Rate-Limit-*'],
+      maxAge: 86400, // 24 hours
+    });
+
+    Log.minimal.info(logger, 'Security configuration applied', {
+      method: 'configureApplicationSecurity',
+      corsOrigins: corsConfig.allowedOrigins.length,
+      corsCredentials: corsConfig.allowCredentials,
+      environment,
+      isProduction,
+      securityFeatures: {
+        helmet: true,
+        cors: true,
+        csp: isProduction,
+        hsts: isProduction,
+      },
+    });
+  } catch (error) {
+    Log.minimal.error(
+      logger,
+      error as Error,
+      'Failed to configure application security',
+      {
+        method: 'configureApplicationSecurity',
+        error: (error as Error).message,
+      },
+    );
+    throw error;
+  }
 }
 
 void bootstrap();
