@@ -91,14 +91,18 @@ export class ConfigLoader {
           accessToken: process.env.DOPPLER_TOKEN,
         });
 
-        const secrets = await doppler.secrets.list({
+        // Use the SDK to get secrets - corrected API usage
+        const response = await doppler.secrets.get({
           project: options.dopplerProject || 'gs-scaffold-api',
           config: options.dopplerConfig || 'dev',
         });
 
+        // Handle the response format
         const result: Record<string, string> = {};
-        for (const secret of secrets) {
-          result[secret.name] = secret.computed_value || secret.raw_value || '';
+        if (response && typeof response === 'object') {
+          for (const [key, value] of Object.entries(response)) {
+            result[key] = String(value);
+          }
         }
 
         return result;
