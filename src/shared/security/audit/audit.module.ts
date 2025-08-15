@@ -1,5 +1,6 @@
 import { Module, DynamicModule, Provider } from '@nestjs/common';
 import { DecisionLoggerService } from './decision-logger.service';
+import { LoggingModule } from '../../logging/logging.module';
 import {
   IClock,
   IIdGenerator,
@@ -38,6 +39,7 @@ export class AuditModule {
 
     return {
       module: AuditModule,
+      imports: [LoggingModule],
       providers,
       exports: [DecisionLoggerService],
       global: true,
@@ -73,6 +75,7 @@ export class AuditModule {
 
     return {
       module: AuditModule,
+      imports: [LoggingModule],
       providers,
       exports: [DecisionLoggerService],
     };
