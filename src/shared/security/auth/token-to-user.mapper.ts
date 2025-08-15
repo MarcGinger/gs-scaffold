@@ -2,136 +2,220 @@ import { Injectable } from '@nestjs/common';
 import { IUserToken } from '../types/user-token.interface';
 import { JwtPayload } from '../types/jwt-payload.interface';
 
+type ResourceAccess = Record<string, { roles?: unknown }>;
+
+export interface TokenMapperOptions {
+  includeGroupsAsRoles?: boolean; // default true
+  roleCase?: 'lower' | 'original'; // default 'lower'
+  ignoreRolePrefixes?: string[]; // default ['uma_', 'default-']
+  ignoreRoles?: string[]; // default ['offline_access']
+  tenantClaimOrder?: string[]; // default ['tenant', 'organization', 'custom_tenant']
+  tenantIdClaimOrder?: string[]; // default ['tenant_id', 'organization_id', 'org_id']
+}
+
+const DEFAULT_OPTS: Required<TokenMapperOptions> = {
+  includeGroupsAsRoles: true,
+  roleCase: 'lower',
+  ignoreRolePrefixes: ['uma_', 'default-'],
+  ignoreRoles: ['offline_access'],
+  tenantClaimOrder: ['tenant', 'organization', 'custom_tenant'],
+  tenantIdClaimOrder: ['tenant_id', 'organization_id', 'org_id'],
+};
+
 @Injectable()
 export class TokenToUserMapper {
+  private readonly options: Required<TokenMapperOptions> = DEFAULT_OPTS;
+
   mapToUserToken(payload: JwtPayload): IUserToken {
-    // Extract roles from various places in the JWT
-    const roles = this.extractRoles(payload);
+    const roles = this.extractRoles(payload, this.options);
+    const { tenant, tenant_id } = this.extractTenant(payload, this.options);
+    const tenant_roles = this.extractTenantRoles(payload, tenant, this.options);
 
-    // Extract tenant information
-    const tenant = this.extractTenant(payload);
+    // Normalize aud to array for consistency
+    const audArray = Array.isArray(payload.aud)
+      ? payload.aud
+      : payload.aud
+        ? [payload.aud]
+        : undefined;
 
-    // Map the payload to our user token interface
+    // Name fallback chain
+    const name =
+      payload.name ||
+      payload.preferred_username ||
+      (typeof payload.email === 'string' ? payload.email : undefined) ||
+      payload.sub;
+
     const userToken: IUserToken = {
       sub: payload.sub,
-      name: payload.name || payload.preferred_username || payload.sub,
+      name,
       email: payload.email || '',
       preferred_username: payload.preferred_username,
-      tenant: tenant?.tenant,
-      tenant_id: tenant?.tenant_id,
+      tenant,
+      tenant_id,
       client_id: payload.azp || payload.client_id,
       roles,
-      permissions: payload.permissions || [],
-      scope: payload.scope,
+      permissions: Array.isArray(payload.permissions)
+        ? payload.permissions
+        : [],
+      scope: typeof payload.scope === 'string' ? payload.scope : undefined,
       session_state: payload.session_state,
       resource_access: payload.resource_access,
       realm_access: payload.realm_access,
-      groups: payload.groups || [],
+      groups: Array.isArray(payload.groups)
+        ? this.normalizeGroups(payload.groups)
+        : [],
 
-      // JWT standard claims
+      // JWT standard claims (pass-through)
       iss: payload.iss,
-      aud: payload.aud,
+      aud: audArray,
       exp: payload.exp,
       iat: payload.iat,
       nbf: payload.nbf,
       jti: payload.jti,
 
-      // Tenant-specific roles
-      tenant_roles: this.extractTenantRoles(payload, tenant?.tenant),
-      security_level: payload.security_level || 1,
-      mfa_verified: payload.mfa_verified || false,
+      // tenant-related
+      tenant_roles,
+      security_level:
+        typeof payload.security_level === 'number' ? payload.security_level : 1,
+      mfa_verified: Boolean(payload.mfa_verified),
     };
 
     return userToken;
   }
 
-  private extractRoles(payload: JwtPayload): string[] {
-    const roles: string[] = [];
+  private extractRoles(
+    payload: JwtPayload,
+    opts: Required<TokenMapperOptions>,
+  ): string[] {
+    const out: string[] = [];
 
-    // Extract from realm_access
-    if (payload.realm_access?.roles) {
-      roles.push(...payload.realm_access.roles);
+    // 1) realm_access.roles
+    const realmRoles = this.asStringArray(payload?.realm_access?.roles);
+    if (realmRoles) out.push(...realmRoles);
+
+    // 2) resource_access[client].roles
+    const ra = payload?.resource_access;
+    if (this.isResourceAccess(ra)) {
+      for (const v of Object.values(ra)) {
+        const roles = this.asStringArray(v?.roles);
+        if (roles) out.push(...roles);
+      }
     }
 
-    // Extract from resource_access (for each client)
-    if (payload.resource_access) {
-      Object.values(payload.resource_access).forEach((access) => {
-        if (access.roles) {
-          roles.push(...access.roles);
-        }
-      });
+    // 3) groups (optional)
+    if (opts.includeGroupsAsRoles) {
+      const groups = this.asStringArray(payload?.groups);
+      if (groups) out.push(...groups.map((g) => this.groupToRole(g)));
     }
 
-    // Extract from groups
-    if (payload.groups) {
-      roles.push(...payload.groups);
-    }
+    // 4) custom roles claim
+    const customRoles = this.asStringArray(payload?.roles);
+    if (customRoles) out.push(...customRoles);
 
-    // Extract from custom roles claim
-    if (payload.roles) {
-      roles.push(...payload.roles);
-    }
+    // Normalize + filter
+    const norm = out
+      .map((r) =>
+        opts.roleCase === 'lower' ? r?.toLowerCase()?.trim() : r?.trim(),
+      )
+      .filter(Boolean);
 
-    // Remove duplicates and filter out system roles
-    return [...new Set(roles)].filter(
-      (role) =>
-        !role.startsWith('uma_') &&
-        !role.startsWith('default-') &&
-        role !== 'offline_access',
+    const filtered = norm.filter(
+      (r) =>
+        !opts.ignoreRoles.includes(r) &&
+        !opts.ignoreRolePrefixes.some((p) => r.startsWith(p)),
     );
+
+    return Array.from(new Set(filtered)).sort();
   }
 
   private extractTenant(
     payload: JwtPayload,
-  ): { tenant?: string; tenant_id?: string } | null {
-    // Try various places where tenant might be stored
-    const tenant =
-      payload.tenant ||
-      payload.tenant_id ||
-      payload.custom_tenant ||
-      payload.organization ||
-      payload.org_id;
-
+    opts: Required<TokenMapperOptions>,
+  ): { tenant?: string; tenant_id?: string } {
+    const tenant = this.firstString(payload, opts.tenantClaimOrder);
     const tenant_id =
-      payload.tenant_id ||
-      payload.tenant ||
-      payload.organization_id ||
-      payload.org_id;
+      this.firstString(payload, opts.tenantIdClaimOrder) ??
+      // fallback if only one present
+      (tenant ? tenant : undefined);
 
-    if (tenant || tenant_id) {
-      return {
-        tenant: typeof tenant === 'string' ? tenant : String(tenant),
-        tenant_id:
-          typeof tenant_id === 'string' ? tenant_id : String(tenant_id),
-      };
-    }
-
-    return null;
+    return {
+      tenant: tenant ?? undefined,
+      tenant_id: tenant_id ?? undefined,
+    };
   }
 
-  private extractTenantRoles(payload: JwtPayload, tenant?: string): string[] {
+  private extractTenantRoles(
+    payload: JwtPayload,
+    tenant: string | undefined,
+    opts: Required<TokenMapperOptions>,
+  ): string[] {
     if (!tenant) return [];
 
-    const tenantRoles: string[] = [];
+    const out: string[] = [];
 
-    // Check if there are tenant-specific roles in resource_access
-    if (payload.resource_access?.[tenant]?.roles) {
-      tenantRoles.push(...payload.resource_access[tenant].roles);
+    // resource_access[tenant].roles
+    const ra = payload?.resource_access;
+    if (this.isResourceAccess(ra) && ra[tenant]) {
+      const roles = this.asStringArray(ra[tenant].roles);
+      if (roles) out.push(...roles);
     }
 
-    // Check for tenant-prefixed roles in realm_access
-    if (payload.realm_access?.roles) {
-      const tenantPrefixedRoles = payload.realm_access.roles
-        .filter((role: string) => role.startsWith(`${tenant}:`))
-        .map((role: string) => role.substring(tenant.length + 1));
-      tenantRoles.push(...tenantPrefixedRoles);
+    // realm_access.roles with prefix "<tenant>:"
+    const realmRoles = this.asStringArray(payload?.realm_access?.roles);
+    if (realmRoles) {
+      out.push(
+        ...realmRoles
+          .filter((r) => r.startsWith(`${tenant}:`))
+          .map((r) => r.slice(tenant.length + 1)),
+      );
     }
 
-    // Check for custom tenant roles claim
-    if (payload.tenant_roles?.[tenant]) {
-      tenantRoles.push(...payload.tenant_roles[tenant]);
+    // custom tenant_roles map
+    const tr = payload?.tenant_roles as Record<string, unknown> | undefined;
+    if (tr && typeof tr === 'object' && Array.isArray(tr[tenant])) {
+      const tenantRoleArray = tr[tenant] as unknown[];
+      out.push(
+        ...tenantRoleArray.filter((x): x is string => typeof x === 'string'),
+      );
     }
 
-    return [...new Set(tenantRoles)];
+    const normalized = out.map((r) =>
+      opts.roleCase === 'lower' ? r.toLowerCase().trim() : r.trim(),
+    );
+    return Array.from(new Set(normalized)).sort();
+  }
+
+  // ---------- helpers ----------
+
+  private isResourceAccess(v: unknown): v is ResourceAccess {
+    return v !== null && typeof v === 'object';
+  }
+
+  private asStringArray(v: unknown): string[] | undefined {
+    if (!v) return undefined;
+    if (Array.isArray(v))
+      return v.filter((x): x is string => typeof x === 'string');
+    return undefined;
+  }
+
+  private firstString(obj: unknown, keys: string[]): string | undefined {
+    if (!obj || typeof obj !== 'object') return undefined;
+    for (const key of keys) {
+      const record = obj as Record<string, unknown>;
+      const val = record[key];
+      if (typeof val === 'string' && val.trim()) return val.trim();
+    }
+    return undefined;
+  }
+
+  private groupToRole(group: string): string {
+    // Keycloak groups often look like '/admins' or '/tenant/admins'
+    return group.startsWith('/') ? group.slice(1) : group;
+  }
+
+  private normalizeGroups(groups: string[]): string[] {
+    return Array.from(
+      new Set(groups.map((g) => (g.startsWith('/') ? g.slice(1) : g))),
+    ).sort();
   }
 }
