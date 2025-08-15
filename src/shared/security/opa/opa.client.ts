@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import type { AxiosError } from 'axios';
+import { ConfigManager } from '../../config/config.manager';
 import { AuthErrors } from '../errors/auth.errors';
 import {
   OpaInput,
@@ -49,31 +49,26 @@ export class OpaClient {
     averageResponseTime: 0,
   };
 
-  constructor(
-    private readonly http: HttpService,
-    private readonly config: ConfigService,
-  ) {
+  constructor(private readonly http: HttpService) {
+    const config = ConfigManager.getInstance();
+
     // Remove trailing slashes and validate URL
-    const baseUrl =
-      this.config.get<string>('OPA_URL') ?? 'http://localhost:8181';
+    const baseUrl = config.get('OPA_URL') ?? 'http://localhost:8181';
     this.opaUrl = baseUrl.replace(/\/+$/, '');
 
     // Validate and set timeouts
-    this.requestTimeout = Number(
-      this.config.get<number>('OPA_TIMEOUT_MS') ?? 5000,
-    );
+    this.requestTimeout = Number(config.get('OPA_TIMEOUT_MS') ?? '5000');
     this.failureThreshold = Number(
-      this.config.get<number>('OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD') ?? 5,
+      config.get('OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD') ?? '5',
     );
     this.recoveryTimeoutMs = Number(
-      this.config.get<number>('OPA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_MS') ??
-        60000,
+      config.get('OPA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_MS') ?? '60000',
     );
     this.successThreshold = Number(
-      this.config.get<number>('OPA_CIRCUIT_BREAKER_SUCCESS_THRESHOLD') ?? 3,
+      config.get('OPA_CIRCUIT_BREAKER_SUCCESS_THRESHOLD') ?? '3',
     );
     this.maxHalfOpenTrials = Number(
-      this.config.get<number>('OPA_CIRCUIT_BREAKER_MAX_HALF_OPEN_TRIALS') ?? 5,
+      config.get('OPA_CIRCUIT_BREAKER_MAX_HALF_OPEN_TRIALS') ?? '5',
     );
 
     // Validate configuration
