@@ -16,6 +16,11 @@ import {
 } from './app-config.schema';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as dotenv from 'dotenv';
+import Doppler from '@dopplerhq/node-sdk';
+
+// Load .env file if it exists
+dotenv.config();
 
 const execAsync = promisify(exec);
 
