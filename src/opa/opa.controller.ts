@@ -83,4 +83,17 @@ export class OpaController {
       userKeys: Object.keys(user || {}),
     };
   }
+
+  @Get('metrics')
+  async getMetrics() {
+    // If using the new OPA client, we would access metrics here
+    // For now, return basic operational metrics
+    return {
+      message: 'OPA Service Metrics',
+      status: 'operational',
+      timestamp: new Date().toISOString(),
+      // In production with enhanced OPA client:
+      // return await this.opaClient.getMetrics();
+    };
+  }
 }

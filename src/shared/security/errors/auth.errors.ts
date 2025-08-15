@@ -216,6 +216,47 @@ export const AuthErrors = {
       message: 'Token structure is invalid or missing required claims',
       timestamp: new Date().toISOString(),
     }),
+
+  // Authorization service errors
+  authorizationServiceUnavailable: () =>
+    new ForbiddenException({
+      code: 'AUTHZ_TEMPORARILY_UNAVAILABLE',
+      message: 'Authorization service temporarily unavailable',
+      timestamp: new Date().toISOString(),
+    }),
+
+  authorizationServiceError: () =>
+    new ForbiddenException({
+      code: 'AUTHZ_ERROR',
+      message: 'Authorization service error',
+      timestamp: new Date().toISOString(),
+    }),
+
+  authorizationConfigurationInvalid: (details?: string) =>
+    new Error(
+      `Invalid authorization configuration${details ? ': ' + details : ''}`,
+    ),
+
+  authorizationPolicyInvalid: () =>
+    new ForbiddenException({
+      code: 'AUTHZ_POLICY_INVALID',
+      message: 'Invalid authorization policy response',
+      timestamp: new Date().toISOString(),
+    }),
+
+  authorizationDenied: (reason?: string) =>
+    new ForbiddenException({
+      code: 'AUTHZ_ACCESS_DENIED',
+      message: reason || 'Access denied by authorization policy',
+      timestamp: new Date().toISOString(),
+    }),
+
+  opaResponseInvalid: () =>
+    new ForbiddenException({
+      code: 'OPA_INVALID_RESPONSE',
+      message: 'Invalid OPA response format',
+      timestamp: new Date().toISOString(),
+    }),
 };
 
 /**
