@@ -14,7 +14,7 @@ const DOPPLER_CMD = '.\\doppler.bat';
 const TEST_CONFIG = {
   project: 'gs-scaffold-api',
   config: 'dev_main',
-  envFile: '.env.sample'
+  envFile: '.env.sample',
 };
 
 // Secret mappings for P0 (Critical) secrets
@@ -22,7 +22,7 @@ const P0_SECRETS = [
   { legacy: 'KEYCLOAK_CLIENT_SECRET', doppler: 'AUTH_KEYCLOAK_CLIENT_SECRET' },
   { legacy: 'PII_ENCRYPTION_KEY', doppler: 'SECURITY_PII_ENCRYPTION_KEY' },
   { legacy: 'DATABASE_PASSWORD', doppler: 'DATABASE_POSTGRES_PASSWORD' },
-  { legacy: 'DATABASE_URL', doppler: 'DATABASE_POSTGRES_URL' }
+  { legacy: 'DATABASE_URL', doppler: 'DATABASE_POSTGRES_URL' },
 ];
 
 /**
@@ -32,8 +32,8 @@ async function loadEnvFile(filePath) {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     const env = {};
-    
-    content.split('\n').forEach(line => {
+
+    content.split('\n').forEach((line) => {
       line = line.trim();
       if (line && !line.startsWith('#') && line.includes('=')) {
         const [key, ...valueParts] = line.split('=');
@@ -41,7 +41,7 @@ async function loadEnvFile(filePath) {
         env[key.trim()] = value;
       }
     });
-    
+
     return env;
   } catch (error) {
     console.error(`❌ Failed to load ${filePath}:`, error.message);
@@ -54,7 +54,9 @@ async function loadEnvFile(filePath) {
  */
 async function setDopplerSecret(project, config, name, value) {
   try {
-    await execAsync(`${DOPPLER_CMD} secrets set ${name}="${value}" --project ${project} --config ${config}`);
+    await execAsync(
+      `${DOPPLER_CMD} secrets set ${name}="${value}" --project ${project} --config ${config}`,
+    );
     return true;
   } catch (error) {
     console.error(`❌ Failed to set ${name}: ${error.message}`);
@@ -80,7 +82,7 @@ async function migrateP0Secrets(dryRun = true) {
 
   for (const secret of P0_SECRETS) {
     const value = env[secret.legacy];
-    
+
     if (!value) {
       console.log(`  ❌ ${secret.legacy} → ${secret.doppler}: Missing in .env`);
       errorCount++;
@@ -88,13 +90,21 @@ async function migrateP0Secrets(dryRun = true) {
     }
 
     if (dryRun) {
-      const maskedValue = value.length > 10 ? 
-        `${value.substring(0, 3)}...${value.substring(value.length - 3)}` : 
-        '*'.repeat(value.length);
-      console.log(`  🔍 DRY RUN: ${secret.legacy} → ${secret.doppler} = ${maskedValue}`);
+      const maskedValue =
+        value.length > 10
+          ? `${value.substring(0, 3)}...${value.substring(value.length - 3)}`
+          : '*'.repeat(value.length);
+      console.log(
+        `  🔍 DRY RUN: ${secret.legacy} → ${secret.doppler} = ${maskedValue}`,
+      );
       migratedCount++;
     } else {
-      const success = await setDopplerSecret(TEST_CONFIG.project, TEST_CONFIG.config, secret.doppler, value);
+      const success = await setDopplerSecret(
+        TEST_CONFIG.project,
+        TEST_CONFIG.config,
+        secret.doppler,
+        value,
+      );
       if (success) {
         console.log(`  ✅ ${secret.legacy} → ${secret.doppler}: Migrated`);
         migratedCount++;
@@ -108,10 +118,14 @@ async function migrateP0Secrets(dryRun = true) {
   console.log(`\n📊 Migration Summary:`);
   console.log(`  ✅ Migrated: ${migratedCount}`);
   console.log(`  ❌ Errors: ${errorCount}`);
-  console.log(`  📈 Success Rate: ${Math.round((migratedCount / P0_SECRETS.length) * 100)}%`);
+  console.log(
+    `  📈 Success Rate: ${Math.round((migratedCount / P0_SECRETS.length) * 100)}%`,
+  );
 
   if (dryRun) {
-    console.log(`\n💡 This was a dry run. To perform actual migration, run with --execute flag`);
+    console.log(
+      `\n💡 This was a dry run. To perform actual migration, run with --execute flag`,
+    );
   }
 
   return { migratedCount, errorCount, success: errorCount === 0 };
@@ -122,20 +136,24 @@ async function migrateP0Secrets(dryRun = true) {
  */
 async function checkDopplerSecrets() {
   try {
-    const { stdout } = await execAsync(`${DOPPLER_CMD} secrets --project ${TEST_CONFIG.project} --config ${TEST_CONFIG.config} --json`);
+    const { stdout } = await execAsync(
+      `${DOPPLER_CMD} secrets --project ${TEST_CONFIG.project} --config ${TEST_CONFIG.config} --json`,
+    );
     const secrets = JSON.parse(stdout);
-    
-    console.log(`\n🔍 Current Doppler Secrets (${TEST_CONFIG.project}/${TEST_CONFIG.config}):`);
+
+    console.log(
+      `\n🔍 Current Doppler Secrets (${TEST_CONFIG.project}/${TEST_CONFIG.config}):`,
+    );
     const secretNames = Object.keys(secrets);
-    
+
     if (secretNames.length === 0) {
       console.log('  📭 No secrets found');
     } else {
-      secretNames.forEach(name => {
+      secretNames.forEach((name) => {
         console.log(`  🔑 ${name}`);
       });
     }
-    
+
     return secrets;
   } catch (error) {
     console.error('❌ Failed to check Doppler secrets:', error.message);
@@ -149,7 +167,7 @@ async function checkDopplerSecrets() {
 async function runTest() {
   const args = process.argv.slice(2);
   const dryRun = !args.includes('--execute');
-  
+
   console.log('🧪 Phase 2.2 Migration Test\n');
   console.log(`📋 Configuration:`);
   console.log(`  Project: ${TEST_CONFIG.project}`);
@@ -166,15 +184,16 @@ async function runTest() {
 
     if (result.success) {
       console.log('\n🎉 Migration test completed successfully!');
-      
+
       if (!dryRun) {
-        console.log('\n🔗 View secrets: https://dashboard.doppler.com/workplace/projects/gs-scaffold-api/configs/dev_main');
+        console.log(
+          '\n🔗 View secrets: https://dashboard.doppler.com/workplace/projects/gs-scaffold-api/configs/dev_main',
+        );
       }
     } else {
       console.log('\n❌ Migration test completed with errors');
       process.exit(1);
     }
-
   } catch (error) {
     console.error('❌ Test failed:', error.message);
     process.exit(1);

@@ -22,10 +22,11 @@ const execAsync = promisify(exec);
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
-const question = (prompt) => new Promise((resolve) => rl.question(prompt, resolve));
+const question = (prompt) =>
+  new Promise((resolve) => rl.question(prompt, resolve));
 
 // Use local doppler wrapper
 const DOPPLER_CMD = '.\\doppler.bat';
@@ -37,11 +38,27 @@ const MIGRATION_GROUPS = {
     description: 'Essential secrets required for application startup',
     riskLevel: 'critical',
     secrets: [
-      { legacy: 'KEYCLOAK_CLIENT_SECRET', doppler: 'AUTH_KEYCLOAK_CLIENT_SECRET', required: true },
-      { legacy: 'PII_ENCRYPTION_KEY', doppler: 'SECURITY_PII_ENCRYPTION_KEY', required: true },
-      { legacy: 'DATABASE_PASSWORD', doppler: 'DATABASE_POSTGRES_PASSWORD', required: true },
-      { legacy: 'DATABASE_URL', doppler: 'DATABASE_POSTGRES_URL', required: true }
-    ]
+      {
+        legacy: 'KEYCLOAK_CLIENT_SECRET',
+        doppler: 'AUTH_KEYCLOAK_CLIENT_SECRET',
+        required: true,
+      },
+      {
+        legacy: 'PII_ENCRYPTION_KEY',
+        doppler: 'SECURITY_PII_ENCRYPTION_KEY',
+        required: true,
+      },
+      {
+        legacy: 'DATABASE_PASSWORD',
+        doppler: 'DATABASE_POSTGRES_PASSWORD',
+        required: true,
+      },
+      {
+        legacy: 'DATABASE_URL',
+        doppler: 'DATABASE_POSTGRES_URL',
+        required: true,
+      },
+    ],
   },
   P1: {
     name: 'Service Connections',
@@ -49,10 +66,22 @@ const MIGRATION_GROUPS = {
     riskLevel: 'high',
     secrets: [
       { legacy: 'REDIS_URL', doppler: 'CACHE_REDIS_URL', required: true },
-      { legacy: 'REDIS_PASSWORD', doppler: 'CACHE_REDIS_PASSWORD', required: false },
-      { legacy: 'ESDB_CONNECTION_STRING', doppler: 'EVENTSTORE_ESDB_CONNECTION_STRING', required: true },
-      { legacy: 'DATABASE_USER', doppler: 'DATABASE_POSTGRES_USER', required: true }
-    ]
+      {
+        legacy: 'REDIS_PASSWORD',
+        doppler: 'CACHE_REDIS_PASSWORD',
+        required: false,
+      },
+      {
+        legacy: 'ESDB_CONNECTION_STRING',
+        doppler: 'EVENTSTORE_ESDB_CONNECTION_STRING',
+        required: true,
+      },
+      {
+        legacy: 'DATABASE_USER',
+        doppler: 'DATABASE_POSTGRES_USER',
+        required: true,
+      },
+    ],
   },
   P2: {
     name: 'Service Endpoints & Authentication Config',
@@ -60,45 +89,76 @@ const MIGRATION_GROUPS = {
     riskLevel: 'medium',
     secrets: [
       { legacy: 'KEYCLOAK_URL', doppler: 'AUTH_KEYCLOAK_URL', required: true },
-      { legacy: 'KEYCLOAK_REALM', doppler: 'AUTH_KEYCLOAK_REALM', required: true },
-      { legacy: 'KEYCLOAK_CLIENT_ID', doppler: 'AUTH_KEYCLOAK_CLIENT_ID', required: true },
+      {
+        legacy: 'KEYCLOAK_REALM',
+        doppler: 'AUTH_KEYCLOAK_REALM',
+        required: true,
+      },
+      {
+        legacy: 'KEYCLOAK_CLIENT_ID',
+        doppler: 'AUTH_KEYCLOAK_CLIENT_ID',
+        required: true,
+      },
       { legacy: 'JWT_AUDIENCE', doppler: 'AUTH_JWT_AUDIENCE', required: true },
       { legacy: 'OPA_URL', doppler: 'SECURITY_OPA_URL', required: false },
-      { legacy: 'PUBLIC_API_URL', doppler: 'APP_SERVER_PUBLIC_URL', required: false }
-    ]
+      {
+        legacy: 'PUBLIC_API_URL',
+        doppler: 'APP_SERVER_PUBLIC_URL',
+        required: false,
+      },
+    ],
   },
   P3: {
     name: 'Application Configuration',
     description: 'Core application and runtime settings',
     riskLevel: 'low',
     secrets: [
-      { legacy: 'NODE_ENV', doppler: 'APP_RUNTIME_ENVIRONMENT', required: true },
+      {
+        legacy: 'NODE_ENV',
+        doppler: 'APP_RUNTIME_ENVIRONMENT',
+        required: true,
+      },
       { legacy: 'PORT', doppler: 'APP_SERVER_PORT', required: true },
       { legacy: 'PROTOCOL', doppler: 'APP_SERVER_PROTOCOL', required: true },
       { legacy: 'HOST', doppler: 'APP_SERVER_HOST', required: true },
       { legacy: 'LOG_LEVEL', doppler: 'LOGGING_CORE_LEVEL', required: true },
-      { legacy: 'DATABASE_HOST', doppler: 'DATABASE_POSTGRES_HOST', required: true },
-      { legacy: 'DATABASE_PORT', doppler: 'DATABASE_POSTGRES_PORT', required: true },
-      { legacy: 'DATABASE_NAME', doppler: 'DATABASE_POSTGRES_NAME', required: true }
-    ]
-  }
+      {
+        legacy: 'DATABASE_HOST',
+        doppler: 'DATABASE_POSTGRES_HOST',
+        required: true,
+      },
+      {
+        legacy: 'DATABASE_PORT',
+        doppler: 'DATABASE_POSTGRES_PORT',
+        required: true,
+      },
+      {
+        legacy: 'DATABASE_NAME',
+        doppler: 'DATABASE_POSTGRES_NAME',
+        required: true,
+      },
+    ],
+  },
 };
 
 async function loadEnvFile(filePath = '.env') {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     const parsed = {};
-    
-    content.split('\n').forEach(line => {
+
+    content.split('\n').forEach((line) => {
       line = line.trim();
       if (line && !line.startsWith('#')) {
         const [key, ...valueParts] = line.split('=');
         if (key && valueParts.length > 0) {
-          parsed[key.trim()] = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
+          parsed[key.trim()] = valueParts
+            .join('=')
+            .trim()
+            .replace(/^["']|["']$/g, '');
         }
       }
     });
-    
+
     return parsed;
   } catch (error) {
     console.log(`⚠️  Could not read ${filePath}, using process.env`);
@@ -118,7 +178,9 @@ async function checkDopplerAuth() {
 
 async function checkDopplerProject(project, config) {
   try {
-    await execAsync(`${DOPPLER_CMD} secrets --project ${project} --config ${config} --json`);
+    await execAsync(
+      `${DOPPLER_CMD} secrets --project ${project} --config ${config} --json`,
+    );
     return true;
   } catch {
     return false;
@@ -127,7 +189,9 @@ async function checkDopplerProject(project, config) {
 
 async function getDopplerSecrets(project, config) {
   try {
-    const { stdout } = await execAsync(`${DOPPLER_CMD} secrets --project ${project} --config ${config} --json`);
+    const { stdout } = await execAsync(
+      `${DOPPLER_CMD} secrets --project ${project} --config ${config} --json`,
+    );
     return JSON.parse(stdout);
   } catch {
     return {};
@@ -136,7 +200,9 @@ async function getDopplerSecrets(project, config) {
 
 async function setDopplerSecret(project, config, name, value) {
   try {
-    await execAsync(`doppler secrets set ${name}="${value}" --project ${project} --config ${config}`);
+    await execAsync(
+      `doppler secrets set ${name}="${value}" --project ${project} --config ${config}`,
+    );
     return true;
   } catch (error) {
     console.error(`  ❌ Failed to set ${name}: ${error.message}`);
@@ -154,7 +220,7 @@ function isPlaceholderValue(value) {
     /your.?secret/i,
     /replace.?this/i,
   ];
-  return patterns.some(pattern => pattern.test(value));
+  return patterns.some((pattern) => pattern.test(value));
 }
 
 function maskValue(value) {
@@ -167,7 +233,14 @@ function maskValue(value) {
   return `${start}${middle}${end}`;
 }
 
-async function migratePriorityGroup(priority, project, config, currentEnv, existingSecrets, options = {}) {
+async function migratePriorityGroup(
+  priority,
+  project,
+  config,
+  currentEnv,
+  existingSecrets,
+  options = {},
+) {
   const group = MIGRATION_GROUPS[priority];
   if (!group) {
     throw new Error(`Priority group ${priority} not found`);
@@ -188,7 +261,7 @@ async function migratePriorityGroup(priority, project, config, currentEnv, exist
 
     // Check if secret exists in current environment
     const currentValue = currentEnv[secret.legacy];
-    
+
     if (!currentValue) {
       if (secret.required) {
         console.log(`  ❌ Required secret ${secret.legacy} not found`);
@@ -210,7 +283,9 @@ async function migratePriorityGroup(priority, project, config, currentEnv, exist
 
     // Check for placeholder values
     if (isPlaceholderValue(currentValue)) {
-      console.log(`  ⚠️  Appears to be placeholder: ${maskValue(currentValue)}`);
+      console.log(
+        `  ⚠️  Appears to be placeholder: ${maskValue(currentValue)}`,
+      );
       if (group.riskLevel === 'critical') {
         console.log(`  ❌ Critical secret with placeholder value`);
         errorCount++;
@@ -222,12 +297,16 @@ async function migratePriorityGroup(priority, project, config, currentEnv, exist
 
     // Perform migration
     if (options.dryRun) {
-      console.log(`  🔍 DRY RUN: Would set ${secret.doppler} = ${maskValue(currentValue)}`);
+      console.log(
+        `  🔍 DRY RUN: Would set ${secret.doppler} = ${maskValue(currentValue)}`,
+      );
       migratedCount++;
     } else {
       // Ask for confirmation for critical secrets
       if (group.riskLevel === 'critical' && !options.autoConfirm) {
-        const confirm = await question(`  🔒 Migrate critical secret ${secret.doppler}? (y/n): `);
+        const confirm = await question(
+          `  🔒 Migrate critical secret ${secret.doppler}? (y/n): `,
+        );
         if (confirm.toLowerCase() !== 'y') {
           console.log(`  ⏭️  Skipped by user`);
           skippedCount++;
@@ -235,7 +314,12 @@ async function migratePriorityGroup(priority, project, config, currentEnv, exist
         }
       }
 
-      const success = await setDopplerSecret(project, config, secret.doppler, currentValue);
+      const success = await setDopplerSecret(
+        project,
+        config,
+        secret.doppler,
+        currentValue,
+      );
       if (success) {
         console.log(`  ✅ Migrated successfully`);
         migratedCount++;
@@ -250,14 +334,19 @@ async function migratePriorityGroup(priority, project, config, currentEnv, exist
     skippedCount,
     errorCount,
     warnings,
-    success: errorCount === 0
+    success: errorCount === 0,
   };
 }
 
-async function generateMigrationReport(project, config, currentEnv, existingSecrets) {
+async function generateMigrationReport(
+  project,
+  config,
+  currentEnv,
+  existingSecrets,
+) {
   console.log(`\n📊 Migration Status Report`);
   console.log(`=====================================`);
-  
+
   let totalSecrets = 0;
   let migratedSecrets = 0;
   let readySecrets = 0;
@@ -266,12 +355,12 @@ async function generateMigrationReport(project, config, currentEnv, existingSecr
   for (const [priority, group] of Object.entries(MIGRATION_GROUPS)) {
     console.log(`\n${priority}: ${group.name}`);
     console.log(`  Risk Level: ${group.riskLevel}`);
-    
+
     for (const secret of group.secrets) {
       totalSecrets++;
       const hasLegacy = !!currentEnv[secret.legacy];
       const hasDoppler = !!existingSecrets[secret.doppler];
-      
+
       let status = '❌ Missing';
       if (hasLegacy && hasDoppler) {
         status = '✅ Migrated';
@@ -294,7 +383,9 @@ async function generateMigrationReport(project, config, currentEnv, existingSecr
   console.log(`  ✅ Migrated: ${migratedSecrets}`);
   console.log(`  🔄 Ready to Migrate: ${readySecrets}`);
   console.log(`  ❌ Missing: ${missingSecrets}`);
-  console.log(`  📊 Progress: ${Math.round((migratedSecrets / totalSecrets) * 100)}%`);
+  console.log(
+    `  📊 Progress: ${Math.round((migratedSecrets / totalSecrets) * 100)}%`,
+  );
 }
 
 async function main() {
@@ -303,28 +394,28 @@ async function main() {
   // Step 1: Check Doppler authentication
   console.log('1. Checking Doppler authentication...');
   const auth = await checkDopplerAuth();
-  
+
   if (!auth.authenticated) {
     console.log('❌ Not authenticated with Doppler');
     console.log('Please run: doppler login');
     return;
   }
-  
+
   console.log(`✅ Authenticated as: ${auth.user}`);
 
   // Step 2: Check project access
   const project = 'gs-scaffold-api';
   const config = 'dev';
-  
+
   console.log(`\n2. Checking Doppler project access...`);
   const hasProject = await checkDopplerProject(project, config);
-  
+
   if (!hasProject) {
     console.log(`❌ Cannot access Doppler project: ${project}/${config}`);
     console.log('Please run: node setup-doppler-project.js');
     return;
   }
-  
+
   console.log(`✅ Project access confirmed: ${project}/${config}`);
 
   // Step 3: Load current environment
@@ -344,51 +435,64 @@ async function main() {
 
   // Step 6: Interactive migration
   console.log(`\n🚀 Ready to begin migration!`);
-  
-  const action = await question('\nWhat would you like to do?\n1. Migrate P0 (Critical) secrets\n2. Migrate specific priority group\n3. View detailed report\n4. Exit\n\nChoice (1-4): ');
+
+  const action = await question(
+    '\nWhat would you like to do?\n1. Migrate P0 (Critical) secrets\n2. Migrate specific priority group\n3. View detailed report\n4. Exit\n\nChoice (1-4): ',
+  );
 
   switch (action) {
     case '1':
       console.log('\n🚨 Migrating P0 Critical Secrets...');
-      const result = await migratePriorityGroup('P0', project, config, currentEnv, existingSecrets, {
-        dryRun: false,
-        skipExisting: true,
-        autoConfirm: false
-      });
-      
+      const result = await migratePriorityGroup(
+        'P0',
+        project,
+        config,
+        currentEnv,
+        existingSecrets,
+        {
+          dryRun: false,
+          skipExisting: true,
+          autoConfirm: false,
+        },
+      );
+
       console.log(`\n📊 P0 Migration Complete:`);
       console.log(`  ✅ Migrated: ${result.migratedCount}`);
       console.log(`  ⏭️  Skipped: ${result.skippedCount}`);
       console.log(`  ❌ Errors: ${result.errorCount}`);
-      
+
       if (result.warnings.length > 0) {
         console.log(`  ⚠️  Warnings:`);
-        result.warnings.forEach(w => console.log(`    - ${w}`));
+        result.warnings.forEach((w) => console.log(`    - ${w}`));
       }
-      
+
       if (result.success) {
         console.log('\n🎉 P0 Critical secrets migrated successfully!');
-        console.log('Next: Run script again to migrate P1 (Service Connections)');
+        console.log(
+          'Next: Run script again to migrate P1 (Service Connections)',
+        );
       }
       break;
 
     case '2':
-      const priority = await question('\nWhich priority group? (P0/P1/P2/P3): ');
+      const priority = await question(
+        '\nWhich priority group? (P0/P1/P2/P3): ',
+      );
       if (MIGRATION_GROUPS[priority.toUpperCase()]) {
         const dryRun = await question('Dry run first? (y/n): ');
         const result = await migratePriorityGroup(
-          priority.toUpperCase(), 
-          project, 
-          config, 
-          currentEnv, 
-          existingSecrets, 
-          { 
+          priority.toUpperCase(),
+          project,
+          config,
+          currentEnv,
+          existingSecrets,
+          {
             dryRun: dryRun.toLowerCase() === 'y',
             skipExisting: true,
-            autoConfirm: false
-          }
+            autoConfirm: false,
+          },
         );
-        
+
         console.log(`\n📊 ${priority} Migration Complete:`);
         console.log(`  ✅ Migrated: ${result.migratedCount}`);
         console.log(`  ⏭️  Skipped: ${result.skippedCount}`);
@@ -399,7 +503,12 @@ async function main() {
       break;
 
     case '3':
-      await generateMigrationReport(project, config, currentEnv, existingSecrets);
+      await generateMigrationReport(
+        project,
+        config,
+        currentEnv,
+        existingSecrets,
+      );
       break;
 
     case '4':

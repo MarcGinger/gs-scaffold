@@ -17,7 +17,6 @@ import {
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as dotenv from 'dotenv';
-import Doppler from '@dopplerhq/node-sdk';
 
 // Load .env file if it exists
 dotenv.config();
@@ -70,7 +69,8 @@ export class ConfigLoader {
 
     try {
       // Use local wrapper on Windows, fallback to global command
-      const dopplerCmd = process.platform === 'win32' ? '.\\doppler.bat' : 'doppler';
+      const dopplerCmd =
+        process.platform === 'win32' ? '.\\doppler.bat' : 'doppler';
       await execAsync(`${dopplerCmd} me --json`);
       this.dopplerAvailable = true;
       return true;
@@ -81,48 +81,36 @@ export class ConfigLoader {
   }
 
   /**
-   * Load configuration from Doppler using the Node.js SDK
+   * Load configuration from Doppler using CLI
    */
   async loadFromDoppler(
     options: ConfigLoadOptions = {},
   ): Promise<Record<string, string>> {
     try {
-      // Option 1: Use SDK with service token
-      if (process.env.DOPPLER_TOKEN) {
-        const doppler = new Doppler({
-          accessToken: process.env.DOPPLER_TOKEN,
-        });
-
-        // Use the SDK to get secrets - corrected API usage
-        const response = await doppler.secrets.get({
-          project: options.dopplerProject || 'gs-scaffold-api',
-          config: options.dopplerConfig || 'dev',
-        });
-
-        // Handle the response format
-        const result: Record<string, string> = {};
-        if (response && typeof response === 'object') {
-          for (const [key, value] of Object.entries(response)) {
-            result[key] = String(value);
-          }
-        }
-
-        return result;
-      }
-
-      // Option 2: Use CLI fallback (for local development)
       const project = options.dopplerProject || 'gs-scaffold-api';
-      const config = options.dopplerConfig || 'dev';
+      const config = options.dopplerConfig || 'dev_main';
 
-      const command = `doppler secrets --project ${project} --config ${config} --format json`;
+      const dopplerCmd =
+        process.platform === 'win32' ? '.\\doppler.bat' : 'doppler';
+      const command = `${dopplerCmd} secrets --project ${project} --config ${config} --json`;
       const { stdout } = await execAsync(command);
 
       const secrets = JSON.parse(stdout) as Record<string, unknown>;
 
-      // Convert to flat key-value pairs
+      // Convert to flat key-value pairs, extracting actual values
       const result: Record<string, string> = {};
       for (const [key, value] of Object.entries(secrets)) {
-        result[key] = String(value);
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          'computed' in value
+        ) {
+          // Handle Doppler CLI output format
+          const computedValue = (value as { computed: unknown }).computed;
+          result[key] = String(computedValue);
+        } else {
+          result[key] = String(value);
+        }
       }
 
       return result;
