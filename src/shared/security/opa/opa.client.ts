@@ -10,6 +10,7 @@ import {
   OpaDecision,
   CircuitBreakerState,
   OpaClientMetrics,
+  DecisionReasonCode,
 } from './opa.types';
 
 // Helper functions for metrics and timing
@@ -40,8 +41,19 @@ export class OpaClient {
   private readonly successThreshold: number;
   private readonly maxHalfOpenTrials: number;
 
-  // Metrics
-  private metrics: OpaClientMetrics = {
+  // Metrics (mutable for internal updates)
+  private metrics: {
+    totalRequests: number;
+    successCount: number;
+    errorCount: number;
+    circuitBreakerState: CircuitBreakerState;
+    averageResponseTime: number;
+    lastError?: string;
+    lastErrorTime?: Date;
+    lastTransitionAt?: Date;
+    p95Ms?: number;
+    p99Ms?: number;
+  } = {
     totalRequests: 0,
     successCount: 0,
     errorCount: 0,
@@ -325,18 +337,22 @@ export class OpaClient {
     if (typeof result === 'boolean') {
       return {
         allow: result,
+        reason_code: result ? 'ALLOW' : 'DENY',
         policy_version: '1.0.0',
+        policy_timestamp: new Date().toISOString(),
       };
     }
 
     // Handle object result with detailed information
     return {
       allow: Boolean(result.allow),
+      reason_code: result.reason_code || (result.allow ? 'ALLOW' : 'DENY'),
       reason: result.reason,
       obligations: Array.isArray(result.obligations) ? result.obligations : [],
       policy_version: result.policy_version || '1.0.0',
       policy_rules: result.policy_rules,
-      policy_timestamp: result.policy_timestamp,
+      policy_timestamp: result.policy_timestamp || new Date().toISOString(),
+      policy_checksum: result.policy_checksum,
     };
   }
 
@@ -355,24 +371,36 @@ export class OpaClient {
 
     return results.map((r: any) => {
       if (typeof r === 'boolean') {
-        return { allow: r, policy_version: '1.0.0' };
+        return {
+          allow: r,
+          reason_code: r ? 'ALLOW' : 'DENY',
+          policy_version: '1.0.0',
+          policy_timestamp: new Date().toISOString(),
+        };
       }
       return {
         allow: Boolean(r?.allow),
+        reason_code: r?.reason_code || (r?.allow ? 'ALLOW' : 'DENY'),
         reason: r?.reason,
         obligations: Array.isArray(r?.obligations) ? r.obligations : [],
         policy_version: r?.policy_version || '1.0.0',
         policy_rules: r?.policy_rules,
-        policy_timestamp: r?.policy_timestamp,
+        policy_timestamp: r?.policy_timestamp || new Date().toISOString(),
+        policy_checksum: r?.policy_checksum,
       };
     });
   }
 
-  private failureDecision(code: string, reason: string): OpaDecision {
+  private failureDecision(
+    code: DecisionReasonCode,
+    reason: string,
+  ): OpaDecision {
     return {
       allow: false,
+      reason_code: code,
       reason,
-      policy_version: code,
+      policy_version: '1.0.0',
+      policy_timestamp: new Date().toISOString(),
     };
   }
 
