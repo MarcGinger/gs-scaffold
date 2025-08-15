@@ -15,11 +15,11 @@ import {
   CurrentUserId,
   CurrentUserRoles,
   CompositeSecurityGuard,
-  ProductResource,
-  OrderResource,
-  UserResource,
   Public,
 } from 'src/shared/security';
+import { ProductResource } from '../product/product.resource';
+import { OrderResource } from '../order/order.resource';
+import { UserResource } from '../user/user.resource';
 
 @Controller('auth-test')
 @UseGuards(JwtAuthGuard) // Apply guard to entire controller

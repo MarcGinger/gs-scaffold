@@ -14,6 +14,7 @@ import { createServiceLoggerFactory } from '../shared/logging/logging.providers'
 import { Log } from '../shared/logging/structured-logger';
 import { SafeJwtAuthGuard, CurrentUser, Public } from '../shared/security/auth';
 import { IUserToken } from '../shared/security/types/user-token.interface';
+import { UserResource, UserProfileResource } from './user.resource';
 
 // Create service-specific logger helpers
 const userLoggerFactory = createServiceLoggerFactory('user-service');
@@ -40,6 +41,7 @@ export class UserController {
 
   @Get()
   @Public() // Public endpoint - no authentication required
+  @UserResource('list')
   findAllUsers(): any {
     Log.minimal.info(this.log, 'Get all users endpoint called', {
       method: 'findAllUsers',
@@ -51,6 +53,7 @@ export class UserController {
 
   @Post()
   @UseGuards(SafeJwtAuthGuard) // Secure JWT authentication
+  @UserResource('create')
   createUser(
     @Body() userData: CreateUserDto,
     @CurrentUser() currentUser: IUserToken,
@@ -68,6 +71,7 @@ export class UserController {
 
   @Get('me')
   @UseGuards(SafeJwtAuthGuard) // Get current user profile
+  @UserProfileResource('read')
   getCurrentUser(@CurrentUser() currentUser: IUserToken): any {
     Log.minimal.info(this.log, 'Get current user profile called', {
       method: 'getCurrentUser',
@@ -84,6 +88,7 @@ export class UserController {
 
   @Get(':id')
   @UseGuards(SafeJwtAuthGuard) // Protected endpoint
+  @UserResource('read')
   findUser(
     @Param('id') id: string,
     @CurrentUser() currentUser: IUserToken,

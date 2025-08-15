@@ -10,9 +10,7 @@ import { AuthErrors } from '../errors/auth.errors';
 @Injectable()
 export class HeaderAuthGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
-    const req = ctx.switchToHttp().getRequest() as {
-      headers?: { authorization?: string };
-    };
+    const req = ctx.switchToHttp().getRequest();
     const auth = req.headers?.authorization;
 
     if (!auth) throw AuthErrors.missingAuthorizationHeader();

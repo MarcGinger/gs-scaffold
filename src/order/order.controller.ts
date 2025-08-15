@@ -4,6 +4,7 @@ import { OrderService } from './order.service';
 import { APP_LOGGER } from '../shared/logging/logging.providers';
 import { createServiceLoggerFactory } from '../shared/logging/logging.providers';
 import { Log } from '../shared/logging/structured-logger';
+import { OrderResource } from './order.resource';
 
 // Create service-specific logger helpers
 const orderLoggerFactory = createServiceLoggerFactory('order-service');
@@ -23,6 +24,7 @@ export class OrderController {
   }
 
   @Post()
+  @OrderResource('create')
   createOrder(@Body() orderData: { id: string; amount: number }): any {
     Log.minimal.info(this.log, 'Create order endpoint called', {
       method: 'createOrder',
@@ -33,6 +35,7 @@ export class OrderController {
   }
 
   @Get(':id/status')
+  @OrderResource('read')
   getOrderStatus(@Param('id') id: string): any {
     Log.minimal.info(this.log, 'Get order status endpoint called', {
       method: 'getOrderStatus',
