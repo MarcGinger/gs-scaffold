@@ -1,6 +1,6 @@
 /**
  * Base Configuration Schema
- * 
+ *
  * Defines the foundational configuration schema using Zod validation.
  * This schema supports both traditional process.env and Doppler secret management.
  */
@@ -8,11 +8,24 @@
 import { z } from 'zod';
 
 // Environment enumeration
-export const Environment = z.enum(['development', 'staging', 'production', 'test']);
+export const Environment = z.enum([
+  'development',
+  'staging',
+  'production',
+  'test',
+]);
 export type Environment = z.infer<typeof Environment>;
 
 // Log level enumeration
-export const LogLevel = z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']);
+export const LogLevel = z.enum([
+  'fatal',
+  'error',
+  'warn',
+  'info',
+  'debug',
+  'trace',
+  'silent',
+]);
 export type LogLevel = z.infer<typeof LogLevel>;
 
 // Log sink enumeration
@@ -42,10 +55,15 @@ export const CoreConfigSchema = z.object({
 export const DatabaseConfigSchema = z.object({
   // Primary connection options (URL takes precedence)
   DATABASE_POSTGRES_URL: z.string().url().optional(),
-  
+
   // Individual connection components
   DATABASE_POSTGRES_HOST: z.string().min(1).default('localhost'),
-  DATABASE_POSTGRES_PORT: z.coerce.number().int().min(1).max(65535).default(5432),
+  DATABASE_POSTGRES_PORT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(65535)
+    .default(5432),
   DATABASE_POSTGRES_NAME: z.string().min(1).default('postgres'),
   DATABASE_POSTGRES_USER: z.string().min(1).default('postgres'),
   DATABASE_POSTGRES_PASSWORD: z.string().min(1),
@@ -87,7 +105,12 @@ export const AuthConfigSchema = z.object({
   // JWT Configuration
   AUTH_JWT_AUDIENCE: z.string().min(1).default('gs-scaffold-api'),
   AUTH_JWKS_CACHE_MAX_AGE: z.coerce.number().int().min(60000).default(3600000), // 1 hour
-  AUTH_JWKS_REQUESTS_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(10),
+  AUTH_JWKS_REQUESTS_PER_MINUTE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .default(10),
   AUTH_JWKS_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000),
 });
 
@@ -102,9 +125,21 @@ export const SecurityConfigSchema = z.object({
   SECURITY_OPA_URL: z.string().url().default('http://localhost:8181'),
   SECURITY_OPA_TIMEOUT_MS: z.coerce.number().int().min(1000).default(5000),
   SECURITY_OPA_DECISION_LOGS_ENABLED: z.coerce.boolean().default(true),
-  SECURITY_OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD: z.coerce.number().int().min(1).default(5),
-  SECURITY_OPA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_MS: z.coerce.number().int().min(1000).default(60000),
-  SECURITY_OPA_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: z.coerce.number().int().min(1).default(3),
+  SECURITY_OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(5),
+  SECURITY_OPA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .default(60000),
+  SECURITY_OPA_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(3),
 
   // CORS Configuration
   SECURITY_CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
@@ -143,8 +178,7 @@ export const InfrastructureConfigSchema = z.object({
  * Complete Application Configuration Schema
  * Combines all configuration schemas
  */
-export const AppConfigSchema = CoreConfigSchema
-  .merge(DatabaseConfigSchema)
+export const AppConfigSchema = CoreConfigSchema.merge(DatabaseConfigSchema)
   .merge(CacheConfigSchema)
   .merge(EventStoreConfigSchema)
   .merge(AuthConfigSchema)
@@ -163,9 +197,7 @@ export const EnvironmentValidationRules = {
       'SECURITY_PII_ENCRYPTION_KEY',
       'DATABASE_POSTGRES_PASSWORD',
     ],
-    optionalSecrets: [
-      'AUTH_KEYCLOAK_CLIENT_SECRET',
-    ],
+    optionalSecrets: ['AUTH_KEYCLOAK_CLIENT_SECRET'],
   },
   staging: {
     requiredSecrets: [
@@ -194,9 +226,7 @@ export const EnvironmentValidationRules = {
     },
   },
   test: {
-    requiredSecrets: [
-      'SECURITY_PII_ENCRYPTION_KEY',
-    ],
+    requiredSecrets: ['SECURITY_PII_ENCRYPTION_KEY'],
   },
 };
 
@@ -216,7 +246,9 @@ export function validateEnvironmentConfig(
     for (const secret of rules.requiredSecrets) {
       const value = (config as any)[secret];
       if (!value || (typeof value === 'string' && value.trim() === '')) {
-        errors.push(`Required secret ${secret} is missing for ${environment} environment`);
+        errors.push(
+          `Required secret ${secret} is missing for ${environment} environment`,
+        );
       }
     }
   }
@@ -230,12 +262,19 @@ export function validateEnvironmentConfig(
           errors.push('HTTPS required for AUTH_KEYCLOAK_URL in production');
         }
         if (config.APP_SERVER_PROTOCOL === 'http') {
-          warnings.push('Consider using HTTPS for APP_SERVER_PROTOCOL in production');
+          warnings.push(
+            'Consider using HTTPS for APP_SERVER_PROTOCOL in production',
+          );
         }
       }
 
-      if (productionRules.securityRules.prettyLogsDisallowed && config.LOGGING_CORE_PRETTY_ENABLED) {
-        errors.push('LOGGING_CORE_PRETTY_ENABLED must be false in production for performance');
+      if (
+        productionRules.securityRules.prettyLogsDisallowed &&
+        config.LOGGING_CORE_PRETTY_ENABLED
+      ) {
+        errors.push(
+          'LOGGING_CORE_PRETTY_ENABLED must be false in production for performance',
+        );
       }
     }
   }

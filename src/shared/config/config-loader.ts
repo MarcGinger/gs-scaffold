@@ -79,16 +79,35 @@ export class ConfigLoader {
   }
 
   /**
-   * Load configuration from Doppler
+   * Load configuration from Doppler using the Node.js SDK
    */
   async loadFromDoppler(
     options: ConfigLoadOptions = {},
   ): Promise<Record<string, string>> {
-    const project = options.dopplerProject || 'gs-scaffold-api';
-    const config = options.dopplerConfig || 'dev';
-
     try {
-      // Use doppler secrets to get all secrets as JSON
+      // Option 1: Use SDK with service token
+      if (process.env.DOPPLER_TOKEN) {
+        const doppler = new Doppler({
+          accessToken: process.env.DOPPLER_TOKEN,
+        });
+
+        const secrets = await doppler.secrets.list({
+          project: options.dopplerProject || 'gs-scaffold-api',
+          config: options.dopplerConfig || 'dev',
+        });
+
+        const result: Record<string, string> = {};
+        for (const secret of secrets) {
+          result[secret.name] = secret.computed_value || secret.raw_value || '';
+        }
+
+        return result;
+      }
+
+      // Option 2: Use CLI fallback (for local development)
+      const project = options.dopplerProject || 'gs-scaffold-api';
+      const config = options.dopplerConfig || 'dev';
+
       const command = `doppler secrets --project ${project} --config ${config} --format json`;
       const { stdout } = await execAsync(command);
 
@@ -111,7 +130,7 @@ export class ConfigLoader {
    */
   loadFromEnv(): Record<string, string> {
     const result: Record<string, string> = {};
-    
+
     // Get all environment variables that match our schema
     for (const key of Object.keys(process.env)) {
       const value = process.env[key];
@@ -119,7 +138,7 @@ export class ConfigLoader {
         result[key] = value;
       }
     }
-    
+
     return result;
   }
 

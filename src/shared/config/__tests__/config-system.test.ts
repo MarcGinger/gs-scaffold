@@ -1,6 +1,6 @@
 /**
  * Configuration System Test
- * 
+ *
  * Tests the new Doppler-enabled configuration system
  * and validates backward compatibility with existing code.
  */
@@ -20,15 +20,17 @@ async function testConfigurationSystem(): Promise<void> {
     console.log(`   ✅ Doppler Available: ${loadResult.dopplerAvailable}`);
     console.log(`   ✅ Errors: ${loadResult.errors.length}`);
     console.log(`   ✅ Warnings: ${loadResult.warnings.length}`);
-    
+
     if (loadResult.errors.length > 0) {
       console.log('   ❌ Errors found:');
-      loadResult.errors.forEach(error => console.log(`      - ${error}`));
+      loadResult.errors.forEach((error) => console.log(`      - ${error}`));
     }
 
     if (loadResult.warnings.length > 0) {
       console.log('   ⚠️ Warnings found:');
-      loadResult.warnings.forEach(warning => console.log(`      - ${warning}`));
+      loadResult.warnings.forEach((warning) =>
+        console.log(`      - ${warning}`),
+      );
     }
 
     // Test 2: Configuration validation
@@ -43,7 +45,7 @@ async function testConfigurationSystem(): Promise<void> {
     const legacyEnvironment = AppConfigUtil.getEnvironment();
     const legacyPort = AppConfigUtil.getPort();
     const legacyHost = AppConfigUtil.getHost();
-    
+
     console.log(`   ✅ Legacy Environment: ${legacyEnvironment}`);
     console.log(`   ✅ Legacy Port: ${legacyPort}`);
     console.log(`   ✅ Legacy Host: ${legacyHost}`);
@@ -55,10 +57,12 @@ async function testConfigurationSystem(): Promise<void> {
       console.log(`   ✅ New Environment: ${config.APP_RUNTIME_ENVIRONMENT}`);
       console.log(`   ✅ New Port: ${config.APP_SERVER_PORT}`);
       console.log(`   ✅ New Host: ${config.APP_SERVER_HOST}`);
-      
+
       // Compare legacy vs new
       console.log('\n📊 Legacy vs New Comparison:');
-      console.log(`   Environment: ${legacyEnvironment} → ${config.APP_RUNTIME_ENVIRONMENT}`);
+      console.log(
+        `   Environment: ${legacyEnvironment} → ${config.APP_RUNTIME_ENVIRONMENT}`,
+      );
       console.log(`   Port: ${legacyPort} → ${config.APP_SERVER_PORT}`);
       console.log(`   Host: ${legacyHost} → ${config.APP_SERVER_HOST}`);
     }
@@ -74,7 +78,9 @@ async function testConfigurationSystem(): Promise<void> {
     try {
       const dopplerResult = await loadConfig({ source: 'doppler' });
       console.log('   ✅ Doppler integration successful');
-      console.log(`   ✅ Loaded ${Object.keys(dopplerResult.config).length} configuration keys`);
+      console.log(
+        `   ✅ Loaded ${Object.keys(dopplerResult.config).length} configuration keys`,
+      );
     } catch (error) {
       console.log('   ⚠️ Doppler not available or not configured:');
       console.log(`      ${error}`);
@@ -82,7 +88,7 @@ async function testConfigurationSystem(): Promise<void> {
     }
 
     console.log('\n🎉 Configuration system test completed!');
-    
+
     return;
   } catch (error) {
     console.error('❌ Configuration test failed:', error);

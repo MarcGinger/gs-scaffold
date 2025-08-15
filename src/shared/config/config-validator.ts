@@ -76,7 +76,8 @@ export class ConfigValidator {
       this.addServiceConnectivityChecks(loadResult.config, warnings);
 
       // Check if configuration is valid
-      const valid = errors.length === 0 && (!options.strict || warnings.length === 0);
+      const valid =
+        errors.length === 0 && (!options.strict || warnings.length === 0);
 
       if (valid) {
         this.validatedConfig = loadResult.config;
@@ -109,7 +110,9 @@ export class ConfigValidator {
     errors: string[],
   ): void {
     // Check for hardcoded fallback usage in PII encryption
-    if (config.SECURITY_PII_ENCRYPTION_KEY === 'default-key-change-in-production') {
+    if (
+      config.SECURITY_PII_ENCRYPTION_KEY === 'default-key-change-in-production'
+    ) {
       errors.push(
         'SECURITY_PII_ENCRYPTION_KEY is using dangerous hardcoded fallback - this is a critical security risk',
       );
@@ -121,11 +124,16 @@ export class ConfigValidator {
         { key: 'AUTH_KEYCLOAK_URL', value: config.AUTH_KEYCLOAK_URL },
         { key: 'SECURITY_OPA_URL', value: config.SECURITY_OPA_URL },
         { key: 'LOGGING_LOKI_URL', value: config.LOGGING_LOKI_URL },
-        { key: 'LOGGING_ELASTICSEARCH_NODE', value: config.LOGGING_ELASTICSEARCH_NODE },
+        {
+          key: 'LOGGING_ELASTICSEARCH_NODE',
+          value: config.LOGGING_ELASTICSEARCH_NODE,
+        },
       ].filter(({ value }) => value?.includes('localhost'));
 
       for (const { key } of localhostUrls) {
-        warnings.push(`${key} uses localhost in ${config.APP_RUNTIME_ENVIRONMENT} environment`);
+        warnings.push(
+          `${key} uses localhost in ${config.APP_RUNTIME_ENVIRONMENT} environment`,
+        );
       }
     }
   }
@@ -140,11 +148,18 @@ export class ConfigValidator {
   ): void {
     // Security requirements
     if (config.LOGGING_CORE_PRETTY_ENABLED) {
-      errors.push('LOGGING_CORE_PRETTY_ENABLED must be false in production for performance');
+      errors.push(
+        'LOGGING_CORE_PRETTY_ENABLED must be false in production for performance',
+      );
     }
 
-    if (config.LOGGING_CORE_LEVEL === 'debug' || config.LOGGING_CORE_LEVEL === 'trace') {
-      errors.push(`LOGGING_CORE_LEVEL=${config.LOGGING_CORE_LEVEL} will generate excessive logs in production`);
+    if (
+      config.LOGGING_CORE_LEVEL === 'debug' ||
+      config.LOGGING_CORE_LEVEL === 'trace'
+    ) {
+      errors.push(
+        `LOGGING_CORE_LEVEL=${config.LOGGING_CORE_LEVEL} will generate excessive logs in production`,
+      );
     }
 
     // HTTPS requirements
@@ -154,7 +169,9 @@ export class ConfigValidator {
 
     // Connection string security
     if (config.DATABASE_POSTGRES_URL?.includes('password=')) {
-      warnings.push('Database URL contains embedded password - consider using separate credentials');
+      warnings.push(
+        'Database URL contains embedded password - consider using separate credentials',
+      );
     }
 
     // SSL requirements
@@ -166,16 +183,20 @@ export class ConfigValidator {
   /**
    * Development environment recommendations
    */
-  private addDevelopmentWarnings(
-    config: AppConfig,
-    warnings: string[],
-  ): void {
-    if (config.LOGGING_CORE_SINK !== 'console' && config.LOGGING_CORE_SINK !== 'loki') {
-      warnings.push('Consider using console or loki logging sink for development');
+  private addDevelopmentWarnings(config: AppConfig, warnings: string[]): void {
+    if (
+      config.LOGGING_CORE_SINK !== 'console' &&
+      config.LOGGING_CORE_SINK !== 'loki'
+    ) {
+      warnings.push(
+        'Consider using console or loki logging sink for development',
+      );
     }
 
     if (!config.LOGGING_CORE_PRETTY_ENABLED) {
-      warnings.push('Enable LOGGING_CORE_PRETTY_ENABLED for better development experience');
+      warnings.push(
+        'Enable LOGGING_CORE_PRETTY_ENABLED for better development experience',
+      );
     }
   }
 
@@ -192,29 +213,42 @@ export class ConfigValidator {
     // but we can validate the components
 
     // Cache configuration recommendations
-    if (config.AUTH_JWKS_CACHE_MAX_AGE < 300000) { // 5 minutes
-      warnings.push('AUTH_JWKS_CACHE_MAX_AGE is very low, may impact performance');
+    if (config.AUTH_JWKS_CACHE_MAX_AGE < 300000) {
+      // 5 minutes
+      warnings.push(
+        'AUTH_JWKS_CACHE_MAX_AGE is very low, may impact performance',
+      );
     }
 
     // Circuit breaker configuration
     if (config.SECURITY_OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD > 10) {
-      warnings.push('SECURITY_OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD is very high, may not protect against failures');
+      warnings.push(
+        'SECURITY_OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD is very high, may not protect against failures',
+      );
     }
 
     // Connection pool validation
     if (config.DATABASE_POSTGRES_POOL_MAX < 5) {
-      warnings.push('DATABASE_POSTGRES_POOL_MAX is very low, may limit concurrency');
+      warnings.push(
+        'DATABASE_POSTGRES_POOL_MAX is very low, may limit concurrency',
+      );
     }
 
-    if (config.DATABASE_POSTGRES_POOL_MIN >= config.DATABASE_POSTGRES_POOL_MAX) {
-      warnings.push('DATABASE_POSTGRES_POOL_MIN should be less than DATABASE_POSTGRES_POOL_MAX');
+    if (
+      config.DATABASE_POSTGRES_POOL_MIN >= config.DATABASE_POSTGRES_POOL_MAX
+    ) {
+      warnings.push(
+        'DATABASE_POSTGRES_POOL_MIN should be less than DATABASE_POSTGRES_POOL_MAX',
+      );
     }
   }
 
   /**
    * Get validated configuration (validate if not cached)
    */
-  async getValidatedConfig(options: ValidationOptions = {}): Promise<AppConfig> {
+  async getValidatedConfig(
+    options: ValidationOptions = {},
+  ): Promise<AppConfig> {
     if (this.validatedConfig && !options.source && !options.environment) {
       return this.validatedConfig;
     }
@@ -262,11 +296,15 @@ export class ConfigValidator {
 
     // Compare and note differences
     if (legacyConfig.environment !== migratedConfig.APP_RUNTIME_ENVIRONMENT) {
-      differences.push(`Environment: ${legacyConfig.environment} → ${migratedConfig.APP_RUNTIME_ENVIRONMENT}`);
+      differences.push(
+        `Environment: ${legacyConfig.environment} → ${migratedConfig.APP_RUNTIME_ENVIRONMENT}`,
+      );
     }
 
     if (legacyConfig.port !== migratedConfig.APP_SERVER_PORT) {
-      differences.push(`Port: ${legacyConfig.port} → ${migratedConfig.APP_SERVER_PORT}`);
+      differences.push(
+        `Port: ${legacyConfig.port} → ${migratedConfig.APP_SERVER_PORT}`,
+      );
     }
 
     return {
