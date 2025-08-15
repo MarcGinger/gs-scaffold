@@ -17,10 +17,13 @@ import {
   ProductResource,
   OrderResource,
   UserResource,
+  Public,
 } from 'src/shared/security';
 
 @Controller('auth-test')
+@UseGuards(JwtAuthGuard) // Apply guard to entire controller
 export class AuthTestController {
+  @Public() // This endpoint skips authentication
   @Get('public')
   getPublicData() {
     return {
@@ -29,6 +32,7 @@ export class AuthTestController {
     };
   }
 
+  @Public() // Debug endpoint should be public
   @Get('phase1/debug')
   debugPhase1() {
     return {
@@ -39,12 +43,61 @@ export class AuthTestController {
         '/auth-test/phase1/multi-tenant-test (requires JWT)',
         '/auth-test/phase1/role-based-test (requires JWT)',
         '/auth-test/phase1/security-context-test (requires JWT)',
+        '/auth-test/public (public, no JWT needed)',
+        '/auth-test/phase1/debug (public, no JWT needed)',
+        '/auth-test/phase1/jwt-debug (public, for debugging)',
+        '/auth-test/phase1/auth-errors-demo (public, shows AuthErrors codes)',
       ],
       status: 'Phase 1 endpoints are ready',
       timestamp: new Date().toISOString(),
     };
   }
 
+  @Public() // New endpoint to demonstrate AuthErrors
+  @Get('phase1/auth-errors-demo')
+  demoAuthErrors() {
+    return {
+      message: 'Authentication Error Codes Reference',
+      description:
+        'These are the error codes returned by our enhanced AuthErrors system',
+      authErrorCodes: {
+        AUTH_TOKEN_EXPIRED: 'JWT token has expired',
+        AUTH_TOKEN_INVALID: 'Invalid token signature',
+        AUTH_TOKEN_MALFORMED: 'Malformed JWT token',
+        AUTH_TOKEN_NOT_ACTIVE: 'Token not yet active',
+        AUTH_TOKEN_MISSING: 'No valid token provided',
+        AUTH_TOKEN_AUDIENCE_INVALID: 'Invalid token audience',
+        AUTH_TOKEN_ISSUER_INVALID: 'Invalid token issuer',
+        AUTH_USER_ID_MISSING: 'User ID is missing from authentication context',
+        AUTH_USER_NOT_FOUND: 'No authenticated user found in request',
+        AUTH_ROLES_MISSING: 'User roles not found in authentication context',
+        AUTH_INSUFFICIENT_PERMISSIONS: 'Insufficient permissions',
+        AUTH_ROLE_REQUIRED: 'Specific role required for operation',
+        AUTH_AUTHENTICATION_FAILED: 'General authentication failure',
+        AUTH_TENANT_MISSING: 'Tenant information missing',
+        AUTH_TENANT_INVALID: 'Invalid tenant',
+        AUTH_SESSION_EXPIRED: 'User session has expired',
+        AUTH_SESSION_INVALID: 'Invalid user session',
+      },
+      features: [
+        'Structured error responses with codes and timestamps',
+        'Consistent error format for Problem Details RFC compliance',
+        'Easy integration with Result<T,E> patterns',
+        'Centralized error management',
+        'Support for additional context (correlationId, tenantId, etc.)',
+      ],
+      testEndpoints: {
+        noToken: 'GET /auth-test/protected (expect AUTH_AUTHENTICATION_FAILED)',
+        malformedToken:
+          'GET /auth-test/protected with "Bearer invalid.token" (expect AUTH_TOKEN_INVALID)',
+        expiredToken:
+          'GET /auth-test/protected with expired token (expect AUTH_TOKEN_EXPIRED)',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Public() // Debug JWT extraction should be public for testing
   @Get('phase1/jwt-debug')
   debugJwtExtraction(@Req() request: Request) {
     const authHeader = request.headers.authorization as string;
@@ -65,7 +118,6 @@ export class AuthTestController {
   }
 
   @Get('protected')
-  @UseGuards(JwtAuthGuard)
   getProtectedData(@CurrentUser() user: IUserToken) {
     return {
       message: 'This is protected data, authentication required',
@@ -81,7 +133,6 @@ export class AuthTestController {
   }
 
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
   getUserProfile(
     @CurrentUserId() userId: string,
     @CurrentUserRoles() roles: string[],
@@ -105,7 +156,6 @@ export class AuthTestController {
   }
 
   @Get('admin')
-  @UseGuards(JwtAuthGuard)
   getAdminData(@CurrentUser() user: IUserToken) {
     // Simple role check (in Phase 2, we'll use OPA for this)
     if (!user.roles.includes('admin')) {
@@ -166,7 +216,6 @@ export class AuthTestController {
   }
 
   @Get('phase1/jwt-validation')
-  @UseGuards(JwtAuthGuard)
   testPhase1JwtValidation(@CurrentUser() user: IUserToken) {
     return {
       phase: 'Phase 1 - JWT Authentication',
@@ -201,7 +250,6 @@ export class AuthTestController {
   }
 
   @Get('phase1/decorators-test')
-  @UseGuards(JwtAuthGuard)
   testPhase1Decorators(
     @CurrentUserId() userId: string,
     @CurrentUserRoles() roles: string[],
@@ -235,7 +283,6 @@ export class AuthTestController {
   }
 
   @Get('phase1/multi-tenant-test')
-  @UseGuards(JwtAuthGuard)
   testPhase1MultiTenant(@CurrentUser() user: IUserToken) {
     const tenantInfo = {
       hasTenant: !!user.tenant,
@@ -265,7 +312,6 @@ export class AuthTestController {
   }
 
   @Get('phase1/role-based-test')
-  @UseGuards(JwtAuthGuard)
   testPhase1RoleBased(@CurrentUser() user: IUserToken) {
     const roleChecks = {
       hasRoles: Array.isArray(user.roles) && user.roles.length > 0,
@@ -304,7 +350,6 @@ export class AuthTestController {
   }
 
   @Get('phase1/security-context-test')
-  @UseGuards(JwtAuthGuard)
   testPhase1SecurityContext(@CurrentUser() user: IUserToken) {
     const securityFeatures = {
       mfaSupported: user.mfa_verified !== undefined,

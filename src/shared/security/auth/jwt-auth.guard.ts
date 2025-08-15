@@ -2,50 +2,168 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
+  SetMetadata,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
+import { IUserToken } from '../types/user-token.interface';
+import { AuthErrors } from '../errors/auth.errors';
+
+// Public decorator to skip auth
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private readonly reflector: Reflector) {
+    super();
+  }
+
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
-    // Add custom logic here if needed (e.g., skip authentication for certain routes)
+    // Check if route is marked as public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
+    // Add custom logic here if needed (e.g., route-based checks)
     return super.canActivate(context);
   }
 
-  handleRequest<TUser = any>(
-    err: any,
-    user: any,
-    info: any,
-    context: ExecutionContext,
+  // If you use GraphQL/WS, uncomment and adapt accordingly:
+  // getRequest(context: ExecutionContext) {
+  //   // HTTP
+  //   if (context.getType() === 'http') {
+  //     return context.switchToHttp().getRequest();
+  //   }
+  //   // GraphQL (Apollo)
+  //   if (context.getType<GqlContextType>() === 'graphql') {
+  //     const gqlCtx = GqlExecutionContext.create(context);
+  //     return gqlCtx.getContext().req;
+  //   }
+  //   // WebSockets
+  //   if (context.getType() === 'ws') {
+  //     return context.switchToWs().getClient()?.handshake; // depending on your adapter
+  //   }
+  // }
+
+  handleRequest<TUser = IUserToken>(
+    err: unknown,
+    user: TUser,
+    info?: Record<string, unknown>,
   ): TUser {
     // Handle authentication errors properly
     if (err) {
+      const errorMessage = this.extractErrorMessage(err);
       throw err instanceof UnauthorizedException
         ? err
-        : new UnauthorizedException('Authentication failed');
+        : AuthErrors.authenticationFailed(errorMessage);
     }
 
     if (!user) {
-      // Handle different types of authentication failures
-      if (info?.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Token has expired');
+      // Map common JWT errors to clearer messages using AuthErrors
+      const reason = this.extractReasonFromInfo(info);
+
+      // Handle different types of authentication failures with specific error codes
+      if (
+        info?.name === 'TokenExpiredError' ||
+        (typeof reason === 'string' && reason.toLowerCase().includes('expired'))
+      ) {
+        throw AuthErrors.tokenExpired();
       }
-      if (info?.name === 'JsonWebTokenError') {
-        throw new UnauthorizedException('Invalid token');
+
+      if (
+        info?.name === 'JsonWebTokenError' ||
+        (typeof reason === 'string' &&
+          reason.toLowerCase().includes('invalid signature'))
+      ) {
+        throw AuthErrors.tokenInvalid();
       }
+
       if (info?.name === 'NotBeforeError') {
-        throw new UnauthorizedException('Token not active');
+        throw AuthErrors.tokenNotActive();
       }
-      if (info?.message) {
-        throw new UnauthorizedException(info.message);
+
+      if (
+        typeof reason === 'string' &&
+        reason.toLowerCase().includes('jwt malformed')
+      ) {
+        throw AuthErrors.tokenMalformed();
       }
-      // Default case when no token is provided
-      throw new UnauthorizedException('No valid token provided');
+
+      if (
+        typeof reason === 'string' &&
+        reason.toLowerCase().includes('audience')
+      ) {
+        throw AuthErrors.tokenAudienceInvalid();
+      }
+
+      if (
+        typeof reason === 'string' &&
+        reason.toLowerCase().includes('issuer')
+      ) {
+        throw AuthErrors.tokenIssuerInvalid();
+      }
+
+      if (typeof info?.message === 'string') {
+        throw AuthErrors.authenticationFailed(info.message);
+      }
+
+      // Default case when no token is provided or other failures
+      throw AuthErrors.tokenMissing();
     }
 
     return user;
+  }
+
+  /**
+   * Safely extract error message from unknown error type
+   */
+  private extractErrorMessage(err: unknown): string {
+    if (err instanceof Error) {
+      return err.message;
+    }
+    if (typeof err === 'string') {
+      return err;
+    }
+    if (
+      err &&
+      typeof err === 'object' &&
+      'message' in err &&
+      typeof err.message === 'string'
+    ) {
+      return err.message;
+    }
+    return 'Authentication failed';
+  }
+
+  /**
+   * Safely extract reason from JWT info object
+   */
+  private extractReasonFromInfo(
+    info?: Record<string, unknown>,
+  ): string | undefined {
+    if (!info) return undefined;
+
+    if (typeof info.message === 'string') {
+      return info.message;
+    }
+
+    if (typeof info.name === 'string') {
+      return info.name;
+    }
+
+    if (typeof info === 'string') {
+      return info;
+    }
+
+    return undefined;
   }
 }

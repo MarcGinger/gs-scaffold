@@ -3,3 +3,6 @@ export * from './jwt-auth.guard';
 export * from './token-to-user.mapper';
 export * from './current-user.decorator';
 export * from './auth.module';
+
+// Export Public decorator and constant from jwt-auth.guard
+export { Public, IS_PUBLIC_KEY } from './jwt-auth.guard';
