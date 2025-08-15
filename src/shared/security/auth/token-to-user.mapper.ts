@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional, Inject } from '@nestjs/common';
 import { IUserToken } from '../types/user-token.interface';
 import { JwtPayload } from '../types/jwt-payload.interface';
 
@@ -11,7 +11,14 @@ export interface TokenMapperOptions {
   ignoreRoles?: string[]; // default ['offline_access']
   tenantClaimOrder?: string[]; // default ['tenant', 'organization', 'custom_tenant']
   tenantIdClaimOrder?: string[]; // default ['tenant_id', 'organization_id', 'org_id']
+  transformGroupPaths?: boolean; // default false - transform /tenant/admin → tenant:admin
+  maxRolesCount?: number; // default 100 - cap role arrays to prevent pathological tokens
+  maxGroupsCount?: number; // default 50 - cap groups arrays
+  maxTenantRolesCount?: number; // default 50 - cap tenant-specific roles
 }
+
+// Token for dependency injection
+export const TOKEN_MAPPER_OPTIONS = 'TOKEN_MAPPER_OPTIONS';
 
 const DEFAULT_OPTS: Required<TokenMapperOptions> = {
   includeGroupsAsRoles: true,
@@ -20,11 +27,27 @@ const DEFAULT_OPTS: Required<TokenMapperOptions> = {
   ignoreRoles: ['offline_access'],
   tenantClaimOrder: ['tenant', 'organization', 'custom_tenant'],
   tenantIdClaimOrder: ['tenant_id', 'organization_id', 'org_id'],
+  transformGroupPaths: false,
+  maxRolesCount: 100,
+  maxGroupsCount: 50,
+  maxTenantRolesCount: 50,
 };
 
 @Injectable()
 export class TokenToUserMapper {
-  private readonly options: Required<TokenMapperOptions> = DEFAULT_OPTS;
+  private readonly options: Required<TokenMapperOptions>;
+
+  constructor(
+    @Optional()
+    @Inject(TOKEN_MAPPER_OPTIONS)
+    injectedOptions?: TokenMapperOptions,
+  ) {
+    // Merge injected options with defaults and freeze for immutability
+    this.options = Object.freeze({
+      ...DEFAULT_OPTS,
+      ...injectedOptions,
+    });
+  }
 
   mapToUserToken(payload: JwtPayload): IUserToken {
     const roles = this.extractRoles(payload, this.options);
@@ -62,7 +85,7 @@ export class TokenToUserMapper {
       resource_access: payload.resource_access,
       realm_access: payload.realm_access,
       groups: Array.isArray(payload.groups)
-        ? this.normalizeGroups(payload.groups)
+        ? this.normalizeGroups(payload.groups, this.options.maxGroupsCount)
         : [],
 
       // JWT standard claims (pass-through)
@@ -93,39 +116,51 @@ export class TokenToUserMapper {
     const realmRoles = this.asStringArray(payload?.realm_access?.roles);
     if (realmRoles) out.push(...realmRoles);
 
-    // 2) resource_access[client].roles
+    // 2) resource_access[client].roles with hardened traversal
     const ra = payload?.resource_access;
     if (this.isResourceAccess(ra)) {
-      for (const v of Object.values(ra)) {
-        const roles = this.asStringArray(v?.roles);
-        if (roles) out.push(...roles);
+      for (const value of Object.values(ra)) {
+        if (this.isValidResourceEntry(value)) {
+          const roles = this.asStringArray(value.roles);
+          if (roles) out.push(...roles);
+        }
       }
     }
 
     // 3) groups (optional)
     if (opts.includeGroupsAsRoles) {
       const groups = this.asStringArray(payload?.groups);
-      if (groups) out.push(...groups.map((g) => this.groupToRole(g)));
+      if (groups) {
+        const groups = this.asStringArray(payload.groups);
+        if (groups) {
+          out.push(
+            ...groups
+              .map((g) => this.groupToRole(g, opts))
+              .slice(0, opts.maxGroupsCount), // Cap groups count
+          );
+        }
+      }
     }
 
     // 4) custom roles claim
     const customRoles = this.asStringArray(payload?.roles);
     if (customRoles) out.push(...customRoles);
 
-    // Normalize + filter
-    const norm = out
-      .map((r) =>
-        opts.roleCase === 'lower' ? r?.toLowerCase()?.trim() : r?.trim(),
-      )
+    // Normalize + filter with hardened string processing
+    const normalized = out
+      .map((r) => this.normalizeRoleString(r, opts))
       .filter(Boolean);
 
-    const filtered = norm.filter(
+    const filtered = normalized.filter(
       (r) =>
         !opts.ignoreRoles.includes(r) &&
         !opts.ignoreRolePrefixes.some((p) => r.startsWith(p)),
     );
 
-    return Array.from(new Set(filtered)).sort();
+    const uniqueSorted = Array.from(new Set(filtered)).sort();
+
+    // Cap array size to prevent pathological tokens
+    return uniqueSorted.slice(0, opts.maxRolesCount);
   }
 
   private extractTenant(
@@ -182,13 +217,60 @@ export class TokenToUserMapper {
     const normalized = out.map((r) =>
       opts.roleCase === 'lower' ? r.toLowerCase().trim() : r.trim(),
     );
-    return Array.from(new Set(normalized)).sort();
+    const uniqueSorted = Array.from(new Set(normalized)).sort();
+
+    // Cap array size to prevent pathological tokens
+    return uniqueSorted.slice(0, opts.maxTenantRolesCount);
   }
 
   // ---------- helpers ----------
 
+  /**
+   * Hardened resource_access validation
+   * Only accepts objects with own enumerable properties that are valid resource entries
+   */
   private isResourceAccess(v: unknown): v is ResourceAccess {
-    return v !== null && typeof v === 'object';
+    if (v === null || typeof v !== 'object') return false;
+
+    // Check that it's a plain object (not array, not function, etc.)
+    if (Array.isArray(v) || Object.getPrototypeOf(v) !== Object.prototype) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Validates individual resource_access entries
+   * Ensures the value is an object with a roles property that can be safely processed
+   */
+  private isValidResourceEntry(v: unknown): v is { roles?: unknown } {
+    return (
+      v !== null &&
+      typeof v === 'object' &&
+      !Array.isArray(v) &&
+      ('roles' in v || Object.keys(v).length === 0) // Allow empty objects or objects with roles
+    );
+  }
+
+  /**
+   * Normalize and validate role strings with bounds checking
+   */
+  private normalizeRoleString(
+    role: string,
+    opts: Required<TokenMapperOptions>,
+  ): string {
+    if (typeof role !== 'string') return '';
+
+    const trimmed = role.trim();
+    if (!trimmed) return '';
+
+    // Apply case normalization
+    const normalized =
+      opts.roleCase === 'lower' ? trimmed.toLowerCase() : trimmed;
+
+    // Additional safety: limit individual role string length
+    return normalized.length > 100 ? normalized.slice(0, 100) : normalized;
   }
 
   private asStringArray(v: unknown): string[] | undefined {
@@ -208,14 +290,33 @@ export class TokenToUserMapper {
     return undefined;
   }
 
-  private groupToRole(group: string): string {
-    // Keycloak groups often look like '/admins' or '/tenant/admins'
-    return group.startsWith('/') ? group.slice(1) : group;
+  private groupToRole(
+    group: string,
+    opts: Required<TokenMapperOptions>,
+  ): string {
+    if (!opts.transformGroupPaths) {
+      // Default behavior: just strip leading slash
+      return group.startsWith('/') ? group.slice(1) : group;
+    }
+
+    // Enhanced path transformation: /tenant/admin → tenant:admin
+    if (group.startsWith('/')) {
+      const pathParts = group.slice(1).split('/');
+      if (pathParts.length > 1) {
+        return pathParts.join(':');
+      }
+      return pathParts[0] || group;
+    }
+
+    return group;
   }
 
-  private normalizeGroups(groups: string[]): string[] {
-    return Array.from(
-      new Set(groups.map((g) => (g.startsWith('/') ? g.slice(1) : g))),
-    ).sort();
+  private normalizeGroups(groups: string[], maxCount: number): string[] {
+    const normalized = groups.map((g) => (g.startsWith('/') ? g.slice(1) : g));
+    const unique = Array.from(new Set(normalized));
+    const sorted = unique.sort();
+
+    // Cap array size to prevent pathological tokens
+    return sorted.slice(0, maxCount);
   }
 }
