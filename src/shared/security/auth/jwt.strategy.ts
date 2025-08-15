@@ -33,19 +33,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     this.jwksClient = new JwksClient({
       jwksUri: `${keycloakUrl}/realms/${realm}/protocol/openid-connect/certs`,
       cache: true,
-      cacheMaxAge: this.configService.get<number>(
-        'JWKS_CACHE_MAX_AGE',
-        3600000,
+      cacheMaxAge: parseInt(
+        this.configService.get<string>('JWKS_CACHE_MAX_AGE', '3600000'),
+        10,
       ), // Default 1 hour, configurable for production
       rateLimit: true,
-      jwksRequestsPerMinute: this.configService.get<number>(
-        'JWKS_REQUESTS_PER_MINUTE',
+      jwksRequestsPerMinute: parseInt(
+        this.configService.get<string>('JWKS_REQUESTS_PER_MINUTE', '10'),
         10,
       ),
       requestHeaders: {
         'User-Agent': 'gs-scaffold-api/1.0.0',
       },
-      timeout: this.configService.get<number>('JWKS_TIMEOUT_MS', 30000),
+      timeout: parseInt(
+        this.configService.get<string>('JWKS_TIMEOUT_MS', '30000'),
+        10,
+      ),
     });
   }
 
@@ -68,18 +71,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       const signingKey = key.getPublicKey();
       done(null, signingKey);
     } catch (error) {
+      // Log error for debugging but don't expose internal details
+      console.log('JWT Strategy: Token validation failed', error);
       done(new UnauthorizedException('Invalid token signature'), undefined);
     }
   }
 
   validate(payload: JwtPayload): IUserToken {
     try {
+      // Validate payload exists
+      if (!payload || typeof payload !== 'object') {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
       // Validate token claims
       this.validateTokenClaims(payload);
 
       // Map JWT payload to IUserToken
       return this.tokenMapper.mapToUserToken(payload);
-    } catch {
+    } catch (error) {
+      // If it's already an UnauthorizedException, re-throw it
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      // For any other error, wrap it in UnauthorizedException
       throw new UnauthorizedException('Token validation failed');
     }
   }

@@ -9,9 +9,9 @@ import { UserModule } from './user/user.module';
 import { OrderModule } from './order/order.module';
 import { HealthModule } from './health';
 import { TypeOrmDatabaseModule } from './shared/infrastructure/database';
-import { SecurityModule } from './security/security.module';
 import { AuthTestModule } from './auth-test/auth-test.module';
 import { ConfigModule } from '@nestjs/config';
+import { SecurityModule } from './shared/security';
 
 // Create service-specific logger factory for the main app
 const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
