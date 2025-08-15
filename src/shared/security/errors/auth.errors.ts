@@ -92,6 +92,28 @@ export const AuthErrors = {
       timestamp: new Date().toISOString(),
     }),
 
+  // Header validation errors
+  missingAuthorizationHeader: () =>
+    new UnauthorizedException({
+      code: 'AUTH_MISSING_HEADER',
+      message: 'Authorization header missing',
+      timestamp: new Date().toISOString(),
+    }),
+
+  invalidAuthorizationHeader: () =>
+    new UnauthorizedException({
+      code: 'AUTH_INVALID_HEADER',
+      message: 'Authorization header must start with Bearer',
+      timestamp: new Date().toISOString(),
+    }),
+
+  missingToken: () =>
+    new UnauthorizedException({
+      code: 'AUTH_MISSING_TOKEN',
+      message: 'Bearer token missing',
+      timestamp: new Date().toISOString(),
+    }),
+
   // User context errors
   userIdMissing: () =>
     new UnauthorizedException({
@@ -179,6 +201,21 @@ export const AuthErrors = {
       timestamp: new Date().toISOString(),
     });
   },
+
+  // Token format validation errors
+  invalidTokenFormat: () =>
+    new UnauthorizedException({
+      code: 'AUTH_INVALID_TOKEN_FORMAT',
+      message: 'Token must have exactly 3 parts separated by dots',
+      timestamp: new Date().toISOString(),
+    }),
+
+  invalidTokenStructure: () =>
+    new UnauthorizedException({
+      code: 'AUTH_INVALID_TOKEN_STRUCTURE',
+      message: 'Token structure is invalid or missing required claims',
+      timestamp: new Date().toISOString(),
+    }),
 };
 
 /**
