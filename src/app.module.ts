@@ -12,6 +12,7 @@ import { TypeOrmDatabaseModule } from './shared/infrastructure/database';
 import { AuthTestModule } from './auth-test/auth-test.module';
 import { ConfigModule } from '@nestjs/config';
 import { SecurityModule } from './shared/security';
+import { OpaModule } from './opa/opa.module';
 
 // Create service-specific logger factory for the main app
 const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
@@ -30,6 +31,7 @@ const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
     TypeOrmDatabaseModule,
     SecurityModule,
     AuthTestModule,
+    OpaModule,
     HealthModule,
     UserModule,
     OrderModule,
