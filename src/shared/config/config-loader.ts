@@ -69,7 +69,9 @@ export class ConfigLoader {
     }
 
     try {
-      await execAsync('doppler me');
+      // Use local wrapper on Windows, fallback to global command
+      const dopplerCmd = process.platform === 'win32' ? '.\\doppler.bat' : 'doppler';
+      await execAsync(`${dopplerCmd} me --json`);
       this.dopplerAvailable = true;
       return true;
     } catch {
