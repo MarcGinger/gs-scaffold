@@ -56,6 +56,42 @@ export const AuthErrors = {
       timestamp: new Date().toISOString(),
     }),
 
+  // JWT Strategy specific errors
+  invalidPayload: () =>
+    new UnauthorizedException({
+      code: 'AUTH_INVALID_PAYLOAD',
+      message: 'Invalid token payload',
+      timestamp: new Date().toISOString(),
+    }),
+
+  subjectMissing: () =>
+    new UnauthorizedException({
+      code: 'AUTH_SUBJECT_MISSING',
+      message: 'Subject (sub) claim missing',
+      timestamp: new Date().toISOString(),
+    }),
+
+  tokenMappingFailed: () =>
+    new UnauthorizedException({
+      code: 'AUTH_TOKEN_MAPPING_FAILED',
+      message: 'Unable to map token to user',
+      timestamp: new Date().toISOString(),
+    }),
+
+  tokenNotYetValid: () =>
+    new UnauthorizedException({
+      code: 'AUTH_TOKEN_NOT_YET_VALID',
+      message: 'Token not yet valid',
+      timestamp: new Date().toISOString(),
+    }),
+
+  tokenIssuedInFuture: () =>
+    new UnauthorizedException({
+      code: 'AUTH_TOKEN_ISSUED_IN_FUTURE',
+      message: 'Token issued in future',
+      timestamp: new Date().toISOString(),
+    }),
+
   // User context errors
   userIdMissing: () =>
     new UnauthorizedException({
