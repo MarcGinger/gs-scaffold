@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { OpaModule } from './opa/opa.module';
 import { CompositeSecurityGuard } from './guards/composite-security.guard';
-import securityConfig from './config/security.config';
+import { SecurityConfigModule } from './config/security-config.module';
 
 @Module({
-  imports: [ConfigModule.forFeature(securityConfig), AuthModule, OpaModule],
+  imports: [SecurityConfigModule, AuthModule, OpaModule],
   providers: [CompositeSecurityGuard],
-  exports: [AuthModule, OpaModule, CompositeSecurityGuard],
+  exports: [
+    SecurityConfigModule,
+    AuthModule,
+    OpaModule,
+    CompositeSecurityGuard,
+  ],
 })
 export class SecurityModule {}

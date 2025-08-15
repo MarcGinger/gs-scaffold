@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { JwksClient } from 'jwks-rsa';
-import { ConfigService } from '@nestjs/config';
+import { SecurityConfigService } from '../config/security-config.service';
 import { IUserToken } from '../types/user-token.interface';
 import { JwtPayload } from '../types/jwt-payload.interface';
 import { TokenToUserMapper } from './token-to-user.mapper';
@@ -12,18 +12,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private jwksClient: JwksClient;
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly securityConfigService: SecurityConfigService,
     private readonly tokenMapper: TokenToUserMapper,
   ) {
-    const keycloakUrl = configService.get<string>('KEYCLOAK_URL');
-    const realm = configService.get<string>('KEYCLOAK_REALM');
-    const audience = configService.get<string>('JWT_AUDIENCE');
+    const jwtConfig = securityConfigService.getValidatedJwtConfig();
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      issuer: `${keycloakUrl}/realms/${realm}`,
-      audience: audience,
+      issuer: jwtConfig.issuer,
+      audience: jwtConfig.audience,
       algorithms: ['RS256'],
       secretOrKeyProvider: (request, rawJwtToken: string, done) => {
         void this.getSigningKey(rawJwtToken, done);
@@ -31,24 +29,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     this.jwksClient = new JwksClient({
-      jwksUri: `${keycloakUrl}/realms/${realm}/protocol/openid-connect/certs`,
+      jwksUri: securityConfigService.getJwksUri(),
       cache: true,
-      cacheMaxAge: parseInt(
-        this.configService.get<string>('JWKS_CACHE_MAX_AGE', '3600000'),
-        10,
-      ), // Default 1 hour, configurable for production
+      cacheMaxAge: jwtConfig.cacheMaxAge,
       rateLimit: true,
-      jwksRequestsPerMinute: parseInt(
-        this.configService.get<string>('JWKS_REQUESTS_PER_MINUTE', '10'),
-        10,
-      ),
+      jwksRequestsPerMinute: jwtConfig.requestsPerMinute,
       requestHeaders: {
         'User-Agent': 'gs-scaffold-api/1.0.0',
       },
-      timeout: parseInt(
-        this.configService.get<string>('JWKS_TIMEOUT_MS', '30000'),
-        10,
-      ),
+      timeout: jwtConfig.timeoutMs,
     });
   }
 
@@ -123,20 +112,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Validate audience claim
-    const expectedAudience = this.configService.get<string>('JWT_AUDIENCE');
-    if (expectedAudience && payload.aud) {
+    const jwtConfig = this.securityConfigService.getValidatedJwtConfig();
+    if (jwtConfig.audience && payload.aud) {
       const audiences = Array.isArray(payload.aud)
         ? payload.aud
         : [payload.aud];
-      if (!audiences.includes(expectedAudience)) {
+      if (!audiences.includes(jwtConfig.audience)) {
         throw new UnauthorizedException(
-          `Invalid audience: expected ${expectedAudience}`,
+          `Invalid audience: expected ${jwtConfig.audience}`,
         );
       }
     }
 
     // Validate issuer claim
-    const expectedIssuer = `${this.configService.get<string>('KEYCLOAK_URL')}/realms/${this.configService.get<string>('KEYCLOAK_REALM')}`;
+    const expectedIssuer = this.securityConfigService.getIssuerUrl();
     if (payload.iss !== expectedIssuer) {
       throw new UnauthorizedException(
         `Invalid issuer: expected ${expectedIssuer}, got ${payload.iss}`,

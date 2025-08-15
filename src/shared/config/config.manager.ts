@@ -148,6 +148,54 @@ export class ConfigManager {
     return AppConfigUtil.getDatabaseConfig();
   }
 
+  /** Security Configuration */
+  getSecurityConfig() {
+    return AppConfigUtil.getSecurityConfig();
+  }
+
+  validateSecurityConfig(): {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
+    const validation = AppConfigUtil.validateSecurityConfig();
+
+    if (this.logger) {
+      if (!validation.valid) {
+        Log.minimal.error(
+          this.logger,
+          new Error('Security configuration validation failed'),
+          'Security configuration validation failed',
+          {
+            method: 'validateSecurityConfig',
+            securityErrors: validation.errors,
+            securityWarnings: validation.warnings,
+          },
+        );
+      } else if (validation.warnings.length > 0) {
+        Log.minimal.warn(
+          this.logger,
+          'Security configuration warnings detected',
+          {
+            method: 'validateSecurityConfig',
+            securityWarnings: validation.warnings,
+          },
+        );
+      } else {
+        Log.minimal.info(
+          this.logger,
+          'Security configuration validated successfully',
+          {
+            method: 'validateSecurityConfig',
+            environment: this.getEnvironment(),
+          },
+        );
+      }
+    }
+
+    return validation;
+  }
+
   /**
    * Generic environment variable getter with optional default
    * Centralizes all env var access through ConfigManager
@@ -239,13 +287,20 @@ export class ConfigManager {
   /**
    * Validate specific configuration aspect without full bootstrap
    */
-  validateAspect(aspect: 'logging' | 'database' | 'server'): {
+  validateAspect(aspect: 'logging' | 'database' | 'server' | 'security'): {
     valid: boolean;
     errors: string[];
   } {
     switch (aspect) {
       case 'logging':
         return AppConfigUtil.validateLoggingConfig();
+      case 'security': {
+        const securityValidation = AppConfigUtil.validateSecurityConfig();
+        return {
+          valid: securityValidation.valid,
+          errors: securityValidation.errors,
+        };
+      }
       case 'database':
         try {
           const dbConfig = this.getDatabaseConfig();
