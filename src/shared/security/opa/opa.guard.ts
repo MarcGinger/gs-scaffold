@@ -12,15 +12,17 @@ import { IUserToken } from '../types/user-token.interface';
 import { OpaInput } from './opa.types';
 import { AuthErrors } from '../errors/auth.errors';
 
+type HeaderValue = string | string[] | undefined;
+
 interface RequestWithUser {
-  user: IUserToken;
+  user?: IUserToken;
   ip?: string;
   url?: string;
   method?: string;
-  headers: Record<string, string>;
+  headers: Record<string, HeaderValue>;
   params?: Record<string, string>;
-  body?: any;
-  query?: any;
+  body?: unknown;
+  query?: unknown;
 }
 
 @Injectable()
@@ -33,124 +35,143 @@ export class OpaGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const resourceOptions = this.reflector.get<ResourceOptions>(
+    const resourceOptions = this.reflector.getAllAndOverride<ResourceOptions>(
       RESOURCE_KEY,
-      context.getHandler(),
+      [context.getHandler(), context.getClass()],
     );
 
+    // No resource metadata → authN only
     if (!resourceOptions) {
-      // No resource metadata, allow access (authentication only)
       this.logger.debug('No resource metadata found, allowing access');
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const request = this.getRequest(context);
     const user = request.user;
-
     if (!user) {
-      throw new ForbiddenException('User not authenticated');
+      throw AuthErrors.userNotFound();
     }
 
-    const correlationId = this.extractCorrelationId(request);
+    const correlationId = this.pickHeader(request, [
+      'x-correlation-id',
+      'x-request-id',
+    ]);
+    const ts = new Date().toISOString();
+
     const authContext = {
       correlationId,
       userId: user.sub,
       tenantId: user.tenant,
       resource: resourceOptions.type,
       action: resourceOptions.action,
-      timestamp: new Date().toISOString(),
+      timestamp: ts,
     };
 
     try {
-      // Build OPA input
-      const opaInput = this.buildOpaInput(user, resourceOptions, request);
+      const opaInput = await this.buildOpaInput(
+        user,
+        resourceOptions,
+        request,
+        ts,
+        correlationId,
+      );
 
-      // Evaluate policy with correlation context
       const decision = await this.opaClient.evaluate(
         'authz.decisions.allow',
         opaInput,
-        {
-          correlationId,
-          tenantId: user.tenant,
-          userId: user.sub,
-        },
+        { correlationId, tenantId: user.tenant, userId: user.sub },
       );
 
       if (!decision.allow) {
-        // Enhanced structured logging
-        this.logger.warn(`Access denied by authorization policy`, {
+        this.logger.warn('Access denied by authorization policy', {
           ...authContext,
-          reason_code: decision.reason_code || 'DENY',
-          reason: decision.reason || 'Policy violation',
+          reason_code: decision.reason_code ?? 'AUTHZ_DENY',
+          reason: decision.reason ?? 'Policy violation',
           policy_version: decision.policy_version,
           policy_timestamp: decision.policy_timestamp,
         });
 
-        // Use enhanced error with machine-readable code
-        const errorMessage = decision.reason || 'Access denied by policy';
-        const forbiddenError = new ForbiddenException({
-          message: errorMessage,
+        throw new ForbiddenException({
+          message: decision.reason ?? 'Access denied by policy',
           error: 'Forbidden',
           statusCode: 403,
           details: {
-            reason_code: decision.reason_code || 'AUTHZ_DENY',
+            reason_code: decision.reason_code ?? 'AUTHZ_DENY',
             policy_version: decision.policy_version,
             correlationId,
-            timestamp: new Date().toISOString(),
+            timestamp: ts,
           },
         });
-
-        throw forbiddenError;
       }
 
-      // Log successful authorization with context
-      this.logger.debug(`Access granted by authorization policy`, {
+      this.logger.debug('Access granted by authorization policy', {
         ...authContext,
-        reason_code: decision.reason_code || 'ALLOW',
+        reason_code: decision.reason_code ?? 'ALLOW',
         policy_version: decision.policy_version,
         policy_timestamp: decision.policy_timestamp,
       });
 
       return true;
-    } catch (error) {
-      if (error instanceof ForbiddenException) {
-        throw error;
-      }
+    } catch (err) {
+      if (err instanceof ForbiddenException) throw err;
 
-      // Enhanced error logging with full context
       this.logger.error('OPA authorization service error', {
         ...authContext,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+        error: err instanceof Error ? err.message : String(err),
       });
 
-      // Return structured error response
       throw AuthErrors.authorizationServiceError();
     }
   }
 
-  private buildOpaInput(
+  // --- helpers ---
+
+  private getRequest(context: ExecutionContext): RequestWithUser {
+    // HTTP only for now; add GraphQL/WS if needed
+    return context.switchToHttp().getRequest<RequestWithUser>();
+  }
+
+  private pickHeader(req: RequestWithUser, keys: string[]): string {
+    for (const k of keys) {
+      const v = req.headers[k.toLowerCase()];
+      if (typeof v === 'string' && v) return v;
+      if (Array.isArray(v) && v.length) return v[0];
+    }
+    // soft fallback; ideally set this in middleware, not here
+    return `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  private getHeader(req: RequestWithUser, key: string): string | undefined {
+    const v = req.headers[key.toLowerCase()];
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)) return v[0];
+    return undefined;
+  }
+
+  private async buildOpaInput(
     user: IUserToken,
     resourceOptions: ResourceOptions,
     request: RequestWithUser,
-  ): OpaInput {
-    // Extract resource information
-    const resourceId = resourceOptions.extractId?.(request);
+    tsIso: string,
+    correlationId: string,
+  ): Promise<OpaInput> {
+    const resourceId = await Promise.resolve(
+      resourceOptions.extractId?.(request),
+    );
     const resourceAttributes =
-      resourceOptions.extractAttributes?.(request) || {};
-
-    const correlationId = this.extractCorrelationId(request);
+      (await Promise.resolve(resourceOptions.extractAttributes?.(request))) ??
+      {};
 
     return {
       subject: {
         id: user.sub,
         tenant: user.tenant,
-        roles: user.roles,
+        roles: user.roles ?? [],
         client_id: user.client_id,
-        permissions: user.permissions || [],
+        permissions: user.permissions ?? [],
       },
       action: {
-        type: 'http',
+        type: (request.method ?? 'GET').toUpperCase(),
         name: resourceOptions.action,
       },
       resource: {
@@ -161,24 +182,18 @@ export class OpaGuard implements CanActivate {
       },
       context: {
         correlationId,
-        time: new Date().toISOString(), // ISO 8601 UTC timestamp
+        time: tsIso,
         environment: process.env.NODE_ENV || 'development',
         ipAddress: request.ip,
-        userAgent: request.headers['user-agent'],
+        userAgent: this.getHeader(request, 'user-agent'),
         metadata: {
           requestPath: request.url,
           method: request.method,
-          userAgent: request.headers['user-agent'],
         },
+        // Optional: pass through break-glass tokens if you use them
+        // emergency_token: this.getHeader(request, 'x-emergency-token'),
+        // approval_token: this.getHeader(request, 'x-approval-token'),
       },
     };
-  }
-
-  private extractCorrelationId(request: RequestWithUser): string {
-    return (
-      request.headers['x-correlation-id'] ||
-      request.headers['x-request-id'] ||
-      `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    );
   }
 }
