@@ -1,7 +1,4 @@
-import {
-  createParamDecorator,
-  ExecutionContext,
-} from '@nestjs/common';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 // import { GqlExecutionContext } from '@nestjs/graphql'; // if using GraphQL
 import { IUserToken } from '../types/user-token.interface';
 import { AuthErrors } from '../errors/auth.errors';
@@ -16,18 +13,18 @@ function getRequest(ctx: ExecutionContext): RequestLike {
   if (ctx.getType() === 'http') {
     return ctx.switchToHttp().getRequest<RequestLike>();
   }
-  
+
   // If using GraphQL, uncomment:
   // if (ctx.getType<'graphql'>() === 'graphql') {
   //   const gql = GqlExecutionContext.create(ctx);
   //   return gql.getContext().req;
   // }
-  
+
   // If using WebSockets, adapt to your gateway/adapter:
   // if (ctx.getType() === 'ws') {
   //   return (ctx.switchToWs().getClient() as any)?.handshake ?? {};
   // }
-  
+
   return {};
 }
 
@@ -61,7 +58,8 @@ export const CurrentUserOptional = createParamDecorator(
  */
 export const CurrentUserId = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     if (!user.sub) throw AuthErrors.userIdMissing();
     return user.sub;
   },
@@ -73,7 +71,8 @@ export const CurrentUserId = createParamDecorator(
  */
 export const CurrentUserTenant = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string | undefined => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     return user.tenant;
   },
 );
@@ -85,7 +84,8 @@ export const CurrentUserTenant = createParamDecorator(
  */
 export const CurrentUserRoles = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string[] => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     if (!user.roles || user.roles.length === 0) {
       throw AuthErrors.rolesMissing();
     }
@@ -100,7 +100,8 @@ export const CurrentUserRoles = createParamDecorator(
  */
 export const CurrentUserRolesOptional = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string[] => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     return user.roles ?? [];
   },
 );
@@ -111,7 +112,8 @@ export const CurrentUserRolesOptional = createParamDecorator(
  */
 export const CurrentUserPermissions = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string[] => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     if (!user.permissions || user.permissions.length === 0) {
       throw AuthErrors.rolesMissing(); // Using rolesMissing for permissions too
     }
@@ -125,7 +127,8 @@ export const CurrentUserPermissions = createParamDecorator(
  */
 export const CurrentUserPermissionsOptional = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string[] => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     return user.permissions ?? [];
   },
 );
@@ -135,7 +138,8 @@ export const CurrentUserPermissionsOptional = createParamDecorator(
  */
 export const CurrentUserGroups = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): string[] => {
-    const user = CurrentUser(undefined, ctx) as IUserToken;
+    const { user } = getRequest(ctx);
+    if (!user) throw AuthErrors.userNotFound();
     return user.groups ?? [];
   },
 );

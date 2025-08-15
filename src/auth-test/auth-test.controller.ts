@@ -10,6 +10,7 @@ import { Request } from 'express';
 import {
   JwtAuthGuard,
   CurrentUser,
+  CurrentUserOptional,
   IUserToken,
   CurrentUserId,
   CurrentUserRoles,
@@ -47,6 +48,7 @@ export class AuthTestController {
         '/auth-test/phase1/debug (public, no JWT needed)',
         '/auth-test/phase1/jwt-debug (public, for debugging)',
         '/auth-test/phase1/auth-errors-demo (public, shows AuthErrors codes)',
+        '/auth-test/phase1/decorators-demo (public, shows enhanced decorators)',
       ],
       status: 'Phase 1 endpoints are ready',
       timestamp: new Date().toISOString(),
@@ -94,6 +96,96 @@ export class AuthTestController {
           'GET /auth-test/protected with expired token (expect AUTH_TOKEN_EXPIRED)',
       },
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Public() // New endpoint to demonstrate enhanced decorators
+  @Get('phase1/decorators-demo')
+  demoEnhancedDecorators() {
+    return {
+      message: 'Enhanced Current User Decorators Reference',
+      description:
+        'These are the new and improved decorators with centralized error handling',
+      decorators: {
+        '@CurrentUser()':
+          'Extract full user object, throws AUTH_USER_NOT_FOUND if missing',
+        '@CurrentUser("sub")': 'Extract specific user property (e.g., user ID)',
+        '@CurrentUserOptional()':
+          'Extract user but returns undefined if not authenticated',
+        '@CurrentUserId()':
+          'Extract user ID, throws AUTH_USER_ID_MISSING if sub missing',
+        '@CurrentUserTenant()':
+          'Extract tenant info, allows undefined for single-tenant',
+        '@CurrentUserRoles()':
+          'Extract roles (strict), throws AUTH_ROLES_MISSING if empty',
+        '@CurrentUserRolesOptional()':
+          'Extract roles (permissive), returns [] if missing',
+        '@CurrentUserPermissions()': 'Extract permissions (strict)',
+        '@CurrentUserPermissionsOptional()': 'Extract permissions (permissive)',
+        '@CurrentUserGroups()': 'Extract groups (always permissive)',
+      },
+      improvements: [
+        'Single getRequest() helper for HTTP/GraphQL/WebSocket support',
+        'De-duplicated user lookup across all decorators',
+        'Consistent AuthErrors throughout all decorators',
+        'Better type safety with optional user in request type',
+        'Strict vs Optional variants for different use cases',
+        'Future-proofed for GraphQL and WebSocket contexts',
+      ],
+      usageExamples: {
+        strictEndpoint: `
+@Get('strict')
+profile(
+  @CurrentUserId() userId: string,
+  @CurrentUserRoles() roles: string[],
+  @CurrentUser() user: IUserToken
+) {
+  // All parameters guaranteed to be present or throws AuthErrors
+}`,
+        optionalEndpoint: `
+@Get('optional')
+@Public()
+optionalAuth(
+  @CurrentUserOptional() user?: IUserToken,
+  @CurrentUserRolesOptional() roles: string[] = []
+) {
+  // Works with or without authentication
+}`,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Public() // Test endpoint showing CurrentUserOptional
+  @Get('phase1/optional-auth-test')
+  testOptionalAuth(@CurrentUserOptional() user?: IUserToken) {
+    return {
+      phase: 'Phase 1 - Enhanced Decorators',
+      testName: 'Optional Authentication Test',
+      status: 'SUCCESS',
+      results: {
+        authenticated: !!user,
+        decoratorWorking: true,
+        noErrorsWhenUnauthenticated: !user,
+      },
+      userInfo: user
+        ? {
+            id: user.sub,
+            name: user.name,
+            email: user.email,
+            tenant: user.tenant,
+            hasRoles: !!user.roles?.length,
+          }
+        : null,
+      message: user
+        ? 'User is authenticated - CurrentUserOptional returned user object'
+        : 'No authentication provided - CurrentUserOptional returned undefined (no errors)',
+      metadata: {
+        testedAt: new Date().toISOString(),
+        decorator: '@CurrentUserOptional()',
+        behavior:
+          'Returns user object if authenticated, undefined if not (never throws)',
+      },
     };
   }
 
