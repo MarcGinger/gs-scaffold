@@ -36,7 +36,7 @@ export class SecurityConfigService {
    */
   getValidatedConfig(): SecurityConfig {
     const validation = this.configManager.validateSecurityConfig();
-    
+
     if (!validation.valid) {
       throw new Error(
         `Security configuration validation failed: ${validation.errors.join(', ')}`,

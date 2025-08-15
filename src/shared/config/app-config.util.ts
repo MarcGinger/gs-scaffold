@@ -330,7 +330,7 @@ export class AppConfigUtil {
   static getSecurityConfig() {
     const keycloakUrl = process.env.KEYCLOAK_URL || 'http://localhost:8080';
     const realm = process.env.KEYCLOAK_REALM || 'gs-scaffold';
-    
+
     return {
       keycloak: {
         url: keycloakUrl,
@@ -342,21 +342,26 @@ export class AppConfigUtil {
         audience: process.env.JWT_AUDIENCE || 'gs-scaffold-api',
         issuer: `${keycloakUrl}/realms/${realm}`,
         cacheMaxAge: parseInt(process.env.JWKS_CACHE_MAX_AGE || '3600000', 10), // 1 hour default
-        requestsPerMinute: parseInt(process.env.JWKS_REQUESTS_PER_MINUTE || '10', 10),
+        requestsPerMinute: parseInt(
+          process.env.JWKS_REQUESTS_PER_MINUTE || '10',
+          10,
+        ),
         timeoutMs: parseInt(process.env.JWKS_TIMEOUT_MS || '30000', 10),
       },
       cors: {
-        allowedOrigins: process.env.CORS_ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+        allowedOrigins: process.env.CORS_ALLOWED_ORIGINS?.split(',') || [
+          'http://localhost:3000',
+        ],
         allowCredentials: process.env.CORS_ALLOW_CREDENTIALS === 'true',
       },
     };
   }
 
   /** Validate security configuration */
-  static validateSecurityConfig(): { 
-    valid: boolean; 
-    errors: string[]; 
-    warnings: string[]; 
+  static validateSecurityConfig(): {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
   } {
     const config = this.getSecurityConfig();
     const errors: string[] = [];
@@ -383,7 +388,9 @@ export class AppConfigUtil {
     try {
       new URL(config.jwt.issuer);
     } catch {
-      errors.push('JWT issuer URL is invalid (derived from KEYCLOAK_URL and KEYCLOAK_REALM)');
+      errors.push(
+        'JWT issuer URL is invalid (derived from KEYCLOAK_URL and KEYCLOAK_REALM)',
+      );
     }
 
     // Production-specific validations
@@ -400,13 +407,15 @@ export class AppConfigUtil {
     }
 
     // Validate numeric configurations
-    if (config.jwt.cacheMaxAge < 60000) { // Less than 1 minute
+    if (config.jwt.cacheMaxAge < 60000) {
+      // Less than 1 minute
       warnings.push('JWKS cache max age is very low, may impact performance');
     }
     if (config.jwt.requestsPerMinute > 100) {
       warnings.push('JWKS requests per minute is very high, may be throttled');
     }
-    if (config.jwt.timeoutMs < 5000) { // Less than 5 seconds
+    if (config.jwt.timeoutMs < 5000) {
+      // Less than 5 seconds
       warnings.push('JWKS timeout is very low, may cause connection issues');
     }
 
