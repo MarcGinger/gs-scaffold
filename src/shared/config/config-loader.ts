@@ -120,7 +120,7 @@ export class ConfigLoader {
   }
 
   /**
-   * Load configuration from process.env
+   * Load configuration from process.env (no legacy mapping needed)
    */
   loadFromEnv(): Record<string, string> {
     const result: Record<string, string> = {};
@@ -134,96 +134,6 @@ export class ConfigLoader {
     }
 
     return result;
-  }
-
-  /**
-   * Map legacy environment variable names to new Doppler secret names
-   */
-  mapLegacyVariables(env: Record<string, string>): Record<string, string> {
-    const mapped = { ...env };
-
-    // Legacy mappings from current .env files to new Doppler names
-    const legacyMappings: Record<string, string> = {
-      // Core Application
-      NODE_ENV: 'APP_RUNTIME_ENVIRONMENT',
-      APP_NAME: 'APP_CORE_NAME',
-      APP_VERSION: 'APP_CORE_VERSION',
-      PORT: 'APP_SERVER_PORT',
-      PROTOCOL: 'APP_SERVER_PROTOCOL',
-      HOST: 'APP_SERVER_HOST',
-      PUBLIC_API_URL: 'APP_SERVER_PUBLIC_URL',
-      STAGING_API_URL: 'APP_SERVER_STAGING_URL',
-
-      // Database
-      DATABASE_URL: 'DATABASE_POSTGRES_URL',
-      DATABASE_HOST: 'DATABASE_POSTGRES_HOST',
-      DATABASE_PORT: 'DATABASE_POSTGRES_PORT',
-      DATABASE_NAME: 'DATABASE_POSTGRES_NAME',
-      DATABASE_USER: 'DATABASE_POSTGRES_USER',
-      DATABASE_PASSWORD: 'DATABASE_POSTGRES_PASSWORD',
-      DATABASE_SSL: 'DATABASE_POSTGRES_SSL_ENABLED',
-      DATABASE_SSL_REJECT_UNAUTHORIZED:
-        'DATABASE_POSTGRES_SSL_REJECT_UNAUTHORIZED',
-      DATABASE_POOL_MIN: 'DATABASE_POSTGRES_POOL_MIN',
-      DATABASE_POOL_MAX: 'DATABASE_POSTGRES_POOL_MAX',
-
-      // Cache/Redis
-      REDIS_URL: 'CACHE_REDIS_URL',
-      REDIS_PASSWORD: 'CACHE_REDIS_PASSWORD',
-
-      // EventStore
-      ESDB_CONNECTION_STRING: 'EVENTSTORE_ESDB_CONNECTION_STRING',
-
-      // Authentication
-      KEYCLOAK_URL: 'AUTH_KEYCLOAK_URL',
-      KEYCLOAK_REALM: 'AUTH_KEYCLOAK_REALM',
-      KEYCLOAK_CLIENT_ID: 'AUTH_KEYCLOAK_CLIENT_ID',
-      KEYCLOAK_CLIENT_SECRET: 'AUTH_KEYCLOAK_CLIENT_SECRET',
-      JWT_AUDIENCE: 'AUTH_JWT_AUDIENCE',
-      JWKS_CACHE_MAX_AGE: 'AUTH_JWKS_CACHE_MAX_AGE',
-      JWKS_REQUESTS_PER_MINUTE: 'AUTH_JWKS_REQUESTS_PER_MINUTE',
-      JWKS_TIMEOUT_MS: 'AUTH_JWKS_TIMEOUT_MS',
-
-      // Security
-      PII_ENCRYPTION_KEY: 'SECURITY_PII_ENCRYPTION_KEY',
-      OPA_URL: 'SECURITY_OPA_URL',
-      OPA_TIMEOUT_MS: 'SECURITY_OPA_TIMEOUT_MS',
-      OPA_DECISION_LOGS: 'SECURITY_OPA_DECISION_LOGS_ENABLED',
-      OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD:
-        'SECURITY_OPA_CIRCUIT_BREAKER_FAILURE_THRESHOLD',
-      OPA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_MS:
-        'SECURITY_OPA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_MS',
-      OPA_CIRCUIT_BREAKER_SUCCESS_THRESHOLD:
-        'SECURITY_OPA_CIRCUIT_BREAKER_SUCCESS_THRESHOLD',
-      CORS_ALLOWED_ORIGINS: 'SECURITY_CORS_ALLOWED_ORIGINS',
-      CORS_ALLOW_CREDENTIALS: 'SECURITY_CORS_ALLOW_CREDENTIALS',
-
-      // Logging
-      LOG_LEVEL: 'LOGGING_CORE_LEVEL',
-      LOGGER_LEVEL: 'LOGGING_CORE_LEVEL',
-      PINO_LOG_LEVEL: 'LOGGING_CORE_LEVEL',
-      LOG_SINK: 'LOGGING_CORE_SINK',
-      PRETTY_LOGS: 'LOGGING_CORE_PRETTY_ENABLED',
-      LOKI_URL: 'LOGGING_LOKI_URL',
-      LOKI_BASIC_AUTH: 'LOGGING_LOKI_BASIC_AUTH',
-      ES_NODE: 'LOGGING_ELASTICSEARCH_NODE',
-      ES_INDEX: 'LOGGING_ELASTICSEARCH_INDEX',
-
-      // Infrastructure
-      DOCKER_CONTAINER: 'INFRA_CONTAINER_DOCKER_ENABLED',
-      CONTAINER_HOST: 'INFRA_CONTAINER_HOST',
-      HOSTNAME: 'INFRA_SYSTEM_HOSTNAME',
-      KUBERNETES_SERVICE_HOST: 'INFRA_KUBERNETES_SERVICE_HOST',
-    };
-
-    // Apply legacy mappings
-    for (const [legacyKey, newKey] of Object.entries(legacyMappings)) {
-      if (env[legacyKey] && !mapped[newKey]) {
-        mapped[newKey] = env[legacyKey];
-      }
-    }
-
-    return mapped;
   }
 
   /**
@@ -260,25 +170,9 @@ export class ConfigLoader {
     }
 
     // Apply legacy variable mapping
-    const mappedConfig = this.mapLegacyVariables(rawConfig);
+    const mappedConfig = rawConfig; // No legacy mapping needed - all secrets use proper Doppler names
 
-    // Add warning for legacy variable usage
-    for (const legacyKey of Object.keys(rawConfig)) {
-      const isLegacy =
-        legacyKey in
-        {
-          NODE_ENV: true,
-          APP_NAME: true,
-          PORT: true,
-          DATABASE_PASSWORD: true,
-          KEYCLOAK_CLIENT_SECRET: true,
-          REDIS_URL: true,
-          LOG_LEVEL: true,
-        };
-      if (isLegacy && source === 'env') {
-        warnings.push(`Using legacy environment variable: ${legacyKey}`);
-      }
-    }
+    // Legacy warning removed - all variables use proper Doppler naming convention
 
     // Validate and parse configuration
     try {

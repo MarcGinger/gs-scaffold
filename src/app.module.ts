@@ -14,15 +14,51 @@ import { ConfigModule } from '@nestjs/config';
 import { SecurityModule } from './shared/security';
 import { OpaModule } from './opa/opa.module';
 
+// ✨ NEW: Import Doppler configuration
+import { DopplerConfigModule } from './shared/config/doppler-config.module';
+
 // Create service-specific logger factory for the main app
 const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
 
+// ✨ NEW: Dynamic Doppler Configuration Factory
+const createDopplerConfig = () => {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+
+  // Map environments to Doppler configs
+  const configMap: Record<string, string> = {
+    development: 'dev_main',
+    staging: 'staging_main',
+    production: 'prd_main',
+    test: 'test_main',
+  };
+
+  const config = {
+    project: process.env.DOPPLER_PROJECT || 'gs-scaffold-api',
+    config: process.env.DOPPLER_CONFIG || configMap[nodeEnv] || 'dev_main',
+    enableFallback: nodeEnv !== 'production',
+    enableLogging: nodeEnv === 'development',
+    strict: nodeEnv === 'production',
+    isGlobal: true,
+  };
+
+  console.log(
+    `🔧 Doppler Configuration: ${config.project}/${config.config} (${nodeEnv})`,
+  );
+
+  return config;
+};
+
 @Module({
   imports: [
+    // ✨ UPDATED: Dynamic Doppler Configuration (replaces hardcoded .env)
+    DopplerConfigModule.forRoot(createDopplerConfig()),
+
+    // ✨ KEEP: Standard ConfigModule for compatibility with existing code
     ConfigModule.forRoot({
-      isGlobal: true, // makes config available app-wide
-      envFilePath: '.env', // can be array for multiple files
+      isGlobal: true,
+      envFilePath: '.env', // Fallback for non-Doppler secrets
     }),
+
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true, generateId: true },

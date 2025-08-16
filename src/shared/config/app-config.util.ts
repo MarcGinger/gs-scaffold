@@ -6,7 +6,11 @@
 export class AppConfigUtil {
   /** Normalized environment enumeration */
   static getEnvironment(): 'production' | 'staging' | 'development' | 'test' {
-    const env = (process.env.NODE_ENV || 'development').toLowerCase();
+    const env = (
+      process.env.APP_RUNTIME_ENVIRONMENT ||
+      process.env.NODE_ENV ||
+      'development'
+    ).toLowerCase();
     if (env === 'production') return 'production';
     if (env === 'staging') return 'staging';
     if (env === 'test') return 'test';
@@ -31,7 +35,7 @@ export class AppConfigUtil {
 
   /** Prefer explicit public URL for shareable/external addresses */
   static getPublicBaseUrl(): URL | null {
-    const raw = process.env.PUBLIC_API_URL?.trim();
+    const raw = process.env.APP_SERVER_PUBLIC_URL?.trim();
     if (!raw) return null;
     try {
       return new URL(raw);
@@ -42,28 +46,30 @@ export class AppConfigUtil {
 
   /** Determine protocol (internal). For external links, prefer getPublicBaseUrl() */
   static getProtocol(): 'http' | 'https' {
-    const val = (process.env.PROTOCOL || '').toLowerCase();
+    const val = (process.env.APP_SERVER_PROTOCOL || '').toLowerCase();
     if (val === 'http' || val === 'https') return val;
     return this.isProduction() ? 'https' : 'http';
   }
 
   /** Integer port with fallback */
   static getPort(fallback: number = 80): number {
-    const fromEnv = Number(process.env.PORT);
+    const fromEnv = Number(process.env.APP_SERVER_PORT);
     return Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : fallback;
   }
 
   /** Host detection: explicit HOST first, then container/k8s hints, then localhost */
   static getHost(): string {
-    if (process.env.HOST?.trim()) return process.env.HOST.trim();
+    if (process.env.APP_SERVER_HOST?.trim())
+      return process.env.APP_SERVER_HOST.trim();
 
     // Kubernetes service discovery host usually indicates a cluster environment
-    if (process.env.KUBERNETES_SERVICE_HOST?.trim())
-      return process.env.KUBERNETES_SERVICE_HOST.trim();
+    if (process.env.INFRA_KUBERNETES_SERVICE_HOST?.trim())
+      return process.env.INFRA_KUBERNETES_SERVICE_HOST.trim();
 
-    if (process.env.CONTAINER_HOST?.trim())
-      return process.env.CONTAINER_HOST.trim();
-    if (process.env.HOSTNAME?.trim()) return process.env.HOSTNAME.trim();
+    if (process.env.INFRA_CONTAINER_HOST?.trim())
+      return process.env.INFRA_CONTAINER_HOST.trim();
+    if (process.env.INFRA_SYSTEM_HOSTNAME?.trim())
+      return process.env.INFRA_SYSTEM_HOSTNAME.trim();
 
     return 'localhost';
   }
@@ -100,52 +106,44 @@ export class AppConfigUtil {
 
   /** Best-effort containerized detection */
   static isContainerized(): boolean {
-    try {
-      const fs = require('fs');
-      if (fs.existsSync('/.dockerenv')) return true;
-      const cgroup = fs.readFileSync('/proc/1/cgroup', 'utf8');
-      if (cgroup && /(docker|kubepods|containerd)/i.test(cgroup)) return true;
-    } catch {
-      // ignore on non-linux hosts
-    }
     return Boolean(
-      process.env.KUBERNETES_SERVICE_HOST ||
-        process.env.CONTAINER_HOST ||
-        process.env.DOCKER_CONTAINER,
+      process.env.INFRA_KUBERNETES_SERVICE_HOST ||
+        process.env.INFRA_CONTAINER_HOST ||
+        process.env.INFRA_CONTAINER_DOCKER_ENABLED === 'true',
     );
   }
 
   /** Database configuration with sensible defaults */
   static getDatabaseConfig() {
-    const port = Number(process.env.DATABASE_PORT || '5432');
+    const port = Number(process.env.DATABASE_POSTGRES_PORT || '5432');
     return {
-      host: process.env.DATABASE_HOST || 'localhost',
+      host: process.env.DATABASE_POSTGRES_HOST || 'localhost',
       port: Number.isFinite(port) ? port : 5432,
-      database: process.env.DATABASE_NAME || 'postgres',
-      username: process.env.DATABASE_USER || 'postgres',
-      password: process.env.DATABASE_PASSWORD || 'postgres',
+      database: process.env.DATABASE_POSTGRES_NAME || 'postgres',
+      username: process.env.DATABASE_POSTGRES_USER || 'postgres',
+      password: process.env.DATABASE_POSTGRES_PASSWORD || 'postgres',
       // Common extras
       ssl:
-        process.env.DATABASE_SSL?.toLowerCase() === 'true'
+        process.env.DATABASE_POSTGRES_SSL_ENABLED?.toLowerCase() === 'true'
           ? {
               rejectUnauthorized:
-                process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false',
+                process.env.DATABASE_POSTGRES_SSL_REJECT_UNAUTHORIZED !==
+                'false',
             }
           : undefined,
       pool: {
-        min: Number(process.env.DATABASE_POOL_MIN || 0),
-        max: Number(process.env.DATABASE_POOL_MAX || 10),
+        min: Number(process.env.DATABASE_POSTGRES_POOL_MIN || 0),
+        max: Number(process.env.DATABASE_POSTGRES_POOL_MAX || 10),
       },
-      url: process.env.DATABASE_URL || undefined, // if using a single URL
+      url: process.env.DATABASE_POSTGRES_URL || undefined, // if using a single URL
     };
   }
 
   /** Logging level: single string with a safe default; supports multiple env keys */
   static getLogLevel(): string {
     const level =
-      process.env.LOGGER_LEVEL ||
-      process.env.LOG_LEVEL ||
-      process.env.PINO_LOG_LEVEL ||
+      process.env.LOGGING_CORE_LEVEL ||
+      process.env.LOG_LEVEL || // Legacy fallback
       '';
     const normalized = level.toLowerCase().trim();
     // Allow only known levels; default to info
@@ -163,7 +161,7 @@ export class AppConfigUtil {
 
   /** Get logging sink configuration for your production logging strategy */
   static getLogSink(): 'stdout' | 'console' | 'loki' | 'elasticsearch' {
-    const sink = (process.env.LOG_SINK || '').toLowerCase().trim();
+    const sink = (process.env.LOGGING_CORE_SINK || '').toLowerCase().trim();
     const allowed = ['stdout', 'console', 'loki', 'elasticsearch'] as const;
     type LogSink = (typeof allowed)[number];
     return allowed.includes(sink as LogSink) ? (sink as LogSink) : 'stdout';
@@ -174,19 +172,19 @@ export class AppConfigUtil {
     return {
       level: this.getLogLevel(),
       sink: this.getLogSink(),
-      pretty: process.env.PRETTY_LOGS?.toLowerCase() === 'true',
-      appName: process.env.APP_NAME || 'gs-scaffold',
-      appVersion: process.env.APP_VERSION || '0.0.1',
+      pretty: process.env.LOGGING_CORE_PRETTY_ENABLED?.toLowerCase() === 'true',
+      appName: process.env.APP_CORE_NAME || 'gs-scaffold',
+      appVersion: process.env.APP_CORE_VERSION || '0.0.1',
       environment: this.getEnvironment(),
       // Loki configuration
       loki: {
-        url: process.env.LOKI_URL,
-        basicAuth: process.env.LOKI_BASIC_AUTH,
+        url: process.env.LOGGING_LOKI_URL,
+        basicAuth: process.env.LOGGING_LOKI_BASIC_AUTH,
       },
       // Elasticsearch configuration
       elasticsearch: {
-        node: process.env.ES_NODE,
-        index: process.env.ES_INDEX || 'app-logs',
+        node: process.env.LOGGING_ELASTICSEARCH_NODE,
+        index: process.env.LOGGING_ELASTICSEARCH_INDEX || 'app-logs',
       },
     };
   }
@@ -223,13 +221,13 @@ export class AppConfigUtil {
 
       if (!config.appName || config.appName === 'gs-scaffold') {
         errors.push(
-          'APP_NAME environment variable should be set to a proper application name',
+          'APP_CORE_NAME environment variable should be set to a proper application name',
         );
       }
 
       if (!config.appVersion || config.appVersion === '0.0.1') {
         warnings.push(
-          'APP_VERSION environment variable should be set to actual version',
+          'APP_CORE_VERSION environment variable should be set to actual version',
         );
       }
     }
@@ -261,22 +259,27 @@ export class AppConfigUtil {
       if (path) u.pathname = this.joinPath(u.pathname, path);
       return u.toString().replace(/\/$/, '');
     }
-    const xfProto = (req.headers?.['x-forwarded-proto'] || '') as string;
-    const proto = (Array.isArray(xfProto) ? xfProto[0] : xfProto)
-      .split(',')[0]
-      ?.trim();
+
+    // Helper function to safely extract header value
+    const getHeaderValue = (
+      headerValue: string | string[] | undefined,
+    ): string => {
+      if (typeof headerValue === 'string') return headerValue;
+      if (Array.isArray(headerValue) && headerValue.length > 0)
+        return headerValue[0];
+      return '';
+    };
+
+    const xfProto = getHeaderValue(req.headers?.['x-forwarded-proto']);
+    const proto = xfProto.split(',')[0]?.trim();
     const protocol = proto === 'https' ? 'https' : this.getProtocol();
 
-    const xfHost = (req.headers?.['x-forwarded-host'] || '') as string;
-    const hostHdr = (Array.isArray(xfHost) ? xfHost[0] : xfHost)
-      .split(',')[0]
-      ?.trim();
-
+    const xfHost = getHeaderValue(req.headers?.['x-forwarded-host']);
+    const hostHdr = xfHost.split(',')[0]?.trim();
     const host = hostHdr || this.getHost();
-    const xfPort = (req.headers?.['x-forwarded-port'] || '') as string;
-    const port = Number(
-      (Array.isArray(xfPort) ? xfPort[0] : xfPort).split(',')[0]?.trim(),
-    );
+
+    const xfPort = getHeaderValue(req.headers?.['x-forwarded-port']);
+    const port = Number(xfPort.split(',')[0]?.trim());
 
     const url = new URL(`${protocol}://${host}`);
     const isDefault =
@@ -310,7 +313,7 @@ export class AppConfigUtil {
           description: 'Local development server',
         });
       }
-      const staging = process.env.STAGING_API_URL?.trim();
+      const staging = process.env.APP_SERVER_STAGING_URL?.trim();
       if (staging) {
         try {
           const s = new URL(staging).toString().replace(/\/$/, '');
@@ -328,31 +331,36 @@ export class AppConfigUtil {
 
   /** Security Configuration */
   static getSecurityConfig() {
-    const keycloakUrl = process.env.KEYCLOAK_URL || 'http://localhost:8080';
-    const realm = process.env.KEYCLOAK_REALM || 'gs-scaffold';
+    const keycloakUrl =
+      process.env.AUTH_KEYCLOAK_URL || 'http://localhost:8080';
+    const realm = process.env.AUTH_KEYCLOAK_REALM || 'gs-scaffold';
 
     return {
       keycloak: {
         url: keycloakUrl,
         realm: realm,
-        clientId: process.env.KEYCLOAK_CLIENT_ID || 'gs-scaffold-api',
-        clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
+        clientId: process.env.AUTH_KEYCLOAK_CLIENT_ID || 'gs-scaffold-api',
+        clientSecret: process.env.AUTH_KEYCLOAK_CLIENT_SECRET,
       },
       jwt: {
-        audience: process.env.JWT_AUDIENCE || 'gs-scaffold-api',
+        audience: process.env.AUTH_JWT_AUDIENCE || 'gs-scaffold-api',
         issuer: `${keycloakUrl}/realms/${realm}`,
-        cacheMaxAge: parseInt(process.env.JWKS_CACHE_MAX_AGE || '3600000', 10), // 1 hour default
+        cacheMaxAge: parseInt(
+          process.env.AUTH_JWKS_CACHE_MAX_AGE || '3600000',
+          10,
+        ), // 1 hour default
         requestsPerMinute: parseInt(
-          process.env.JWKS_REQUESTS_PER_MINUTE || '10',
+          process.env.AUTH_JWKS_REQUESTS_PER_MINUTE || '10',
           10,
         ),
-        timeoutMs: parseInt(process.env.JWKS_TIMEOUT_MS || '30000', 10),
+        timeoutMs: parseInt(process.env.AUTH_JWKS_TIMEOUT_MS || '30000', 10),
       },
       cors: {
-        allowedOrigins: process.env.CORS_ALLOWED_ORIGINS?.split(',') || [
-          'http://localhost:3000',
-        ],
-        allowCredentials: process.env.CORS_ALLOW_CREDENTIALS === 'true',
+        allowedOrigins: process.env.SECURITY_CORS_ALLOWED_ORIGINS?.split(
+          ',',
+        ) || ['http://localhost:3000'],
+        allowCredentials:
+          process.env.SECURITY_CORS_ALLOW_CREDENTIALS === 'true',
       },
     };
   }
@@ -369,34 +377,34 @@ export class AppConfigUtil {
 
     // Required configurations
     if (!config.keycloak.url) {
-      errors.push('KEYCLOAK_URL is required');
+      errors.push('AUTH_KEYCLOAK_URL is required');
     }
     if (!config.keycloak.realm) {
-      errors.push('KEYCLOAK_REALM is required');
+      errors.push('AUTH_KEYCLOAK_REALM is required');
     }
     if (!config.jwt.audience) {
-      errors.push('JWT_AUDIENCE is required');
+      errors.push('AUTH_JWT_AUDIENCE is required');
     }
 
     // Validate URLs
     try {
       new URL(config.keycloak.url);
     } catch {
-      errors.push('KEYCLOAK_URL must be a valid URL');
+      errors.push('AUTH_KEYCLOAK_URL must be a valid URL');
     }
 
     try {
       new URL(config.jwt.issuer);
     } catch {
       errors.push(
-        'JWT issuer URL is invalid (derived from KEYCLOAK_URL and KEYCLOAK_REALM)',
+        'JWT issuer URL is invalid (derived from AUTH_KEYCLOAK_URL and AUTH_KEYCLOAK_REALM)',
       );
     }
 
     // Production-specific validations
     if (this.isProduction()) {
       if (!config.keycloak.clientSecret) {
-        errors.push('KEYCLOAK_CLIENT_SECRET is required in production');
+        errors.push('AUTH_KEYCLOAK_CLIENT_SECRET is required in production');
       }
       if (config.keycloak.url.includes('localhost')) {
         warnings.push('Using localhost Keycloak URL in production');

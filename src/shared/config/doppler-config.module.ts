@@ -4,7 +4,6 @@
  */
 
 import { DynamicModule, Global, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import {
   DopplerConfigService,
   DopplerServiceOptions,
@@ -33,17 +32,6 @@ export class DopplerConfigModule {
     return {
       module: DopplerConfigModule,
       global: options.isGlobal !== false,
-      imports: [
-        ConfigModule.forRootAsync({
-          useFactory: async () => {
-            const config = await configService.loadConfiguration();
-            return {
-              load: [() => config],
-              isGlobal: true,
-            };
-          },
-        }),
-      ],
       providers: [
         {
           provide: DopplerConfigService,
@@ -53,8 +41,15 @@ export class DopplerConfigModule {
           provide: ConfigLoader,
           useValue: ConfigLoader.getInstance(),
         },
+        // Provide the loaded configuration as a factory
+        {
+          provide: 'DOPPLER_CONFIG',
+          useFactory: async () => {
+            return await configService.loadConfiguration();
+          },
+        },
       ],
-      exports: [DopplerConfigService, ConfigLoader],
+      exports: [DopplerConfigService, ConfigLoader, 'DOPPLER_CONFIG'],
     };
   }
 
