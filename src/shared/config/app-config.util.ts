@@ -117,12 +117,29 @@ export class AppConfigUtil {
   static getDatabaseConfig() {
     const port = Number(process.env.DATABASE_POSTGRES_PORT || '5432');
     return {
+      // Connection settings
+      url: process.env.DATABASE_POSTGRES_URL || process.env.DATABASE_URL, // Legacy fallback
       host: process.env.DATABASE_POSTGRES_HOST || 'localhost',
       port: Number.isFinite(port) ? port : 5432,
       database: process.env.DATABASE_POSTGRES_NAME || 'postgres',
       username: process.env.DATABASE_POSTGRES_USER || 'postgres',
       password: process.env.DATABASE_POSTGRES_PASSWORD || 'postgres',
-      // Common extras
+
+      // Schema configuration
+      schema: process.env.DATABASE_POSTGRES_SCHEMA || 'gs_scaffold_read',
+
+      // Performance and timeout settings
+      maxQueryExecutionTime: Number(
+        process.env.DATABASE_POSTGRES_SLOW_QUERY_THRESHOLD || '500',
+      ),
+      statementTimeout: Number(
+        process.env.DATABASE_POSTGRES_STATEMENT_TIMEOUT || '15000',
+      ),
+      connectTimeoutMS: Number(
+        process.env.DATABASE_POSTGRES_CONNECT_TIMEOUT || '10000',
+      ),
+
+      // SSL configuration
       ssl:
         process.env.DATABASE_POSTGRES_SSL_ENABLED?.toLowerCase() === 'true'
           ? {
@@ -131,11 +148,18 @@ export class AppConfigUtil {
                 'false',
             }
           : undefined,
+
+      // Connection pool settings
       pool: {
-        min: Number(process.env.DATABASE_POSTGRES_POOL_MIN || 0),
-        max: Number(process.env.DATABASE_POSTGRES_POOL_MAX || 10),
+        min: Number(process.env.DATABASE_POSTGRES_POOL_MIN || '0'),
+        max: Number(process.env.DATABASE_POSTGRES_POOL_MAX || '10'),
       },
-      url: process.env.DATABASE_POSTGRES_URL || undefined, // if using a single URL
+
+      // Logging configuration for TypeORM
+      logging: {
+        enabled: process.env.DATABASE_POSTGRES_LOGGING !== 'false',
+        level: process.env.DATABASE_POSTGRES_LOG_LEVEL || 'warn',
+      },
     };
   }
 
@@ -161,7 +185,13 @@ export class AppConfigUtil {
 
   /** Get logging sink configuration for your production logging strategy */
   static getLogSink(): 'stdout' | 'console' | 'loki' | 'elasticsearch' {
-    const sink = (process.env.LOGGING_CORE_SINK || '').toLowerCase().trim();
+    const sink = (
+      process.env.LOG_SINK || // Legacy support
+      process.env.LOGGING_CORE_SINK ||
+      ''
+    )
+      .toLowerCase()
+      .trim();
     const allowed = ['stdout', 'console', 'loki', 'elasticsearch'] as const;
     type LogSink = (typeof allowed)[number];
     return allowed.includes(sink as LogSink) ? (sink as LogSink) : 'stdout';
@@ -172,19 +202,36 @@ export class AppConfigUtil {
     return {
       level: this.getLogLevel(),
       sink: this.getLogSink(),
-      pretty: process.env.LOGGING_CORE_PRETTY_ENABLED?.toLowerCase() === 'true',
-      appName: process.env.APP_CORE_NAME || 'gs-scaffold',
-      appVersion: process.env.APP_CORE_VERSION || '0.0.1',
+      pretty:
+        process.env.PRETTY_LOGS === 'true' || // Legacy support
+        process.env.LOGGING_CORE_PRETTY_ENABLED?.toLowerCase() === 'true',
+      appName:
+        process.env.APP_NAME || // Legacy support
+        process.env.APP_CORE_NAME ||
+        'gs-scaffold',
+      appVersion:
+        process.env.APP_VERSION || // Legacy support
+        process.env.APP_CORE_VERSION ||
+        '0.0.1',
       environment: this.getEnvironment(),
       // Loki configuration
       loki: {
-        url: process.env.LOGGING_LOKI_URL,
-        basicAuth: process.env.LOGGING_LOKI_BASIC_AUTH,
+        url:
+          process.env.LOKI_URL || // Legacy support
+          process.env.LOGGING_LOKI_URL,
+        basicAuth:
+          process.env.LOKI_BASIC_AUTH || // Legacy support
+          process.env.LOGGING_LOKI_BASIC_AUTH,
       },
       // Elasticsearch configuration
       elasticsearch: {
-        node: process.env.LOGGING_ELASTICSEARCH_NODE,
-        index: process.env.LOGGING_ELASTICSEARCH_INDEX || 'app-logs',
+        node:
+          process.env.ES_NODE || // Legacy support
+          process.env.LOGGING_ELASTICSEARCH_NODE,
+        index:
+          process.env.ES_INDEX || // Legacy support
+          process.env.LOGGING_ELASTICSEARCH_INDEX ||
+          'app-logs',
       },
     };
   }
@@ -362,6 +409,25 @@ export class AppConfigUtil {
         allowCredentials:
           process.env.SECURITY_CORS_ALLOW_CREDENTIALS === 'true',
       },
+    };
+  }
+
+  /** Error Configuration for Problem Details */
+  static getErrorConfig() {
+    const baseUrl = process.env.ERROR_BASE_URL || this.buildUrl();
+    const apiVersion = process.env.ERROR_API_VERSION || 'v1';
+
+    return {
+      baseUrl: `${baseUrl}/errors`,
+      version: apiVersion,
+      sanitize: this.isProduction(),
+      // Additional error-specific configurations
+      includeStackTrace: !this.isProduction(),
+      maxDetailLength: parseInt(
+        process.env.ERROR_MAX_DETAIL_LENGTH || '500',
+        10,
+      ),
+      enableTracing: process.env.ERROR_ENABLE_TRACING !== 'false',
     };
   }
 

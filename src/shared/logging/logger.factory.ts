@@ -1,53 +1,54 @@
 import pino from 'pino';
 import { ClsService } from 'nestjs-cls';
+import { AppConfigUtil } from '../config/app-config.util';
 
 /**
  * Builds an application logger with CLS context integration.
  * This logger automatically includes traceId, correlationId, tenantId, and userId
  * from CLS context in every log entry.
+ * Uses centralized configuration from AppConfigUtil.
  */
 export function buildAppLogger(cls: ClsService) {
-  const sink = process.env.LOG_SINK ?? 'stdout';
-  const pretty = process.env.PRETTY_LOGS === 'true';
+  const loggingConfig = AppConfigUtil.getLoggingConfig();
 
   let transport: pino.TransportSingleOptions | undefined;
-  if (sink === 'console' && pretty) {
+  if (loggingConfig.sink === 'console' && loggingConfig.pretty) {
     transport = {
       target: 'pino-pretty',
       options: { translateTime: 'UTC:isoTime' },
     };
-  } else if (sink === 'loki') {
+  } else if (loggingConfig.sink === 'loki') {
     transport = {
       target: 'pino-loki',
       options: {
-        host: process.env.LOKI_URL,
-        basicAuth: process.env.LOKI_BASIC_AUTH,
+        host: loggingConfig.loki.url,
+        basicAuth: loggingConfig.loki.basicAuth,
         batching: true,
         interval: 2000,
         labels: {
-          app: process.env.APP_NAME ?? 'app',
-          env: process.env.NODE_ENV ?? 'local',
+          app: loggingConfig.appName,
+          env: loggingConfig.environment,
         },
       },
     };
-  } else if (sink === 'elasticsearch') {
+  } else if (loggingConfig.sink === 'elasticsearch') {
     transport = {
       target: 'pino-elasticsearch',
       options: {
-        node: process.env.ES_NODE,
-        index: process.env.ES_INDEX ?? 'app-logs',
+        node: loggingConfig.elasticsearch.node,
+        index: loggingConfig.elasticsearch.index,
         esVersion: 8,
       },
     };
   }
 
   return pino({
-    level: process.env.LOG_LEVEL ?? 'info',
+    level: loggingConfig.level,
     transport,
     base: {
-      app: process.env.APP_NAME ?? 'app',
-      environment: process.env.NODE_ENV ?? 'local',
-      version: process.env.APP_VERSION ?? '0.0.1',
+      app: loggingConfig.appName,
+      environment: loggingConfig.environment,
+      version: loggingConfig.appVersion,
     },
     mixin() {
       return {

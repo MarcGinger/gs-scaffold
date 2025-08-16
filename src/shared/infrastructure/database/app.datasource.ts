@@ -10,47 +10,37 @@ import { AppConfigUtil } from '../../config/app-config.util';
  * - synchronize: false for production safety
  * - Explicit entity and migration paths
  * - Performance monitoring enabled
+ * - Centralized configuration management
  */
+
+// Get centralized database configuration
+const dbConfig = AppConfigUtil.getDatabaseConfig();
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
 
-  // Connection from environment or fallback to local development
-  url: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-  host:
-    !process.env.POSTGRES_URL && !process.env.DATABASE_URL
-      ? AppConfigUtil.getDatabaseConfig().host
-      : undefined,
-  port:
-    !process.env.POSTGRES_URL && !process.env.DATABASE_URL
-      ? AppConfigUtil.getDatabaseConfig().port
-      : undefined,
-  database:
-    !process.env.POSTGRES_URL && !process.env.DATABASE_URL
-      ? AppConfigUtil.getDatabaseConfig().database
-      : undefined,
-  username:
-    !process.env.POSTGRES_URL && !process.env.DATABASE_URL
-      ? AppConfigUtil.getDatabaseConfig().username
-      : undefined,
-  password:
-    !process.env.POSTGRES_URL && !process.env.DATABASE_URL
-      ? AppConfigUtil.getDatabaseConfig().password
-      : undefined,
+  // Connection from centralized configuration
+  url: dbConfig.url,
+  host: !dbConfig.url ? dbConfig.host : undefined,
+  port: !dbConfig.url ? dbConfig.port : undefined,
+  database: !dbConfig.url ? dbConfig.database : undefined,
+  username: !dbConfig.url ? dbConfig.username : undefined,
+  password: !dbConfig.url ? dbConfig.password : undefined,
 
   // Schema isolation - each service gets its own schema
-  schema: process.env.DB_SCHEMA ?? 'gs_scaffold_read',
+  schema: dbConfig.schema,
 
   // Production safety - NEVER enable synchronize in shared environments
   synchronize: false,
 
   // Selective logging - 'query' only for debugging
   logging:
-    process.env.NODE_ENV === 'development'
+    AppConfigUtil.getEnvironment() === 'development'
       ? ['warn', 'error', 'migration']
       : ['warn', 'error'],
 
   // Performance monitoring
-  maxQueryExecutionTime: Number(process.env.DB_SLOW_QUERY_THRESHOLD) || 500, // ms
+  maxQueryExecutionTime: dbConfig.maxQueryExecutionTime, // ms
 
   // Entity and migration discovery
   entities: [
@@ -63,21 +53,21 @@ export const AppDataSource = new DataSource({
   // PostgreSQL specific optimizations
   extra: {
     // Query timeout
-    statement_timeout: Number(process.env.DB_STATEMENT_TIMEOUT) || 15000,
+    statement_timeout: dbConfig.statementTimeout,
 
     // Application identification in PostgreSQL logs
-    application_name: process.env.APP_NAME ?? 'gs-scaffold',
+    application_name: AppConfigUtil.getLoggingConfig().appName,
 
     // Connection pool settings (will be overridden by NestJS module)
-    max: Number(process.env.DATABASE_POOL_MAX) || 10,
-    min: Number(process.env.DATABASE_POOL_MIN) || 0,
+    max: dbConfig.pool.max,
+    min: dbConfig.pool.min,
 
     // SSL configuration
-    ssl: AppConfigUtil.getDatabaseConfig().ssl,
+    ssl: dbConfig.ssl,
   },
 
   // Connection pool configuration
   // These can be overridden by the TypeORM module
-  connectTimeoutMS: Number(process.env.DB_CONNECT_TIMEOUT) || 10000,
+  connectTimeoutMS: dbConfig.connectTimeoutMS,
   // acquireTimeoutMillis: Number(process.env.DB_ACQUIRE_TIMEOUT) || 10000, // Not supported in PostgreSQL driver
 });

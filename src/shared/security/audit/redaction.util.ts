@@ -117,7 +117,7 @@ export class RedactionUtil {
         /token|secret|password|key|auth/i.test(key) &&
         typeof redacted[key] === 'string'
       ) {
-        redacted[key] = this.maskToken(redacted[key] as string);
+        redacted[key] = this.maskToken(redacted[key]);
       }
     });
 

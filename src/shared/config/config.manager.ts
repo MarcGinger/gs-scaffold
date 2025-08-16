@@ -153,6 +153,11 @@ export class ConfigManager {
     return AppConfigUtil.getSecurityConfig();
   }
 
+  /** Error Configuration */
+  getErrorConfig() {
+    return AppConfigUtil.getErrorConfig();
+  }
+
   validateSecurityConfig(): {
     valid: boolean;
     errors: string[];
@@ -287,7 +292,9 @@ export class ConfigManager {
   /**
    * Validate specific configuration aspect without full bootstrap
    */
-  validateAspect(aspect: 'logging' | 'database' | 'server' | 'security'): {
+  validateAspect(
+    aspect: 'logging' | 'database' | 'server' | 'security' | 'error',
+  ): {
     valid: boolean;
     errors: string[];
   } {
@@ -301,13 +308,87 @@ export class ConfigManager {
           errors: securityValidation.errors,
         };
       }
+      case 'error':
+        try {
+          const errorConfig = this.getErrorConfig();
+          const errors: string[] = [];
+
+          // Validate base URL
+          if (!errorConfig.baseUrl) {
+            errors.push('Error base URL is not configured');
+          } else {
+            try {
+              new URL(errorConfig.baseUrl);
+            } catch {
+              errors.push('Error base URL is not a valid URL');
+            }
+          }
+
+          // Validate version
+          if (!errorConfig.version || !errorConfig.version.match(/^v\d+$/)) {
+            errors.push(
+              'Error API version should follow format "v1", "v2", etc.',
+            );
+          }
+
+          return { valid: errors.length === 0, errors };
+        } catch (error) {
+          return { valid: false, errors: [(error as Error).message] };
+        }
       case 'database':
         try {
           const dbConfig = this.getDatabaseConfig();
-          return {
-            valid: !!(dbConfig.host && dbConfig.port && dbConfig.database),
-            errors: dbConfig.host ? [] : ['Database host not configured'],
-          };
+          const errors: string[] = [];
+
+          // Validate connection settings
+          const hasUrl = !!(dbConfig.url && dbConfig.url.trim());
+          const hasExplicitHost = !!(
+            process.env.DATABASE_POSTGRES_HOST &&
+            process.env.DATABASE_POSTGRES_HOST.trim()
+          );
+
+          if (!hasUrl && !hasExplicitHost) {
+            errors.push('Database connection URL or host must be configured');
+          }
+
+          if (
+            !dbConfig.url &&
+            (!dbConfig.port || dbConfig.port <= 0 || dbConfig.port > 65535)
+          ) {
+            errors.push('Database port must be between 1 and 65535');
+          }
+
+          if (!dbConfig.database) {
+            errors.push('Database name must be configured');
+          }
+
+          if (!dbConfig.schema) {
+            errors.push('Database schema must be configured');
+          }
+
+          // Validate timeout settings
+          if (dbConfig.maxQueryExecutionTime < 100) {
+            errors.push('maxQueryExecutionTime should be at least 100ms');
+          }
+
+          if (dbConfig.statementTimeout < 1000) {
+            errors.push('statementTimeout should be at least 1000ms');
+          }
+
+          if (dbConfig.connectTimeoutMS < 1000) {
+            errors.push('connectTimeoutMS should be at least 1000ms');
+          }
+
+          // Validate pool settings
+          if (dbConfig.pool.max < 1) {
+            errors.push('Connection pool max must be at least 1');
+          }
+
+          if (dbConfig.pool.min < 0 || dbConfig.pool.min > dbConfig.pool.max) {
+            errors.push('Connection pool min must be between 0 and max');
+          }
+
+          return { valid: errors.length === 0, errors };
         } catch (error) {
           return { valid: false, errors: [(error as Error).message] };
         }
