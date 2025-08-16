@@ -4,12 +4,52 @@
 
 This document provides a comprehensive overview of the **Catalog Domain** implementation, showcasing a clean architecture pattern with **Domain-Driven Design (DDD)**, **CQRS**, and **Event Sourcing** principles. The implementation demonstrates proper separation of concerns, consistent validation patterns, and domain-driven type safety.
 
+## Design Principles
+
+### Explicit Naming & Type Safety
+
+This implementation follows **explicit naming conventions** to avoid "type soup" - the anti-pattern where generic or ambiguous type names make code difficult to understand and maintain.
+
+**Principles Applied:**
+
+- ✅ **Descriptive Interface Names**: `ChangeProductPriceProps` instead of generic `PriceData` or `Price`
+- ✅ **Business Domain Context**: Names reflect actual business operations and concepts
+- ✅ **Type Guards**: Runtime validation functions for interface compliance
+- ✅ **Centralized Definitions**: Single source of truth for domain contracts
+- ✅ **Documented Constraints**: JSDoc annotations explain business rules and validation
+
+**Example:**
+
+```typescript
+// ❌ Type soup - unclear, generic naming
+interface Props {
+  price: number;
+  currency: string;
+}
+
+// ✅ Explicit, business-focused naming
+interface ChangeProductPriceProps {
+  price: number;
+  currency: string;
+}
+```
+
+### One Concept Per File
+
+Each domain concept gets its own dedicated file with comprehensive documentation and supporting utilities:
+
+- ✅ **Single Responsibility**: Each file contains one main interface/type
+- ✅ **Co-located Utilities**: Type guards, constants, and helpers in same file
+- ✅ **Complete Documentation**: JSDoc for interface, properties, and utilities
+- ✅ **Business Context**: Clear connection to domain operations
+
 ## Architecture Overview
 
 ```
 src/contexts/catalog/
 ├── domain/                          # Domain Layer (Core Business Logic)
 │   ├── types/                       # Domain Type Definitions
+│   ├── props/                       # Domain Property Interfaces
 │   ├── value-objects/               # Domain Value Objects
 │   ├── aggregates/                  # Domain Aggregates
 │   ├── events/                      # Domain Events
@@ -73,25 +113,71 @@ export const PRODUCT_STATUS_TRANSITIONS: Record<
 - ✅ Terminal state handling for deleted products
 - ✅ Clear separation from value objects
 
-#### 2. Change Product Price Types (`domain/types/change-product-price.types.ts`)
+#### 2. Change Product Price Props (`domain/types/change-product-price-props.types.ts`)
 
 ```typescript
 /**
- * Interface representing price change properties
- * Used to ensure consistency between DTOs, commands, and domain objects
+ * Domain Types: Change Product Price Props
+ *
+ * Explicit interface for price change properties to avoid "type soup"
+ * This interface ensures type safety and consistency across all layers
+ * when dealing with product price modifications.
  */
-export interface ChangeProductPrice {
+export interface ChangeProductPriceProps {
+  /**
+   * New price value for the product
+   * Must be a positive number representing the monetary value
+   */
   price: number;
+
+  /**
+   * Currency code for the price
+   * Must be a valid ISO 4217 currency code
+   */
   currency: string;
 }
+
+/**
+ * Type guard to check if an object implements ChangeProductPriceProps
+ */
+export function isChangeProductPriceProps(
+  obj: any,
+): obj is ChangeProductPriceProps {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof (obj as ChangeProductPriceProps).price === 'number' &&
+    (obj as ChangeProductPriceProps).price >= 0 &&
+    typeof (obj as ChangeProductPriceProps).currency === 'string' &&
+    (obj as ChangeProductPriceProps).currency.length === 3
+  );
+}
+
+/**
+ * Supported currencies for price changes
+ */
+export const SUPPORTED_CURRENCIES = [
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'CAD',
+  'AUD',
+  'CHF',
+  'CNY',
+] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 ```
 
 **Key Features:**
 
-- ✅ Descriptive naming convention
-- ✅ Single source of truth for price change operations
-- ✅ Type safety across application layers
-- ✅ Domain contract enforcement
+- ✅ **Explicit naming**: `ChangeProductPriceProps` avoids "type soup" confusion
+- ✅ **Type safety**: Runtime type guards for validation
+- ✅ **Domain constraints**: Built-in currency validation and support list
+- ✅ **Documentation**: Comprehensive JSDoc for all properties
+- ✅ **Consistency**: Single source of truth for price change operations
+- ✅ **Business rules**: ISO 4217 currency code enforcement
 
 ### Value Objects
 
@@ -410,14 +496,69 @@ const command: ChangeProductPrice = new ChangeProductPriceCommand(/* ... */);
 - ✅ **Single Responsibility**: One concern per file
 - ✅ **DRY Principle**: No code duplication
 - ✅ **Type Safety**: Compile-time guarantees
+- ✅ **Explicit Naming**: Avoids "type soup" anti-pattern
+
+### Type Safety Refactoring
+
+**Latest Improvement: Explicit Type Definitions**
+
+The implementation was refactored to avoid "type soup" by creating explicit, self-documenting type definitions:
+
+```typescript
+// ✅ Explicit, business-focused interface
+export interface ChangeProductPriceProps {
+  price: number;
+  currency: string;
+}
+
+// ✅ Runtime validation with type guards
+export function isChangeProductPriceProps(
+  obj: any,
+): obj is ChangeProductPriceProps {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof (obj as ChangeProductPriceProps).price === 'number' &&
+    (obj as ChangeProductPriceProps).price >= 0 &&
+    typeof (obj as ChangeProductPriceProps).currency === 'string' &&
+    (obj as ChangeProductPriceProps).currency.length === 3
+  );
+}
+
+// ✅ Business constraints as constants
+export const SUPPORTED_CURRENCIES = [
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'CAD',
+  'AUD',
+  'CHF',
+  'CNY',
+] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+```
+
+**Benefits Achieved:**
+
+- ✅ **Self-Documenting Code**: Interface name explains its purpose
+- ✅ **Runtime Safety**: Type guards prevent invalid data
+- ✅ **Business Alignment**: Currency constraints match business rules
+- ✅ **IDE Support**: Enhanced autocomplete and refactoring
+- ✅ **Maintenance**: Single file for all price change logic
 
 ### File Organization
 
-- **Domain Layer**: 15+ files with clear separation
+- **Domain Layer**:
+  - **Types**: `domain/types/change-product-price-props.types.ts` - Explicit interfaces with type guards
+  - **Value Objects**: Business logic encapsulation with validation
+  - **Events**: Individual event files following one-per-file pattern
+  - **Aggregates**: Domain root entities with business behavior
 - **Application Layer**: 25+ files with focused responsibilities
 - **Custom Decorators**: 10 specialized validation decorators
-- **DTOs**: 6 focused DTOs with domain contracts
-- **Commands**: Domain-contract-compliant commands
+- **DTOs**: 6 focused DTOs implementing domain contracts
+- **Commands**: Domain-contract-compliant commands with interface implementation
 
 ## Future Extensions
 

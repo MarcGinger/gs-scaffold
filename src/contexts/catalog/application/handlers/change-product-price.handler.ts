@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { ChangeProductPriceCommand } from '../commands/change-product-price.command';
+import { ChangeProductPricePropsCommand } from '../commands/change-product-price.command';
 import { ProductRepository } from '../ports/product.repository.port';
 import { ProductId, Price } from '../../domain';
 import {
@@ -9,9 +9,9 @@ import {
   isErr,
 } from '../../../../shared/errors/error.types';
 
-@CommandHandler(ChangeProductPriceCommand)
-export class ChangeProductPriceHandler
-  implements ICommandHandler<ChangeProductPriceCommand>
+@CommandHandler(ChangeProductPricePropsCommand)
+export class ChangeProductPricePropsHandler
+  implements ICommandHandler<ChangeProductPricePropsCommand>
 {
   constructor(
     @Inject(ProductRepository)
@@ -19,7 +19,7 @@ export class ChangeProductPriceHandler
   ) {}
 
   async execute(
-    command: ChangeProductPriceCommand,
+    command: ChangeProductPricePropsCommand,
   ): Promise<Result<void, DomainError>> {
     // Create ProductId value object
     const productIdResult = ProductId.create(command.productId);

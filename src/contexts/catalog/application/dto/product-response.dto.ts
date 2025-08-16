@@ -10,9 +10,9 @@ import {
   ApiCreatedAt,
   ApiUpdatedAt,
 } from '../decorators';
-import { ChangeProductPrice } from '../../domain';
+import { ChangeProductPriceProps } from '../../domain';
 
-export class ProductResponseDto implements ChangeProductPrice {
+export class ProductResponseDto implements ChangeProductPriceProps {
   @ApiProductId()
   id: string;
 

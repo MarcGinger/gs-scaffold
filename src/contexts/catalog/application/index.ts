@@ -7,7 +7,7 @@ export { DeleteProductCommand } from './commands/delete-product.command';
 export { ActivateProductCommand } from './commands/activate-product.command';
 export { DeactivateProductCommand } from './commands/deactivate-product.command';
 export { CategorizeProductCommand } from './commands/categorize-product.command';
-export { ChangeProductPriceCommand } from './commands/change-product-price.command';
+export { ChangeProductPricePropsCommand } from './commands/change-product-price.command';
 
 // Queries
 export { GetProductQuery } from './queries/get-product.query';
@@ -24,7 +24,7 @@ export { UpdateProductUseCase } from './use-cases/update-product.use-case';
 export {
   CreateProductDto,
   UpdateProductDto,
-  ChangeProductPriceDto,
+  ChangeProductPricePropsDto,
   CategorizeProductDto,
   ProductResponseDto,
   ProductListResponseDto,

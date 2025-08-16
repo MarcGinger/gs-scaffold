@@ -11,7 +11,13 @@ export {
   ProductStatusType,
   PRODUCT_STATUS_TRANSITIONS,
 } from './types/product-status.types';
-export { ChangeProductPrice } from './types/change-product-price.types';
+export {
+  ChangeProductPriceProps,
+  isChangeProductPriceProps,
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrency,
+} from './types/change-product-price-props.types';
 
 // Aggregates
 export { ProductAggregate, ProductProps } from './product.aggregate';

@@ -14,7 +14,7 @@ import {
   ActivateProductHandler,
   DeactivateProductHandler,
   CategorizeProductHandler,
-  ChangeProductPriceHandler,
+  ChangeProductPricePropsHandler,
   // Query Handlers
   GetProductHandler,
   ListProductsHandler,
@@ -36,7 +36,7 @@ import { EventStoreProductRepository } from './infrastructure';
     ActivateProductHandler,
     DeactivateProductHandler,
     CategorizeProductHandler,
-    ChangeProductPriceHandler,
+    ChangeProductPricePropsHandler,
 
     // Query Handlers
     GetProductHandler,
@@ -59,7 +59,7 @@ import { EventStoreProductRepository } from './infrastructure';
     ActivateProductHandler,
     DeactivateProductHandler,
     CategorizeProductHandler,
-    ChangeProductPriceHandler,
+    ChangeProductPricePropsHandler,
     GetProductHandler,
     ListProductsHandler,
   ],

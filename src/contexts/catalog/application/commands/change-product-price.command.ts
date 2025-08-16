@@ -1,6 +1,6 @@
-import { ChangeProductPrice } from '../../domain';
+import { ChangeProductPriceProps } from '../../domain';
 
-export class ChangeProductPriceCommand implements ChangeProductPrice {
+export class ChangeProductPricePropsCommand implements ChangeProductPriceProps {
   constructor(
     public readonly productId: string,
     public readonly price: number,
