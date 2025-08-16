@@ -17,7 +17,15 @@ export {
   DEFAULT_CURRENCY,
   SUPPORTED_CURRENCIES,
   type SupportedCurrency,
-} from './types/change-product-price-props.types';
+} from './props/change-product-price.props.';
+
+// Entities
+export {
+  EntityBase,
+  ProductEntity,
+  ProductEntityProps,
+  ProductEntitySnapshot,
+} from './entities';
 
 // Aggregates
 export { ProductAggregate, ProductProps } from './product.aggregate';

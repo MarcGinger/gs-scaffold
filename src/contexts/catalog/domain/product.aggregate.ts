@@ -8,6 +8,9 @@ import {
   Category,
   ProductStatus,
   ProductErrors,
+  ProductEntity,
+  ProductEntityProps,
+  ProductEntitySnapshot,
 } from './index';
 import {
   Result,
@@ -39,12 +42,19 @@ export interface ProductProps {
   updatedAt: Date;
 }
 
+/**
+ * Product Aggregate
+ *
+ * Handles complex business rules, event sourcing, and cross-entity operations.
+ * Uses ProductEntity for state management while focusing on domain events
+ * and aggregate-level business logic.
+ */
 export class ProductAggregate extends AggregateRootBase {
-  private props: ProductProps;
+  private entity: ProductEntity;
 
-  private constructor(props: ProductProps) {
+  private constructor(entity: ProductEntity) {
     super();
-    this.props = props;
+    this.entity = entity;
   }
 
   // Factory method for creating new products
@@ -62,7 +72,8 @@ export class ProductAggregate extends AggregateRootBase {
       return err(ProductErrors.INVALID_PRICE);
     }
 
-    const product = new ProductAggregate({
+    // Create the entity
+    const entityProps: ProductEntityProps = {
       id,
       name,
       sku,
@@ -72,7 +83,14 @@ export class ProductAggregate extends AggregateRootBase {
       description,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    };
+
+    const entityResult = ProductEntity.create(entityProps);
+    if (entityResult.ok === false) {
+      return err(entityResult.error);
+    }
+
+    const product = new ProductAggregate(entityResult.value);
 
     // Apply creation event
     const event = new ProductCreatedDomainEvent(id.getValue(), 1, metadata, {
@@ -90,29 +108,44 @@ export class ProductAggregate extends AggregateRootBase {
     return ok(product);
   }
 
-  // Business methods
+  // Factory method for reconstituting from persistence
+  public static reconstitute(entity: ProductEntity): ProductAggregate {
+    return new ProductAggregate(entity);
+  }
+
+  // Business methods - validate then apply events (no pre-mutation)
   public updateDetails(
     name: ProductName,
     description: string | undefined,
     metadata: EventMetadata,
   ): Result<void, DomainError> {
-    if (this.props.status.isDeleted()) {
+    // Precondition checks using entity
+    if (this.entity.isDeleted()) {
       return err(ProductErrors.PRODUCT_DELETED);
     }
 
-    const oldName = this.props.name;
-    const oldDescription = this.props.description;
+    // No-op guard: check if anything actually changed
+    const nameChanged = !name.equals(this.entity.name);
+    const descriptionChanged = description !== this.entity.description;
+
+    if (!nameChanged && !descriptionChanged) {
+      return err(ProductErrors.PRODUCT_NOT_MODIFIED);
+    }
+
+    // Prepare event data (capture old values before applying)
+    const oldName = this.entity.name;
+    const oldDescription = this.entity.description;
 
     const event = new ProductUpdatedDomainEvent(
-      this.props.id.getValue(),
+      this.entity.id.getValue(),
       this.version + 1,
       metadata,
       {
         changes: {
-          ...(name.getValue() !== oldName.getValue() && {
+          ...(nameChanged && {
             name: { old: oldName.getValue(), new: name.getValue() },
           }),
-          ...(description !== oldDescription && {
+          ...(descriptionChanged && {
             description: { old: oldDescription, new: description },
           }),
         },
@@ -127,18 +160,25 @@ export class ProductAggregate extends AggregateRootBase {
     newPrice: Price,
     metadata: EventMetadata,
   ): Result<void, DomainError> {
-    if (this.props.status.isDeleted()) {
+    // Precondition checks using entity (no pre-mutation)
+    if (this.entity.isDeleted()) {
       return err(ProductErrors.PRODUCT_DELETED);
     }
 
-    if (newPrice.getValue() < 0) {
+    if (newPrice.getValue() <= 0) {
       return err(ProductErrors.INVALID_PRICE);
     }
 
-    const oldPrice = this.props.price;
+    // No-op guard: check if price actually changed
+    if (newPrice.equals && newPrice.equals(this.entity.price)) {
+      return err(ProductErrors.PRICE_UNCHANGED);
+    }
+
+    // Prepare event data (capture old values before applying)
+    const oldPrice = this.entity.price;
 
     const event = new ProductPriceChangedDomainEvent(
-      this.props.id.getValue(),
+      this.entity.id.getValue(),
       this.version + 1,
       metadata,
       {
@@ -156,14 +196,21 @@ export class ProductAggregate extends AggregateRootBase {
     category: Category,
     metadata: EventMetadata,
   ): Result<void, DomainError> {
-    if (this.props.status.isDeleted()) {
+    // Precondition checks using entity (no pre-mutation)
+    if (this.entity.isDeleted()) {
       return err(ProductErrors.PRODUCT_DELETED);
     }
 
-    const oldCategory = this.props.category;
+    // No-op guard: check if category actually changed
+    if (category.getId() === this.entity.category.getId()) {
+      return err(ProductErrors.CATEGORY_UNCHANGED);
+    }
+
+    // Prepare event data (capture old values before applying)
+    const oldCategory = this.entity.category;
 
     const event = new ProductCategorizedDomainEvent(
-      this.props.id.getValue(),
+      this.entity.id.getValue(),
       this.version + 1,
       metadata,
       {
@@ -178,16 +225,23 @@ export class ProductAggregate extends AggregateRootBase {
   }
 
   public activate(metadata: EventMetadata): Result<void, DomainError> {
-    if (this.props.status.isDeleted()) {
+    // Precondition checks using entity (no pre-mutation)
+    if (this.entity.isDeleted()) {
       return err(ProductErrors.PRODUCT_DELETED);
     }
 
-    if (this.props.status.isActive()) {
+    if (this.entity.isActive()) {
       return err(ProductErrors.PRODUCT_ALREADY_ACTIVE);
     }
 
+    // Check if transition is allowed
+    const activeStatus = ProductStatus.active();
+    if (!this.entity.status.canTransitionTo(activeStatus)) {
+      return err(ProductErrors.INVALID_STATUS_TRANSITION);
+    }
+
     const event = new ProductActivatedDomainEvent(
-      this.props.id.getValue(),
+      this.entity.id.getValue(),
       this.version + 1,
       metadata,
     );
@@ -197,16 +251,23 @@ export class ProductAggregate extends AggregateRootBase {
   }
 
   public deactivate(metadata: EventMetadata): Result<void, DomainError> {
-    if (this.props.status.isDeleted()) {
+    // Precondition checks using entity (no pre-mutation)
+    if (this.entity.isDeleted()) {
       return err(ProductErrors.PRODUCT_DELETED);
     }
 
-    if (this.props.status.isInactive()) {
+    if (this.entity.isInactive()) {
       return err(ProductErrors.PRODUCT_ALREADY_INACTIVE);
     }
 
+    // Check if transition is allowed
+    const inactiveStatus = ProductStatus.inactive();
+    if (!this.entity.status.canTransitionTo(inactiveStatus)) {
+      return err(ProductErrors.INVALID_STATUS_TRANSITION);
+    }
+
     const event = new ProductDeactivatedDomainEvent(
-      this.props.id.getValue(),
+      this.entity.id.getValue(),
       this.version + 1,
       metadata,
     );
@@ -216,12 +277,19 @@ export class ProductAggregate extends AggregateRootBase {
   }
 
   public delete(metadata: EventMetadata): Result<void, DomainError> {
-    if (this.props.status.isDeleted()) {
+    // Precondition checks using entity (no pre-mutation)
+    if (this.entity.isDeleted()) {
       return err(ProductErrors.PRODUCT_ALREADY_DELETED);
     }
 
+    // Check if transition is allowed
+    const deletedStatus = ProductStatus.deleted();
+    if (!this.entity.status.canTransitionTo(deletedStatus)) {
+      return err(ProductErrors.INVALID_STATUS_TRANSITION);
+    }
+
     const event = new ProductDeletedDomainEvent(
-      this.props.id.getValue(),
+      this.entity.id.getValue(),
       this.version + 1,
       metadata,
     );
@@ -258,57 +326,109 @@ export class ProductAggregate extends AggregateRootBase {
   }
 
   private onProductCreated(event: ProductCreatedDomainEvent): void {
-    // State is already set in constructor for create command
-    this.props.updatedAt = event.occurredAt;
+    // Build entity from event payload for proper event replay
+    const id = unsafeUnwrap(ProductId.create(event.aggregateId));
+    const name = unsafeUnwrap(ProductName.create(event.payload.name));
+    const sku = unsafeUnwrap(Sku.create(event.payload.sku));
+    const price = unsafeUnwrap(
+      Price.create(event.payload.price, event.payload.currency),
+    );
+    const category = unsafeUnwrap(
+      Category.create(event.payload.categoryId, event.payload.categoryName),
+    );
+    const status = ProductStatus.fromString(event.payload.status);
+    const now = new Date(event.occurredAt);
+
+    const props: ProductEntityProps = {
+      id,
+      name,
+      sku,
+      price,
+      category,
+      status,
+      description: event.payload.description,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.entity = unsafeUnwrap(ProductEntity.create(props));
   }
 
   private onProductUpdated(event: ProductUpdatedDomainEvent): void {
+    // Apply changes to the entity
+    let updatedEntity = this.entity;
+
     if (event.payload.changes.name) {
-      this.props.name = unsafeUnwrap(
-        ProductName.create(event.payload.changes.name.new),
+      const nameResult = updatedEntity.updateName(
+        unsafeUnwrap(ProductName.create(event.payload.changes.name.new)),
       );
+      if (nameResult.ok) {
+        updatedEntity = nameResult.value;
+      }
     }
+
     if (event.payload.changes.description !== undefined) {
-      this.props.description = event.payload.changes.description.new;
+      const descResult = updatedEntity.updateDescription(
+        event.payload.changes.description.new,
+      );
+      if (descResult.ok) {
+        updatedEntity = descResult.value;
+      }
     }
-    this.props.updatedAt = event.occurredAt;
+
+    this.entity = updatedEntity;
   }
 
   private onProductPriceChanged(event: ProductPriceChangedDomainEvent): void {
-    this.props.price = unsafeUnwrap(
+    const newPrice = unsafeUnwrap(
       Price.create(event.payload.newPrice, event.payload.currency),
     );
-    this.props.updatedAt = event.occurredAt;
+    const result = this.entity.changePrice(newPrice);
+    if (result.ok) {
+      this.entity = result.value;
+    }
   }
 
   private onProductCategorized(event: ProductCategorizedDomainEvent): void {
-    this.props.category = unsafeUnwrap(
+    const newCategory = unsafeUnwrap(
       Category.create(
         event.payload.newCategoryId,
         event.payload.newCategoryName,
       ),
     );
-    this.props.updatedAt = event.occurredAt;
+    const result = this.entity.changeCategory(newCategory);
+    if (result.ok) {
+      this.entity = result.value;
+    }
   }
 
-  private onProductActivated(event: ProductActivatedDomainEvent): void {
-    this.props.status = ProductStatus.active();
-    this.props.updatedAt = event.occurredAt;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private onProductActivated(_event: ProductActivatedDomainEvent): void {
+    const result = this.entity.activate();
+    if (result.ok) {
+      this.entity = result.value;
+    }
   }
 
-  private onProductDeactivated(event: ProductDeactivatedDomainEvent): void {
-    this.props.status = ProductStatus.inactive();
-    this.props.updatedAt = event.occurredAt;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private onProductDeactivated(_event: ProductDeactivatedDomainEvent): void {
+    const result = this.entity.deactivate();
+    if (result.ok) {
+      this.entity = result.value;
+    }
   }
 
-  private onProductDeleted(event: ProductDeletedDomainEvent): void {
-    this.props.status = ProductStatus.deleted();
-    this.props.updatedAt = event.occurredAt;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private onProductDeleted(_event: ProductDeletedDomainEvent): void {
+    const result = this.entity.delete();
+    if (result.ok) {
+      this.entity = result.value;
+    }
   }
 
   // Snapshot methods (required by base class)
-  protected applySnapshot(snapshot: any): void {
-    this.props = {
+  protected applySnapshot(snapshot: ProductEntitySnapshot): void {
+    const entityProps: ProductEntityProps = {
       id: unsafeUnwrap(ProductId.create(snapshot.id)),
       name: unsafeUnwrap(ProductName.create(snapshot.name)),
       sku: unsafeUnwrap(Sku.create(snapshot.sku)),
@@ -321,58 +441,65 @@ export class ProductAggregate extends AggregateRootBase {
       createdAt: new Date(snapshot.createdAt),
       updatedAt: new Date(snapshot.updatedAt),
     };
+
+    this.entity = ProductEntity.reconstitute(entityProps);
   }
 
-  public createSnapshot(): any {
-    return {
-      id: this.props.id.getValue(),
-      name: this.props.name.getValue(),
-      sku: this.props.sku.getValue(),
-      price: this.props.price.getValue(),
-      currency: this.props.price.getCurrency(),
-      categoryId: this.props.category.getId(),
-      categoryName: this.props.category.getName(),
-      status: this.props.status.getValue(),
-      description: this.props.description,
-      createdAt: this.props.createdAt.toISOString(),
-      updatedAt: this.props.updatedAt.toISOString(),
-    };
+  public createSnapshot(): ProductEntitySnapshot {
+    return this.entity.toSnapshot();
   }
 
-  // Getters
+  // Getters - delegate to entity
   get id(): ProductId {
-    return this.props.id;
+    return this.entity.id;
   }
 
   get name(): ProductName {
-    return this.props.name;
+    return this.entity.name;
   }
 
   get sku(): Sku {
-    return this.props.sku;
+    return this.entity.sku;
   }
 
   get price(): Price {
-    return this.props.price;
+    return this.entity.price;
   }
 
   get category(): Category {
-    return this.props.category;
+    return this.entity.category;
   }
 
   get status(): ProductStatus {
-    return this.props.status;
+    return this.entity.status;
   }
 
   get description(): string | undefined {
-    return this.props.description;
+    return this.entity.description;
   }
 
   get createdAt(): Date {
-    return this.props.createdAt;
+    return this.entity.createdAt;
   }
 
   get updatedAt(): Date {
-    return this.props.updatedAt;
+    return this.entity.updatedAt;
+  }
+
+  // Additional aggregate-level methods
+  public getEntity(): ProductEntity {
+    return this.entity;
+  }
+
+  public isActive(): boolean {
+    return this.entity.isActive();
+  }
+
+  public isDeleted(): boolean {
+    return this.entity.isDeleted();
+  }
+
+  public isDraft(): boolean {
+    return this.entity.isDraft();
   }
 }

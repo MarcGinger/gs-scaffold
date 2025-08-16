@@ -5,4 +5,4 @@
  * This avoids "type soup" by providing explicit, well-documented interfaces
  */
 
-export * from './product-status.types';
+export * from '../props/change-product-price.props.';

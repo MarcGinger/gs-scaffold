@@ -50,6 +50,7 @@ src/contexts/catalog/
 ├── domain/                          # Domain Layer (Core Business Logic)
 │   ├── types/                       # Domain Type Definitions
 │   ├── props/                       # Domain Property Interfaces
+│   ├── entities/                    # Domain Entities
 │   ├── value-objects/               # Domain Value Objects
 │   ├── aggregates/                  # Domain Aggregates
 │   ├── events/                      # Domain Events
@@ -178,6 +179,104 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 - ✅ **Documentation**: Comprehensive JSDoc for all properties
 - ✅ **Consistency**: Single source of truth for price change operations
 - ✅ **Business rules**: ISO 4217 currency code enforcement
+
+### Domain Entities
+
+#### 1. Product Entity (`domain/entities/product.entity.ts`)
+
+The Product Entity represents the core product concept with identity, state, and basic business operations:
+
+```typescript
+/**
+ * Properties required to create a Product entity
+ */
+export interface ProductEntityProps {
+  id: ProductId;
+  name: ProductName;
+  sku: Sku;
+  price: Price;
+  category: Category;
+  status: ProductStatus;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Product Entity
+ * Core domain entity representing a product in the catalog
+ */
+export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
+  // Factory methods
+  public static create(
+    props: ProductEntityProps,
+  ): Result<ProductEntity, DomainError>;
+  public static reconstitute(props: ProductEntityProps): ProductEntity;
+
+  // Business methods
+  public updateName(newName: ProductName): Result<ProductEntity, DomainError>;
+  public updateDescription(
+    description?: string,
+  ): Result<ProductEntity, DomainError>;
+  public changePrice(newPrice: Price): Result<ProductEntity, DomainError>;
+  public changeCategory(
+    newCategory: Category,
+  ): Result<ProductEntity, DomainError>;
+  public activate(): Result<ProductEntity, DomainError>;
+  public deactivate(): Result<ProductEntity, DomainError>;
+  public delete(): Result<ProductEntity, DomainError>;
+
+  // Query methods
+  public isActive(): boolean;
+  public isInactive(): boolean;
+  public isDeleted(): boolean;
+  public isDraft(): boolean;
+  public sameAs(other: ProductEntity): boolean;
+  public toSnapshot(): ProductEntitySnapshot;
+}
+```
+
+**Key Features:**
+
+- ✅ **Identity**: ProductId provides unique identification
+- ✅ **Immutability**: Operations return new entity instances
+- ✅ **Validation**: Built-in business rule validation
+- ✅ **State Management**: Proper status transition handling
+- ✅ **Factory Pattern**: Safe creation with validation
+- ✅ **Reconstitution**: Restore from persistence without validation
+- ✅ **Business Operations**: Domain-specific methods
+- ✅ **Serialization**: Snapshot pattern for persistence
+
+#### 2. Entity Base Class (`domain/entities/entity.base.ts`)
+
+Base class providing common entity functionality:
+
+```typescript
+export abstract class EntityBase<TProps, TId = string> {
+  protected readonly _props: TProps;
+  protected readonly _id: TId;
+
+  constructor(props: TProps, id: TId) {
+    this._props = props;
+    this._id = id;
+  }
+
+  protected get props(): TProps {
+    return this._props;
+  }
+
+  public equals(entity: EntityBase<any, TId>): boolean {
+    // Identity-based equality comparison
+  }
+}
+```
+
+**Key Features:**
+
+- ✅ **Generic Design**: Reusable across all entities
+- ✅ **Identity Protection**: Private ID access
+- ✅ **Equality Logic**: Identity-based comparison
+- ✅ **Type Safety**: Generic props and ID types
 
 ### Value Objects
 

@@ -162,6 +162,31 @@ export const ProductErrors = {
     category: 'domain',
     retryable: false,
   } as DomainError,
+
+  // No-op guard errors for business methods
+  PRODUCT_NOT_MODIFIED: {
+    code: 'PRODUCT.PRODUCT_NOT_MODIFIED',
+    title: 'Product not modified',
+    detail: 'The requested changes would result in no actual modification',
+    category: 'domain',
+    retryable: false,
+  } as DomainError,
+
+  PRICE_UNCHANGED: {
+    code: 'PRODUCT.PRICE_UNCHANGED',
+    title: 'Price unchanged',
+    detail: 'The new price is the same as the current price',
+    category: 'domain',
+    retryable: false,
+  } as DomainError,
+
+  CATEGORY_UNCHANGED: {
+    code: 'PRODUCT.CATEGORY_UNCHANGED',
+    title: 'Category unchanged',
+    detail: 'The new category is the same as the current category',
+    category: 'domain',
+    retryable: false,
+  } as DomainError,
 } as const;
 
 // Type helper for Product error codes
