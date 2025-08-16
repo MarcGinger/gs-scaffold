@@ -1,0 +1,5014 @@
+{
+  "tables": {
+    "62498fe2-f963-485a-ba03-e0886cd8f8c5": {
+      "id": "62498fe2-f963-485a-ba03-e0886cd8f8c5",
+      "visible": true,
+      "name": "rail",
+      "desc": "\n## Payment Settlement Networks\n\nThis API manages payment rails and routing configurations for the banking platform:\n\n### 🌐 Payment Rails\nSettlement networks that process and route payment transactions:\n- **SWIFT Network**: International wire transfers and cross-border payments\n- **ACH Network**: Domestic automated clearing house transactions\n- **Internal Rails**: Proprietary settlement systems for instant transfers\n- **Card Networks**: Visa, Mastercard, and other payment card processors\n\n### ⚙️ Rail Configuration\n- Network routing rules and priorities\n- Settlement timing and cut-off configurations\n- Fee structures per rail and transaction type\n- Compliance and regulatory requirements\n- Failover and redundancy settings\n\n### 🔄 Transaction Routing\n- Intelligent routing based on transaction attributes\n- Cost optimization across multiple rails\n- Real-time rail status monitoring\n- Automatic failover mechanisms\n\n### 📊 Rail Analytics\n- Transaction volume and success rates\n- Settlement timing analytics\n- Cost analysis per rail\n- Performance monitoring and SLA tracking\n\n---\n**Base Path:** `/api/fintech-banking-product/rails`\n\n### 🔍 Common Use Cases\n- Configure new payment rails for different regions\n- Set up routing rules for cost optimization\n- Monitor rail performance and reliability\n- Manage compliance requirements per network\n",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "57feda74-6175-472a-b0c0-92cccce780df",
+          "name": "theCode",
+          "datatype": "INT",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique numeric identifier for the payment rail configuration.",
+          "defaultvalue": "",
+          "data": "1001",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "245ee1cc-d69e-4de5-8173-bfe56e39a8d6",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Human-readable name of the payment rail (e.g., 'SWIFT International', 'ACH Domestic', 'Real-time Payments').",
+          "defaultvalue": "",
+          "data": "SWIFT International Wire",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "d20fb403-4c46-4c76-aeac-8d2d0588c525",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Detailed explanation of the rail's purpose, capabilities, and typical use cases.",
+          "defaultvalue": "",
+          "data": "International wire transfer network for cross-border payments with same-day settlement",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "84b39ddc-596e-4edd-ac72-bb1bd1ecf2b5",
+          "name": "status",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Current operational status of the rail. Values: ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED.",
+          "defaultvalue": "",
+          "data": "active",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "active,disabled,pending",
+          "estimatedSize": "",
+          "type": "RailStatusEnum"
+        },
+        {
+          "id": "23e9f261-7ff6-4487-9efe-b2787b8ccc04",
+          "name": "enabled",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Flag indicating whether this rail is currently available for processing transactions.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        },
+        {
+          "id": "78b615fd-4596-48ad-8d3f-a96bb3cdd308",
+          "name": "rules_code",
+          "datatype": "JSON",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Unique numeric identifier for the payment rail configuration.",
+          "defaultvalue": "object()",
+          "data": "1001",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Rules"
+        }
+      ],
+      "relations": [
+        "e4b74af4-8ce3-4f5d-aa11-c45834ab6f87",
+        "1f2009fe-79b8-4857-baa9-7a9feb3cfc1d"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "d31c88ea-bd5d-40c1-9a5b-b8f2fa6a6ab5",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "17025115-e5a9-4d95-914c-2688db00f9e9",
+              "colid": "57feda74-6175-472a-b0c0-92cccce780df"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "c7b7a89d-032a-428c-a52a-5431054d4c45",
+          "name": "rail_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "f3305912-0a67-4f6c-8ff9-2f9b96b17e98",
+              "colid": "57feda74-6175-472a-b0c0-92cccce780df",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "48f606cc-fb32-4286-9561-983a529e622a",
+          "name": "rail_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "281be8cf-ebd0-406b-8717-38ded4c9ba81",
+              "colid": "245ee1cc-d69e-4de5-8173-bfe56e39a8d6",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "rails"
+      },
+      "_relationships": [
+        {
+          "name": "rail_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "rail",
+          "parent": "rail",
+          "parentCol": "theCode",
+          "parentClass": "Rail",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "rails",
+          "childClass": "Product",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "rules_rail",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "rules",
+          "parent": "rules",
+          "parentCol": "code",
+          "parentClass": "Rules",
+          "childTable": "rail",
+          "child": "rail",
+          "childCol": "rules_code",
+          "childClass": "Rail",
+          "c_p": "many",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "status": {
+          "file": "rail",
+          "name": "RailStatusEnum",
+          "declaration": "export enum RailStatusEnum {\n  ACTIVE = 'active',\n  DISABLED = 'disabled',\n  PENDING = 'pending',\n}\n\n"
+        }
+      }
+    },
+    "5709f6b3-733d-4b2f-9708-aac9c8ccfb54": {
+      "id": "5709f6b3-733d-4b2f-9708-aac9c8ccfb54",
+      "visible": true,
+      "name": "currency",
+      "desc": "\n## Multi-Currency Banking Platform\n\nThis API manages currency configurations and exchange rate systems:\n\n### 🌍 Supported Currencies\nISO 4217 compliant currency management:\n- **Major Currencies**: USD, EUR, GBP, JPY, CHF, CAD, AUD\n- **Regional Currencies**: ZAR, NGN, KES, GHS, and other local currencies\n- **Digital Currencies**: CBDC and stablecoin support where applicable\n- **Precious Metals**: Gold, Silver as store-of-value currencies\n\n### 📈 Exchange Rate Management\n- Real-time exchange rate feeds from multiple providers\n- Historical rate tracking and analytics\n- Rate spread configuration for different customer tiers\n- Mid-market rates with customizable margins\n- Rate volatility monitoring and alerts\n\n### 🔄 Currency Conversion\n- Automatic currency conversion for cross-border transactions\n- Configurable conversion rules and thresholds\n- Multi-leg conversion routing for exotic currency pairs\n- Conversion fee calculation and application\n\n### ⚖️ Regulatory Compliance\n- Currency control regulations by jurisdiction\n- Capital flow monitoring and reporting\n- Anti-money laundering (AML) currency tracking\n- Sanctions and embargo compliance\n\n---\n**Base Path:** `/api/fintech-banking-product/currencies`\n\n### 🔍 Common Use Cases\n- Add support for new regional currencies\n- Configure exchange rate spreads for different customer segments\n- Monitor currency exposure and risk\n- Set up automated currency hedging rules\n",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "ce8ef0bf-f0a9-4c02-85c6-42fceb09b266",
+          "name": "code_the",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Three-letter ISO 4217 currency code uniquely identifying the currency.",
+          "defaultvalue": "",
+          "data": "USD",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "d590b42d-a509-434d-86f1-6aeb71335782",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Full descriptive name of the currency as commonly recognized.",
+          "defaultvalue": "",
+          "data": "United States Dollar",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "274d2628-1816-469f-a688-3f05b3908799",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Additional details about the currency, including regional usage or special characteristics.",
+          "defaultvalue": "",
+          "data": "Primary currency of the United States and widely used international reserve currency",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "15619f67-f822-446a-833b-8c78755fd173",
+          "name": "enabled",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Indicates whether this currency is currently supported for new accounts and transactions.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        },
+        {
+          "id": "8539c791-14bc-48f5-b7a3-d093a52b9f52",
+          "name": "status",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "active,disabled,pending",
+          "estimatedSize": "",
+          "type": "CurrencyStatusEnum"
+        }
+      ],
+      "relations": [
+        "b12b09da-d743-4973-b9ab-2e63e6c0a020"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "0ac1fdd1-61c1-4601-aeab-5ab4bf0f4e2e",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "b538662e-a674-46ca-b075-71d8949ef615",
+              "colid": "ce8ef0bf-f0a9-4c02-85c6-42fceb09b266"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "6d169444-1a9b-41b4-8dba-8eadf45e9409",
+          "name": "currency_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "8959f93b-8597-4071-87b0-74d794156bf4",
+              "colid": "ce8ef0bf-f0a9-4c02-85c6-42fceb09b266",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "c48494c5-e421-4789-9778-b6a0df94ed7c",
+          "name": "currency_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "24b3549b-1127-4afb-953e-47d472ec643f",
+              "colid": "d590b42d-a509-434d-86f1-6aeb71335782",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "currencies"
+      },
+      "_relationships": [
+        {
+          "name": "currency_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "currency",
+          "parent": "currency",
+          "parentCol": "code_the",
+          "parentClass": "Currency",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "currency",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "status": {
+          "file": "currency",
+          "name": "CurrencyStatusEnum",
+          "declaration": "export enum CurrencyStatusEnum {\n  ACTIVE = 'active',\n  DISABLED = 'disabled',\n  PENDING = 'pending',\n}\n\n"
+        }
+      }
+    },
+    "a9cd563e-aef6-44fc-a842-895c53094714": {
+      "id": "a9cd563e-aef6-44fc-a842-895c53094714",
+      "visible": true,
+      "name": "channel",
+      "desc": "## Customer Access Channels\n\nThis API manages all customer interaction channels and access methods:\n\n### 📱 Digital Channels\nModern digital banking touchpoints:\n- **Mobile Banking**: iOS and Android native applications\n- **Web Banking**: Responsive web application with PWA support\n- **API Banking**: RESTful APIs for third-party integrations\n- **Chatbot**: AI-powered conversational banking interface\n- **Voice Banking**: Voice-activated banking through smart speakers\n\n### 🏢 Physical Channels\nTraditional banking touchpoints:\n- **Branch Banking**: In-person banking services and consultations\n- **ATM Network**: Cash withdrawal, deposits, and basic transactions\n- **Kiosk**: Self-service banking terminals in high-traffic areas\n- **Phone Banking**: Call center and interactive voice response (IVR)\n\n### 🔐 Channel Security\n- Multi-factor authentication per channel\n- Device registration and management\n- Session management and timeout policies\n- Fraud detection and prevention per channel\n- Channel-specific security policies\n\n### ⚙️ Channel Configuration\n- Service availability per channel\n- Transaction limits and restrictions\n- Feature flags and A/B testing\n- Channel-specific fee structures\n- Operating hours and maintenance windows\n\n### 📊 Channel Analytics\n- Usage patterns and customer preferences\n- Channel performance metrics\n- Customer journey analytics across channels\n- Channel profitability analysis\n\n---\n**Base Path:** `/api/fintech-banking-product/channels`\n\n### 🔍 Common Use Cases\n- Configure new digital channels for market expansion\n- Set channel-specific transaction limits and fees\n- Monitor channel performance and customer satisfaction\n- Implement omnichannel customer experiences\n        ",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "fe3ec1a5-7db1-4856-af19-d6b317c7fb09",
+          "name": "code",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique alphanumeric identifier for the customer access channel.",
+          "defaultvalue": "",
+          "data": "WEB",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "2a25cdc2-10e3-4981-8e36-dd9f8dc69934",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Display name of the customer channel as shown in user interfaces and reports.",
+          "defaultvalue": "",
+          "data": "Web Banking Portal",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "87bd8bb8-30ef-46d8-a2f0-25a779192126",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Comprehensive description of the channel's functionality, supported operations, and target user base.",
+          "defaultvalue": "",
+          "data": "Full-featured web-based banking platform accessible via desktop and tablet browsers",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "b8eafa4e-1b16-4d32-8380-e6b55f6625bd",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Flag indicating whether this channel is currently operational and available to customers.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        "f1c008de-6d5b-47a5-b5ed-534460d13f58"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "99aa5d91-cff8-49c3-b7f8-864aff72aeb9",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "7aeed152-477d-4450-8962-8fc940e12b32",
+              "colid": "fe3ec1a5-7db1-4856-af19-d6b317c7fb09"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "040131ef-0287-4281-bde2-df733c4aa5f0",
+          "name": "channel_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "b99396a5-8ada-485b-8a9f-1bb4ffc57811",
+              "colid": "fe3ec1a5-7db1-4856-af19-d6b317c7fb09",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "1d93f803-2c10-46e9-aab9-8450640bc18b",
+          "name": "channel_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "a609bdf9-2855-4094-8509-9234dbe520e5",
+              "colid": "2a25cdc2-10e3-4981-8e36-dd9f8dc69934",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "channels"
+      },
+      "_relationships": [
+        {
+          "name": "channel_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "channel",
+          "parent": "channel",
+          "parentCol": "code",
+          "parentClass": "Channel",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "channels",
+          "childClass": "Product",
+          "c_p": "many",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "adec5299-d945-4688-a425-c21e33fe6050": {
+      "id": "adec5299-d945-4688-a425-c21e33fe6050",
+      "visible": true,
+      "name": "transactional_fee",
+      "desc": "\n## Per-Transaction Fee Management\n\nThis API manages fees charged for individual banking transactions:\n\n### 💳 Transaction Types\nFee structures for different transaction categories:\n- **Transfers**: Wire transfers, ACH, internal transfers, international remittances\n- **Withdrawals**: ATM withdrawals, over-the-counter cash, online withdrawals\n- **Deposits**: Cash deposits, check deposits, electronic deposits\n- **Card Transactions**: POS purchases, online payments, contactless payments\n- **Bill Payments**: Utility payments, loan payments, third-party bill pay\n\n### 🎯 Fee Calculation Models\n- **Fixed Fees**: Flat rate per transaction regardless of amount\n- **Percentage Fees**: Fee calculated as percentage of transaction amount\n- **Tiered Fees**: Different rates based on transaction amount bands\n- **Hybrid Fees**: Combination of fixed and percentage components\n- **Volume-Based**: Discounts based on transaction frequency or volume\n\n### 🏷️ Fee Categories\n- **Channel-Specific**: Different fees per access channel (mobile, web, ATM, branch)\n- **Customer Tier**: Premium, standard, and basic customer fee structures\n- **Geographic**: Regional or country-specific fee configurations\n- **Time-Based**: Peak hours, weekend, or holiday fee adjustments\n- **Product-Specific**: Fees tied to specific account or product types\n\n### ⚡ Real-Time Processing\n- Real-time fee calculation during transaction authorization\n- Dynamic fee adjustment based on customer profile and transaction context\n- Fee preview before transaction completion\n- Transparent fee disclosure and customer notification\n\n### 📊 Fee Analytics\n- Transaction fee revenue tracking\n- Customer fee burden analysis\n- Competitive fee benchmarking\n- Fee waiver and discount tracking\n\n---\n**Base Path:** `/api/fintech-banking-product/transactional-fees`\n\n### 🔍 Common Use Cases\n- Configure fees for new transaction types\n- Update fee structures for different customer segments\n- Implement promotional fee waivers\n- Analyze fee revenue and customer impact\n",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "353ce489-b200-4df2-b697-9452bb013bcc",
+          "name": "tranCode",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique identifier for the transactional fee configuration.",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "6e4af767-1128-45fa-bf4f-c8d514787344",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Human-readable name for the fee (e.g., 'Internal Transfer Fee').",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "f09e5c55-3a85-40b8-b051-251e5300adc4",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Optional explanatory text describing the purpose or rules behind the fee.",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "3c0b0cec-ce5a-496b-8ad1-25eda265e0d8",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Specifies whether this fee configuration is currently active and enforceable.",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        "74413ee6-56d8-463e-9f8c-142d001fb369"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "de57ec56-4865-46bd-ae2c-29061665c6ad",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "ba38de60-6cfc-4c68-a2f3-fc582f94e57e",
+              "colid": "353ce489-b200-4df2-b697-9452bb013bcc"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "40a4b344-6a80-4f4e-b1ee-5bb5964dded9",
+          "name": "channel_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "4c7cf9fc-09ff-4879-b844-804feabe012c",
+              "colid": "353ce489-b200-4df2-b697-9452bb013bcc",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "010a26cf-9846-4759-83d9-a740236e5af8",
+          "name": "channel_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "eec592e2-7551-42f3-b975-50ff1e60489f",
+              "colid": "6e4af767-1128-45fa-bf4f-c8d514787344",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "transactionalFees"
+      },
+      "_relationships": [
+        {
+          "name": "transactional_fee_fees",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "transactional_fee",
+          "parent": "transactional_fee",
+          "parentCol": "tranCode",
+          "parentClass": "TransactionalFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "transactional_fees",
+          "childClass": "Fee",
+          "c_p": "many",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "66764717-2f5c-4f53-a66e-5c08b59936a5": {
+      "id": "66764717-2f5c-4f53-a66e-5c08b59936a5",
+      "visible": true,
+      "name": "initiation_fee",
+      "desc": "One-time setup and initiation fee configurations applied during account opening, product enrollment, or service activation. These fees are typically charged once per customer lifecycle event.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "7cbd5084-cbd3-4edb-b103-86de3bd80b30",
+          "name": "initCode",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique alphanumeric identifier for the initiation fee configuration, used for system references and fee mapping.",
+          "defaultvalue": "",
+          "data": "SETUP_PREMIUM",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "77a96d19-e9f0-4eb1-875c-11e7a4b10cba",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Business-friendly name for the initiation fee displayed to customers and in financial reports.",
+          "defaultvalue": "",
+          "data": "Premium Account Setup Fee",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "b55e9d7c-af46-4c21-b4e4-7f41c68d919e",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Detailed explanation of when this fee applies, what services it covers, and any conditions or exemptions.",
+          "defaultvalue": "",
+          "data": "One-time fee for premium account activation including enhanced features, priority support, and advanced reporting tools",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "7303d27f-3cb3-43dc-8f35-6419518432be",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Determines whether this initiation fee is currently applied to new account openings and product enrollments.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        "337b2441-4af4-462d-9586-5bd78a8c3ffa"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "c115ccbb-462e-4b04-820e-38477627eb0d",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "846cdefa-d35a-4bb3-a093-ac59540a9fe1",
+              "colid": "7cbd5084-cbd3-4edb-b103-86de3bd80b30"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "57c9b084-cdb3-45fb-acc8-bb28df4a8f37",
+          "name": "channel_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "776e0717-995f-4ba5-b207-7d927f5e3d4e",
+              "colid": "7cbd5084-cbd3-4edb-b103-86de3bd80b30",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "989ebe56-6cde-4d1e-b84f-8d9996b110b9",
+          "name": "channel_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "5510635d-ea98-41e7-9480-63fd6490cbae",
+              "colid": "77a96d19-e9f0-4eb1-875c-11e7a4b10cba",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "initiationFees"
+      },
+      "_relationships": [
+        {
+          "name": "initiation_fee_fees",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "initiation_fee",
+          "parent": "initiation_fee",
+          "parentCol": "initCode",
+          "parentClass": "InitiationFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "initiation_fees",
+          "childClass": "Fee",
+          "c_p": "many",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "dd59da13-0fcf-4bd8-bee0-de944b73af3e": {
+      "id": "dd59da13-0fcf-4bd8-bee0-de944b73af3e",
+      "visible": true,
+      "name": "periodic_fee",
+      "desc": "Recurring fee structures applied at regular intervals such as monthly maintenance fees, annual service charges, or subscription-based pricing models for banking products and services.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "a7c5c2e0-0882-4ef8-b100-c831f04208a4",
+          "name": "periCode",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique identifier code for the periodic fee configuration, enabling systematic fee management and reporting.",
+          "defaultvalue": "",
+          "data": "MONTHLY_MAINT",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "b0a4a566-4bf8-4e4b-b40f-7985c801e09d",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Customer-facing name for the periodic fee as it appears on statements and fee schedules.",
+          "defaultvalue": "",
+          "data": "Monthly Account Maintenance Fee",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "968a0a82-3153-4909-97b3-65c78d9d55b9",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Comprehensive explanation of the fee's purpose, billing frequency, calculation method, and any waiver conditions or minimum balance requirements.",
+          "defaultvalue": "",
+          "data": "Monthly service fee for account maintenance and customer support services. Waived with minimum balance of $2,500 or direct deposit enrollment",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "72913a84-a589-4478-ba8d-1f273acafd9b",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Status flag indicating whether this periodic fee is currently being applied to eligible accounts.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        "a79a0c4d-188d-45ca-b830-6cbba778b52a"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "ddabddf1-7a7b-4fa8-b375-194b0d31d135",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "669122dc-0bac-4ee9-a86d-7b60da698010",
+              "colid": "a7c5c2e0-0882-4ef8-b100-c831f04208a4"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "9e5b3738-2e00-4fc3-abf6-cab8d05a11cd",
+          "name": "channel_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "07699620-fe09-4f83-a540-e59b8033fdf4",
+              "colid": "a7c5c2e0-0882-4ef8-b100-c831f04208a4",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "acb176c6-cf55-43cb-95f9-c2a7f1f6e50e",
+          "name": "channel_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "2905bdb2-d88f-4cf2-8d1e-08fd3353461c",
+              "colid": "b0a4a566-4bf8-4e4b-b40f-7985c801e09d",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "periodicFees"
+      },
+      "_relationships": [
+        {
+          "name": "periodic_fee_fees",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "periodic_fee",
+          "parent": "periodic_fee",
+          "parentCol": "periCode",
+          "parentClass": "PeriodicFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "periodic_fees",
+          "childClass": "Fee",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "5acf4854-34d3-4c05-8c89-8468f9a1a344": {
+      "id": "5acf4854-34d3-4c05-8c89-8468f9a1a344",
+      "visible": true,
+      "name": "penalty_fee",
+      "desc": "Penalty and violation fee configurations applied when customers breach account terms, exceed limits, or trigger specific risk conditions. These fees serve as deterrents and risk mitigation measures.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "49d36bc2-50b1-4d7f-8edf-347b44d928b7",
+          "name": "penCode",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique system identifier for the penalty fee definition, used for automated fee assessment and reporting.",
+          "defaultvalue": "",
+          "data": "OVERDRAFT_PEN",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "b59915cb-2227-4658-957b-b32fb1f311cb",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Clear, customer-understandable name for the penalty fee as displayed on statements and notifications.",
+          "defaultvalue": "",
+          "data": "Overdraft Penalty Fee",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "3093271f-4889-49e1-ad65-2328acf83319",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Detailed specification of the conditions that trigger this penalty, the calculation method, maximum frequency, and any grace period or waiver provisions.",
+          "defaultvalue": "",
+          "data": "Fee assessed when account balance falls below zero due to insufficient funds. Applied per occurrence with maximum of 4 fees per day. $35 per incident with 24-hour grace period for deposit corrections",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "ef7fbb3e-6d50-427c-8e75-097d9e990563",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Operational flag indicating whether this penalty fee is currently enforced for policy violations.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        "f7a1cf41-77f9-4df1-9dbc-ec58a466d969"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "430b529b-4e92-4931-9a22-851f2351cd14",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "5b41350b-a972-4c8d-8978-d547c71c1bcf",
+              "colid": "49d36bc2-50b1-4d7f-8edf-347b44d928b7"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "16fbee44-63ed-497a-815e-941854b4ce61",
+          "name": "channel_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "0e7dd0c6-ec2b-427c-920e-cc95d27840d9",
+              "colid": "49d36bc2-50b1-4d7f-8edf-347b44d928b7",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "15753e69-89b3-4aee-934c-ef1dde6674b8",
+          "name": "channel_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "5a1e2857-f0d2-458a-be93-813024e1bebe",
+              "colid": "b59915cb-2227-4658-957b-b32fb1f311cb",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "penaltyFees"
+      },
+      "_relationships": [
+        {
+          "name": "penalty_fee_fees",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "penalty_fee",
+          "parent": "penalty_fee",
+          "parentCol": "penCode",
+          "parentClass": "PenaltyFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "penalty_fees",
+          "childClass": "Fee",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "72bb0c46-7bf1-46ce-9591-dcc378de7b55": {
+      "id": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "visible": true,
+      "name": "product",
+      "desc": "\n## Banking Product Management\n\nThis API manages the complete lifecycle of banking products and their configurations:\n\n### 📦 Product Types\nComprehensive range of banking products:\n- **Deposit Products**: Savings accounts, current accounts, term deposits, money market accounts\n- **Credit Products**: Personal loans, mortgages, credit cards, lines of credit, overdraft facilities\n- **Investment Products**: Mutual funds, ETFs, bonds, structured products, wealth management\n- **Payment Products**: Debit cards, prepaid cards, payment wallets, merchant services\n- **Insurance Products**: Life insurance, general insurance, bancassurance products\n\n### ⚙️ Product Configuration\n- **Interest Structures**: Fixed vs variable rates, tiered interest, promotional rates\n- **Fee Configurations**: Product-specific fee schedules and waiver conditions\n- **Limit Management**: Transaction limits, balance thresholds, credit limits\n- **Channel Access**: Available channels per product (mobile, web, ATM, branch)\n- **Eligibility Criteria**: Age, income, credit score, and other qualification requirements\n\n### 🔧 Business Rules Engine\n- **Automated Decision Making**: Product approval workflows and decision trees\n- **Risk Assessment**: Credit scoring, fraud detection, compliance checks\n- **Pricing Models**: Dynamic pricing based on customer profile and market conditions\n- **Product Bundling**: Cross-selling and upselling rules and recommendations\n- **Lifecycle Management**: Product maturity, renewal, and closure processes\n\n### 🎯 Customer Segmentation\n- **Premium Banking**: High-net-worth individual products and services\n- **Mass Market**: Standard retail banking products for general customers\n- **SME Banking**: Small and medium enterprise business banking solutions\n- **Corporate Banking**: Large enterprise and institutional banking products\n- **Youth Banking**: Student accounts and youth-focused financial products\n\n### 📊 Product Analytics\n- **Performance Metrics**: Product profitability, usage patterns, customer satisfaction\n- **Market Analysis**: Competitive positioning, pricing benchmarks, market share\n- **Customer Journey**: Product adoption, usage lifecycle, churn analysis\n- **Risk Monitoring**: Portfolio risk, concentration limits, stress testing\n\n---\n**Base Path:** `/api/fintech-banking-product/products`\n\n### 🔍 Common Use Cases\n- Launch new banking products with comprehensive configurations\n- Update existing product features and pricing structures\n- Configure business rules for automated decision making\n- Analyze product performance and customer behavior\n",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "25060ee6-c464-4664-8362-b520b82fc78f",
+          "name": "code",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Unique business identifier for the product used in APIs, reports, and customer communications. Should be descriptive and follow consistent naming conventions.",
+          "defaultvalue": "uuid()",
+          "data": "PREMIUM_SAVINGS",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "db555147-acbf-4642-8dcc-e35f9188a0ab",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Customer-facing display name for the product as shown in marketing materials, applications, and account statements.",
+          "defaultvalue": "",
+          "data": "Premium High-Yield Savings Account",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "202c1da2-b5bc-4a89-950c-39f51fc6a56e",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Comprehensive marketing description highlighting key features, benefits, target customer segments, and competitive advantages of the product.",
+          "defaultvalue": "",
+          "data": "High-yield savings account with competitive interest rates, no monthly fees for balances over $10,000, and premium customer support access",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "c4ef86ba-dd2e-4648-8397-e8cb68720c8a",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Master switch controlling product availability. When false, the product is hidden from new customer enrollment while maintaining existing accounts.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        },
+        {
+          "id": "0069d397-3384-455f-a59a-fadf82b44f3f",
+          "name": "currency",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Primary base currency for the product using ISO 4217 currency codes. Determines the default currency for account balances and transactions.",
+          "defaultvalue": "",
+          "data": "USD",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "5d8dc920-ba9a-44bd-ae39-c7864a29cac8",
+          "name": "channels",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Comma-delimited list of customer access channels supported by this product. Controls which touchpoints can be used for account management and transactions.",
+          "defaultvalue": "",
+          "data": "WEB,MOBILE,ATM,BRANCH",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "b9db7e6e-d9cf-45a9-bc15-8a9a0d21a327",
+          "name": "rails",
+          "datatype": "INT",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Comma-separated list of payment rail IDs that this product supports for transaction processing. Determines available settlement networks and routing options.",
+          "defaultvalue": "",
+          "data": "1001,1002,1003",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "9045538e-e129-4735-935e-b8c18c9037a5",
+          "name": "category",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Product classification for regulatory reporting, risk management, and operational categorization. Values include SAVINGS, CHECKING, MONEY_MARKET, LOAN, CREDIT_LINE.",
+          "defaultvalue": "",
+          "data": "TRANSACTIONAL",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "TRANSACTIONAL,ESCROW,SAVINGS,FLOAT,SETTLEMENT",
+          "estimatedSize": "",
+          "type": "ProductCategoryEnum"
+        },
+        {
+          "id": "0dcf16c1-ebe6-43fe-bf34-8eaaf39c6bff",
+          "name": "isDefault",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Designates this product as the default option for new customer onboarding when no specific product is selected. Only one product per category should be marked as default.",
+          "defaultvalue": "",
+          "data": "false",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        },
+        {
+          "id": "810e3a1b-b0ab-43bc-91c5-dd1548b14548",
+          "name": "fees",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Comprehensive fee structure object containing references to applicable transactional, initiation, periodic, and penalty fees. Enables flexible fee bundling and product-specific pricing.",
+          "defaultvalue": "",
+          "data": "{\"transactional\": [\"WIRE_FEE\"], \"periodic\": [\"MONTHLY_MAINT\"], \"penalty\": [\"OVERDRAFT\"]}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Fee"
+        },
+        {
+          "id": "63f49b2b-f854-46e5-8f00-fb8341553a5f",
+          "name": "routingNumber",
+          "datatype": "VARCHAR",
+          "param": "50",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "ABA routing number or equivalent bank identifier used for wire transfers, ACH transactions, and check processing associated with this product.",
+          "defaultvalue": "",
+          "data": "121000248",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "0f2cba24-df8a-432d-9377-499de575511e",
+          "name": "accountNumberPrefix",
+          "datatype": "VARCHAR",
+          "param": "3",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Standardized prefix applied to all account numbers generated for this product type. Enables systematic account identification and routing logic.",
+          "defaultvalue": "",
+          "data": "SAV",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "1a03c40b-3590-4a53-b5b9-3e7115e0a611",
+          "name": "interest",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Interest calculation configuration object specifying rates, compounding rules, accrual methods, and payment schedules. Links to interest_configuration for detailed parameters.",
+          "defaultvalue": "",
+          "data": "{\"configId\": \"HIGH_YIELD_CONFIG\", \"tierBased\": true, \"minimumBalance\": 1000}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "InterestConfiguration"
+        },
+        {
+          "id": "6cf3b2b8-c0fd-482e-befe-d2513e5a5292",
+          "name": "statement",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Statement generation and delivery configuration including frequency, format preferences, electronic delivery options, and retention policies.",
+          "defaultvalue": "",
+          "data": "{\"frequency\": \"MONTHLY\", \"delivery\": \"EMAIL\", \"format\": \"PDF\", \"suppressZeroBalance\": false}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Statement"
+        },
+        {
+          "id": "35f53d28-5661-4f99-845a-31a3b6ca69b7",
+          "name": "dormancy",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Account dormancy detection and management rules specifying inactivity thresholds, notification procedures, and automated actions to comply with regulatory requirements.",
+          "defaultvalue": "",
+          "data": "{\"inactiveDays\": 365, \"notifyBeforeDays\": 30, \"actions\": [\"RESTRICT_DEBITS\", \"NOTIFY_CUSTOMER\"]}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Dormancy"
+        },
+        {
+          "id": "4b87d06a-5efb-44b0-8ef0-7fe1ed8375cd",
+          "name": "limits",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Transaction and operational limit configurations including daily/monthly caps, per-transaction maximums, and velocity controls for risk management and regulatory compliance.",
+          "defaultvalue": "",
+          "data": "{\"dailyWithdrawal\": 5000, \"monthlyTransfers\": 6, \"maxTransactionAmount\": 25000}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "LimitLink"
+        },
+        {
+          "id": "8e67ab3e-15ab-4a72-b2c7-2fd6c14f0100",
+          "name": "attributes",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Extensible metadata object for storing product-specific feature flags, custom parameters, integration settings, and business logic configurations not covered by standard fields.",
+          "defaultvalue": "",
+          "data": "{\"eligibleForPromotion\": true, \"requiresIdentityVerification\": true, \"supportsCryptoCurrency\": false}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        }
+      ],
+      "relations": [
+        "b12b09da-d743-4973-b9ab-2e63e6c0a020",
+        "f1c008de-6d5b-47a5-b5ed-534460d13f58",
+        "e4b74af4-8ce3-4f5d-aa11-c45834ab6f87",
+        "05222e3f-132e-45c9-bdab-4fa2741c3700",
+        "54728bf8-32d3-4794-af68-e5c96cb44819",
+        "584f7e61-f08b-4bc2-8e27-6c347cb3b83f",
+        "530585b5-b367-4744-95fa-260459ab9134",
+        "b1dfb14e-e1d4-44eb-9a7a-899192cbc312"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "4011592c-58b1-438a-9168-eef4f05523c6",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "efea4a2f-eb0f-4f9f-809b-cf1012314a4a",
+              "colid": "25060ee6-c464-4664-8362-b520b82fc78f"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "83e5a7c4-b89d-4388-a821-6180e24e80ba",
+          "name": "product_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "570be80c-ab8c-4627-b344-293b74d26801",
+              "colid": "25060ee6-c464-4664-8362-b520b82fc78f",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "6291d612-259e-4255-ad33-3cf382049efb",
+          "name": "product_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "f8491504-5b45-4807-9c67-5a5a1ba9a728",
+              "colid": "db555147-acbf-4642-8dcc-e35f9188a0ab",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "products"
+      },
+      "_relationships": [
+        {
+          "name": "currency_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "currency",
+          "parent": "currency",
+          "parentCol": "code_the",
+          "parentClass": "Currency",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "currency",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "channel_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "channel",
+          "parent": "channel",
+          "parentCol": "code",
+          "parentClass": "Channel",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "channels",
+          "childClass": "Product",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "rail_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "rail",
+          "parent": "rail",
+          "parentCol": "theCode",
+          "parentClass": "Rail",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "rails",
+          "childClass": "Product",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "interest_configuration_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "interest_configuration",
+          "parent": "interest_configuration",
+          "parentCol": "id",
+          "parentClass": "InterestConfiguration",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "interest",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "statement_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "statement",
+          "parent": "statement",
+          "parentCol": "id",
+          "parentClass": "Statement",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "statement",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "dormancy_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "dormancy",
+          "parent": "dormancy",
+          "parentCol": "id",
+          "parentClass": "Dormancy",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "dormancy",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "fees_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "fee",
+          "parent": "fee",
+          "parentCol": "id",
+          "parentClass": "Fee",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "fees",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "limits_product",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "limit_link",
+          "parent": "limit_link",
+          "parentCol": "id",
+          "parentClass": "LimitLink",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "limits",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "category": {
+          "file": "product",
+          "name": "ProductCategoryEnum",
+          "declaration": "export enum ProductCategoryEnum {\n  TRANSACTIONAL = 'TRANSACTIONAL',\n  ESCROW = 'ESCROW',\n  SAVINGS = 'SAVINGS',\n  FLOAT = 'FLOAT',\n  SETTLEMENT = 'SETTLEMENT',\n}\n\n"
+        }
+      }
+    },
+    "f92d678c-c897-4484-b476-b902d3931516": {
+      "id": "f92d678c-c897-4484-b476-b902d3931516",
+      "visible": true,
+      "name": "interest_configuration",
+      "desc": "Comprehensive interest calculation and accrual configuration table supporting complex financial instruments and regulatory compliance requirements. Enables sophisticated interest strategies with multiple calculation methods and payment schedules.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "0c4954ca-d332-4e24-9976-a4aeb2b511dd",
+          "name": "id",
+          "datatype": "JSON",
+          "param": "",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Composite unique identifier object containing tenant context, configuration version, and any hierarchical structure needed for multi-tenant interest management.",
+          "defaultvalue": "",
+          "data": "{\"tenant\": \"bank123\", \"version\": \"v2.1\", \"configId\": \"SAVINGS_PREMIUM\"}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "a0d854af-2b64-4865-81bb-5a6d1291a2c0",
+          "name": "rate",
+          "datatype": "DECIMAL",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Annual interest rate expressed as a decimal value. For percentage rates, divide by 100 (e.g., 2.5% = 0.025). Supports up to 6 decimal places for precision.",
+          "defaultvalue": "",
+          "data": "0.025000",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "fdf86411-3e87-496c-88c3-f02e44bfb001",
+          "name": "rateCode",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Reference identifier linking to external rate sources, benchmark rates, or rate tables. Used for dynamic rate updates and regulatory reporting.",
+          "defaultvalue": "",
+          "data": "PRIME_PLUS_050",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "7cfe481a-9be3-4fc0-8f30-406164bfaf00",
+          "name": "calculation",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Mathematical method for interest calculation. Options: SIMPLE (principal only), COMPOUND (interest on interest), COMPOUND_CONTINUOUS (continuous compounding for high-frequency calculations).",
+          "defaultvalue": "",
+          "data": "simple",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "simple,compound",
+          "estimatedSize": "",
+          "type": "InterestConfigurationCalculationEnum"
+        },
+        {
+          "id": "52fc6c6d-8e2d-45cd-859c-6685da60e6f1",
+          "name": "accrual",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Frequency and timing for interest accrual calculations. Options: DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUALLY. Determines how often interest is computed and added to accrued balance.",
+          "defaultvalue": "",
+          "data": "daily",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "daily,monthly,annually,biweekly,semiannually,quarterly,weekly",
+          "estimatedSize": "",
+          "type": "InterestConfigurationAccrualEnum"
+        },
+        {
+          "id": "567283cb-46ff-49bb-8a7c-99d58339d1eb",
+          "name": "capitalization",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Schedule for converting accrued interest into principal balance. Options: DAILY, MONTHLY, QUARTERLY, ANNUALLY, END_OF_TERM. Affects compound interest calculations.",
+          "defaultvalue": "",
+          "data": "daily",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "daily,monthly,annually,biweekly,semiannually,quarterly,weekly",
+          "estimatedSize": "",
+          "type": "InterestConfigurationCapitalizationEnum"
+        },
+        {
+          "id": "238e128a-9fa4-43d2-b4d7-a0e64672bb36",
+          "name": "dayCountConversion",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Day count convention for interest period calculations. Options: ACTUAL_360 (actual days/360), ACTUAL_365 (actual days/365), THIRTY_360 (30 days per month), ACTUAL_ACTUAL (actual days/actual year).",
+          "defaultvalue": "",
+          "data": "actual",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "actual,thirty360,thirty365,thirtye360,thirtye365,thirtyeplus360,thirtyeplus365,thirtyeplusactual",
+          "estimatedSize": "",
+          "type": "InterestConfigurationDayCountConversionEnum"
+        },
+        {
+          "id": "b89b2635-04cd-4a9c-9fba-46274a66cb85",
+          "name": "active",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Operational status flag controlling whether this interest configuration is available for new product assignments and active interest calculations.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        },
+        {
+          "id": "ad6e7904-0c07-4c40-82af-0323bec5b98a",
+          "name": "lastAppliedAt",
+          "datatype": "DATETIME",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "UTC timestamp recording the most recent successful application of interest calculations using this configuration. Used for auditing and reconciliation processes.",
+          "defaultvalue": "",
+          "data": "2025-07-01T10:30:00Z",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Date"
+        }
+      ],
+      "relations": [
+        "05222e3f-132e-45c9-bdab-4fa2741c3700"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "13c13422-e2e8-40b0-bf2a-6047fa8d1e20",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "1f93c960-54c6-4c99-8502-6dc7c2d3c692",
+              "colid": "0c4954ca-d332-4e24-9976-a4aeb2b511dd"
+            }
+          ]
+        }
+      ],
+      "indexes": [],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "service",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "interestConfigurations"
+      },
+      "_relationships": [
+        {
+          "name": "interest_configuration_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "interest_configuration",
+          "parent": "interest_configuration",
+          "parentCol": "id",
+          "parentClass": "InterestConfiguration",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "interest",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "calculation": {
+          "file": "interestConfiguration",
+          "name": "InterestConfigurationCalculationEnum",
+          "declaration": "export enum InterestConfigurationCalculationEnum {\n  SIMPLE = 'simple',\n  COMPOUND = 'compound',\n}\n\n"
+        },
+        "accrual": {
+          "file": "interestConfiguration",
+          "name": "InterestConfigurationAccrualEnum",
+          "declaration": "export enum InterestConfigurationCalculationEnum {\n  SIMPLE = 'simple',\n  COMPOUND = 'compound',\n}\n\nexport enum InterestConfigurationAccrualEnum {\n  DAILY = 'daily',\n  MONTHLY = 'monthly',\n  ANNUALLY = 'annually',\n  BIWEEKLY = 'biweekly',\n  SEMIANNUALLY = 'semiannually',\n  QUARTERLY = 'quarterly',\n  WEEKLY = 'weekly',\n}\n\n"
+        },
+        "capitalization": {
+          "file": "interestConfiguration",
+          "name": "InterestConfigurationCapitalizationEnum",
+          "declaration": "export enum InterestConfigurationCalculationEnum {\n  SIMPLE = 'simple',\n  COMPOUND = 'compound',\n}\n\nexport enum InterestConfigurationAccrualEnum {\n  DAILY = 'daily',\n  MONTHLY = 'monthly',\n  ANNUALLY = 'annually',\n  BIWEEKLY = 'biweekly',\n  SEMIANNUALLY = 'semiannually',\n  QUARTERLY = 'quarterly',\n  WEEKLY = 'weekly',\n}\n\nexport enum InterestConfigurationCapitalizationEnum {\n  DAILY = 'daily',\n  MONTHLY = 'monthly',\n  ANNUALLY = 'annually',\n  BIWEEKLY = 'biweekly',\n  SEMIANNUALLY = 'semiannually',\n  QUARTERLY = 'quarterly',\n  WEEKLY = 'weekly',\n}\n\n"
+        },
+        "dayCountConversion": {
+          "file": "interestConfiguration",
+          "name": "InterestConfigurationDayCountConversionEnum",
+          "declaration": "export enum InterestConfigurationCalculationEnum {\n  SIMPLE = 'simple',\n  COMPOUND = 'compound',\n}\n\nexport enum InterestConfigurationAccrualEnum {\n  DAILY = 'daily',\n  MONTHLY = 'monthly',\n  ANNUALLY = 'annually',\n  BIWEEKLY = 'biweekly',\n  SEMIANNUALLY = 'semiannually',\n  QUARTERLY = 'quarterly',\n  WEEKLY = 'weekly',\n}\n\nexport enum InterestConfigurationCapitalizationEnum {\n  DAILY = 'daily',\n  MONTHLY = 'monthly',\n  ANNUALLY = 'annually',\n  BIWEEKLY = 'biweekly',\n  SEMIANNUALLY = 'semiannually',\n  QUARTERLY = 'quarterly',\n  WEEKLY = 'weekly',\n}\n\nexport enum InterestConfigurationDayCountConversionEnum {\n  ACTUAL = 'actual',\n  THIRTY360 = 'thirty360',\n  THIRTY365 = 'thirty365',\n  THIRTYE360 = 'thirtye360',\n  THIRTYE365 = 'thirtye365',\n  THIRTYEPLUS360 = 'thirtyeplus360',\n  THIRTYEPLUS365 = 'thirtyeplus365',\n  THIRTYEPLUSACTUAL = 'thirtyeplusactual',\n}\n\n"
+        }
+      }
+    },
+    "db66cef1-da0b-41ce-8bdf-e468eb409fff": {
+      "id": "db66cef1-da0b-41ce-8bdf-e468eb409fff",
+      "visible": true,
+      "name": "statement",
+      "desc": "Statement generation and delivery configuration table managing customer account statements, regulatory reporting requirements, and document retention policies. Supports multiple delivery channels and customizable formatting options.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "d13f9721-dad2-42d9-9a12-c89489fe9919",
+          "name": "id",
+          "datatype": "JSON",
+          "param": "",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Composite identifier structure containing tenant context, product type, and configuration versioning for multi-tenant statement management systems.",
+          "defaultvalue": "",
+          "data": "{\"tenant\": \"bank123\", \"product\": \"SAVINGS\", \"version\": \"2024Q1\"}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "f53cb125-5056-468e-b7ae-0a1b48fd9b67",
+          "name": "frequency",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Statement generation schedule determining how often account statements are produced. Options: WEEKLY, MONTHLY, QUARTERLY, ANNUALLY, ON_DEMAND. Aligns with regulatory requirements and customer preferences.",
+          "defaultvalue": "",
+          "data": "monthly",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "monthly,quarterly,halfannually,annually",
+          "estimatedSize": "",
+          "type": "StatementFrequencyEnum"
+        },
+        {
+          "id": "3e2e21f5-76f2-45e8-8859-a5a729f12727",
+          "name": "day",
+          "datatype": "INT",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Specific day of the month (1-31) when periodic statements are generated. For monthly statements, day 31 will default to last day of month for shorter months.",
+          "defaultvalue": "",
+          "data": "15",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "263df2f6-d686-43d3-8a15-316fd7a4a247",
+          "name": "timeZone",
+          "datatype": "VARCHAR",
+          "param": "30",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "IANA time zone identifier for statement generation scheduling. Ensures consistent timing across geographic regions and daylight saving transitions.",
+          "defaultvalue": "",
+          "data": "America/New_York",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "1ac09bc7-7e74-44bf-8adc-95d6bb39f151",
+          "name": "type",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Statement content and format specification. Options: SUMMARY (basic balance and transaction count), DETAILED (full transaction listing), REGULATORY (compliance-focused), CUSTOM (configurable fields).",
+          "defaultvalue": "",
+          "data": "summary",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "summary,detailed,regulatory",
+          "estimatedSize": "",
+          "type": "StatementTypeEnum"
+        },
+        {
+          "id": "3f2c65dc-c1e4-499e-b12f-a51b6f093563",
+          "name": "deliveryMethod",
+          "datatype": "ENUM",
+          "param": "30",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Primary delivery channel for statement distribution. Options: EMAIL, POSTAL_MAIL, SECURE_PORTAL, API_PUSH, SMS_LINK. May support multiple methods with customer preferences.",
+          "defaultvalue": "",
+          "data": "email",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "email,pdf,apiOnly",
+          "estimatedSize": "",
+          "type": "StatementDeliveryMethodEnum"
+        },
+        {
+          "id": "430d85b7-c852-442d-910f-6b1f060d66f9",
+          "name": "gracePeriodDays",
+          "datatype": "INT",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Number of calendar days after statement generation during which delivery attempts continue before marking as failed. Used for retry logic and customer notification escalation.",
+          "defaultvalue": "",
+          "data": "7",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "f7d39b77-52a6-4036-a4cf-d55565367e7e",
+          "name": "retentionPeriod",
+          "datatype": "ENUM",
+          "param": "30",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Document retention policy for generated statements. Options: THREE_MONTHS, SIX_MONTHS, ONE_YEAR, SEVEN_YEARS, PERMANENT. Must comply with financial regulations and data privacy laws.",
+          "defaultvalue": "",
+          "data": "oneyear",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "oneyear,threeyears,forever",
+          "estimatedSize": "",
+          "type": "StatementRetentionPeriodEnum"
+        }
+      ],
+      "relations": [
+        "54728bf8-32d3-4794-af68-e5c96cb44819"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "d393202e-ecb2-4bbb-b373-d4a28f300aec",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "3d2c1bff-79a2-4eaa-853a-2c92fae3a4d9",
+              "colid": "d13f9721-dad2-42d9-9a12-c89489fe9919"
+            }
+          ]
+        }
+      ],
+      "indexes": [],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "service",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "statements"
+      },
+      "_relationships": [
+        {
+          "name": "statement_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "statement",
+          "parent": "statement",
+          "parentCol": "id",
+          "parentClass": "Statement",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "statement",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "frequency": {
+          "file": "statement",
+          "name": "StatementFrequencyEnum",
+          "declaration": "export enum StatementFrequencyEnum {\n  MONTHLY = 'monthly',\n  QUARTERLY = 'quarterly',\n  HALFANNUALLY = 'halfannually',\n  ANNUALLY = 'annually',\n}\n\n"
+        },
+        "type": {
+          "file": "statement",
+          "name": "StatementTypeEnum",
+          "declaration": "export enum StatementFrequencyEnum {\n  MONTHLY = 'monthly',\n  QUARTERLY = 'quarterly',\n  HALFANNUALLY = 'halfannually',\n  ANNUALLY = 'annually',\n}\n\nexport enum StatementTypeEnum {\n  SUMMARY = 'summary',\n  DETAILED = 'detailed',\n  REGULATORY = 'regulatory',\n}\n\n"
+        },
+        "deliveryMethod": {
+          "file": "statement",
+          "name": "StatementDeliveryMethodEnum",
+          "declaration": "export enum StatementFrequencyEnum {\n  MONTHLY = 'monthly',\n  QUARTERLY = 'quarterly',\n  HALFANNUALLY = 'halfannually',\n  ANNUALLY = 'annually',\n}\n\nexport enum StatementTypeEnum {\n  SUMMARY = 'summary',\n  DETAILED = 'detailed',\n  REGULATORY = 'regulatory',\n}\n\nexport enum StatementDeliveryMethodEnum {\n  EMAIL = 'email',\n  PDF = 'pdf',\n  APIONLY = 'apiOnly',\n}\n\n"
+        },
+        "retentionPeriod": {
+          "file": "statement",
+          "name": "StatementRetentionPeriodEnum",
+          "declaration": "export enum StatementFrequencyEnum {\n  MONTHLY = 'monthly',\n  QUARTERLY = 'quarterly',\n  HALFANNUALLY = 'halfannually',\n  ANNUALLY = 'annually',\n}\n\nexport enum StatementTypeEnum {\n  SUMMARY = 'summary',\n  DETAILED = 'detailed',\n  REGULATORY = 'regulatory',\n}\n\nexport enum StatementDeliveryMethodEnum {\n  EMAIL = 'email',\n  PDF = 'pdf',\n  APIONLY = 'apiOnly',\n}\n\nexport enum StatementRetentionPeriodEnum {\n  ONEYEAR = 'oneyear',\n  THREEYEARS = 'threeyears',\n  FOREVER = 'forever',\n}\n\n"
+        }
+      }
+    },
+    "0b6353f6-92c3-45b0-9cd8-b14e08f454c1": {
+      "id": "0b6353f6-92c3-45b0-9cd8-b14e08f454c1",
+      "visible": true,
+      "name": "dormancy",
+      "desc": "Account dormancy detection and management configuration table implementing regulatory compliance for inactive account handling. Defines automated workflows for customer notification, account restrictions, and escheatment processes.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "caafa843-1dc6-44bc-bb60-6324a8754cb3",
+          "name": "id",
+          "datatype": "JSON",
+          "param": "",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Composite identifier encompassing tenant, product type, jurisdiction, and configuration version to support regulatory variations across different markets and account types.",
+          "defaultvalue": "",
+          "data": "{\"tenant\": \"bank123\", \"product\": \"CHECKING\", \"jurisdiction\": \"NY\", \"version\": \"v1.2\"}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "e2e269a6-5c9d-4f6e-bfd7-f08a75547ced",
+          "name": "days",
+          "datatype": "INT",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Threshold number of consecutive calendar days without customer-initiated activity that triggers dormancy classification. Must align with state and federal banking regulations.",
+          "defaultvalue": "",
+          "data": "365",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "dfa2b629-aeb7-4c28-bb31-d8acee5d2799",
+          "name": "activation",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Specific trigger criteria for dormancy evaluation. Options: NO_CUSTOMER_ACTIVITY (any customer action), NO_FINANCIAL_ACTIVITY (transactions only), NO_LOGIN (digital access), BALANCE_BASED (minimum balance thresholds).",
+          "defaultvalue": "",
+          "data": "any",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "any,debit,credit",
+          "estimatedSize": "",
+          "type": "DormancyActivationEnum"
+        },
+        {
+          "id": "1805871c-e24e-45f5-985a-8e3c98a35f94",
+          "name": "actions",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Automated response configuration array specifying sequential actions taken upon dormancy detection. May include account restrictions, fee assessments, notification escalation, and eventual escheatment procedures.",
+          "defaultvalue": "",
+          "data": "freeze",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "freeze,notify,charge_fee,deactivate",
+          "estimatedSize": "",
+          "type": "DormancyActionsEnum"
+        },
+        {
+          "id": "855d90b4-b36b-43c6-a87b-b4d17912d78a",
+          "name": "notifyChannels",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Multi-channel notification strategy for customer outreach before and after dormancy activation. Includes primary and fallback communication methods with timing and content specifications.",
+          "defaultvalue": "",
+          "data": "email",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "email,sms,inApp",
+          "estimatedSize": "",
+          "type": "DormancyNotifyChannelsEnum"
+        },
+        {
+          "id": "54f51b14-f999-462c-9f64-5e83e009d804",
+          "name": "tagAsDormant",
+          "datatype": "BOOLEAN",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "System flag controlling whether accounts meeting dormancy criteria are automatically marked with dormant status for reporting, compliance monitoring, and operational workflow routing.",
+          "defaultvalue": "",
+          "data": "true",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        "584f7e61-f08b-4bc2-8e27-6c347cb3b83f"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "9225caf3-923f-43bc-a4c0-0817ae9f37f2",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "22d66573-de9c-461e-8040-8e561b2e73a2",
+              "colid": "caafa843-1dc6-44bc-bb60-6324a8754cb3"
+            }
+          ]
+        }
+      ],
+      "indexes": [],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "service",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "dormancies"
+      },
+      "_relationships": [
+        {
+          "name": "dormancy_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "dormancy",
+          "parent": "dormancy",
+          "parentCol": "id",
+          "parentClass": "Dormancy",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "dormancy",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "activation": {
+          "file": "dormancy",
+          "name": "DormancyActivationEnum",
+          "declaration": "export enum DormancyActivationEnum {\n  ANY = 'any',\n  DEBIT = 'debit',\n  CREDIT = 'credit',\n}\n\n"
+        },
+        "actions": {
+          "file": "dormancy",
+          "name": "DormancyActionsEnum",
+          "declaration": "export enum DormancyActivationEnum {\n  ANY = 'any',\n  DEBIT = 'debit',\n  CREDIT = 'credit',\n}\n\nexport enum DormancyActionsEnum {\n  FREEZE = 'freeze',\n  NOTIFY = 'notify',\n  CHARGE_FEE = 'charge_fee',\n  DEACTIVATE = 'deactivate',\n}\n\n"
+        },
+        "notifyChannels": {
+          "file": "dormancy",
+          "name": "DormancyNotifyChannelsEnum",
+          "declaration": "export enum DormancyActivationEnum {\n  ANY = 'any',\n  DEBIT = 'debit',\n  CREDIT = 'credit',\n}\n\nexport enum DormancyActionsEnum {\n  FREEZE = 'freeze',\n  NOTIFY = 'notify',\n  CHARGE_FEE = 'charge_fee',\n  DEACTIVATE = 'deactivate',\n}\n\nexport enum DormancyNotifyChannelsEnum {\n  EMAIL = 'email',\n  SMS = 'sms',\n  INAPP = 'inApp',\n}\n\n"
+        }
+      }
+    },
+    "6b11cb32-8653-45f7-b595-ee5f0d3cfb85": {
+      "id": "6b11cb32-8653-45f7-b595-ee5f0d3cfb85",
+      "visible": true,
+      "name": "limit",
+      "desc": "Transaction limit and velocity control configuration table for risk management, fraud prevention, and regulatory compliance. Supports complex limit structures with multiple time periods, transaction types, and enforcement actions.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "d10f7837-d2a8-4de9-b955-6e4c7b88256a",
+          "name": "id",
+          "datatype": "JSON",
+          "param": "",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Multi-dimensional identifier incorporating tenant, currency, product type, customer segment, and configuration version for granular limit management across diverse banking environments.",
+          "defaultvalue": "",
+          "data": "{\"tenant\": \"bank123\", \"currency\": \"USD\", \"product\": \"CHECKING\", \"segment\": \"PREMIUM\", \"version\": \"2024.1\"}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "30057aa5-607b-4525-a9ba-aa7e9e4163f3",
+          "name": "period",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Time window for limit enforcement and reset cycles. Options: PER_TRANSACTION, HOURLY, DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUALLY. Supports both sliding and fixed windows.",
+          "defaultvalue": "",
+          "data": "day",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "day,week,month",
+          "estimatedSize": "",
+          "type": "LimitPeriodEnum"
+        },
+        {
+          "id": "dc6a75d3-c292-498c-a823-d1d250358267",
+          "name": "transactionType",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "Specific transaction category subject to the limit. Options: PAYMENT, TRANSFER, WITHDRAWAL, DEPOSIT, WIRE, ACH, CHECK, CARD_PURCHASE, ATM_WITHDRAWAL, BILL_PAY. Enables fine-grained control.",
+          "defaultvalue": "",
+          "data": "payment",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "payment,transfer",
+          "estimatedSize": "",
+          "type": "LimitTransactionTypeEnum"
+        },
+        {
+          "id": "5349f0d1-9f31-4f96-8e6f-99a2b9d5a3fb",
+          "name": "count",
+          "datatype": "INT",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Maximum number of transactions permitted within the specified time period. Used for velocity controls and anti-fraud measures. Zero indicates no count-based restriction.",
+          "defaultvalue": "",
+          "data": "10",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "05af0e69-c4d3-41ad-a007-ab33acb43b5c",
+          "name": "totalValueLimit ",
+          "datatype": "DECIMAL",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Maximum cumulative value allowed for the transaction type within the defined time period.",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "23db11d0-cffd-4954-bd4c-3c6b8a34956f",
+          "name": "perTransactionLimit ",
+          "datatype": "DECIMAL",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Maximum allowed value for a single transaction.",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "number"
+        },
+        {
+          "id": "bcac538f-0301-447a-9777-fbf4b13d1f5c",
+          "name": "onViolation",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Automated system response when limits are exceeded. Options: BLOCK (reject transaction), HOLD (require approval), WARN (allow with alert), ESCALATE (route to review queue), LOG_ONLY (monitor without action).",
+          "defaultvalue": "",
+          "data": "block",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "block,warn,defer",
+          "estimatedSize": "",
+          "type": "LimitOnViolationEnum"
+        },
+        {
+          "id": "550a2549-4d42-43c4-bee1-af5c755d5afb",
+          "name": "severity",
+          "datatype": "ENUM",
+          "param": "",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "Risk classification level for limit violations, determining alert priority and response protocols. Options: LOW (routine monitoring), MEDIUM (enhanced review), HIGH (immediate intervention), CRITICAL (emergency response).",
+          "defaultvalue": "",
+          "data": "low",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "low,medium,high",
+          "estimatedSize": "",
+          "type": "LimitSeverityEnum"
+        }
+      ],
+      "relations": [
+        "57ecfc23-60c5-4e68-aad0-e0b8fd58c050",
+        "d7270dfe-eaa6-4638-9711-3a58b152a888"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "721bdbaf-df40-41f3-aa06-b1100ba30b7a",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "4a1a9321-5e60-40e3-939d-f425eb2a6456",
+              "colid": "d10f7837-d2a8-4de9-b955-6e4c7b88256a"
+            }
+          ]
+        }
+      ],
+      "indexes": [],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "service",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "limits"
+      },
+      "_relationships": [
+        {
+          "name": "limit_limits",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "limit",
+          "parent": "limit",
+          "parentCol": "id",
+          "parentClass": "Limit",
+          "childTable": "limit_link",
+          "child": "limit_link",
+          "childCol": "customer",
+          "childClass": "LimitLink",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "limit_limits",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "limit",
+          "parent": "limit",
+          "parentCol": "id",
+          "parentClass": "Limit",
+          "childTable": "limit_link",
+          "child": "limit_link",
+          "childCol": "product",
+          "childClass": "LimitLink",
+          "c_p": "many",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {
+        "period": {
+          "file": "limit",
+          "name": "LimitPeriodEnum",
+          "declaration": "export enum LimitPeriodEnum {\n  DAY = 'day',\n  WEEK = 'week',\n  MONTH = 'month',\n}\n\n"
+        },
+        "transactionType": {
+          "file": "limit",
+          "name": "LimitTransactionTypeEnum",
+          "declaration": "export enum LimitPeriodEnum {\n  DAY = 'day',\n  WEEK = 'week',\n  MONTH = 'month',\n}\n\nexport enum LimitTransactionTypeEnum {\n  PAYMENT = 'payment',\n  TRANSFER = 'transfer',\n}\n\n"
+        },
+        "onViolation": {
+          "file": "limit",
+          "name": "LimitOnViolationEnum",
+          "declaration": "export enum LimitPeriodEnum {\n  DAY = 'day',\n  WEEK = 'week',\n  MONTH = 'month',\n}\n\nexport enum LimitTransactionTypeEnum {\n  PAYMENT = 'payment',\n  TRANSFER = 'transfer',\n}\n\nexport enum LimitOnViolationEnum {\n  BLOCK = 'block',\n  WARN = 'warn',\n  DEFER = 'defer',\n}\n\n"
+        },
+        "severity": {
+          "file": "limit",
+          "name": "LimitSeverityEnum",
+          "declaration": "export enum LimitPeriodEnum {\n  DAY = 'day',\n  WEEK = 'week',\n  MONTH = 'month',\n}\n\nexport enum LimitTransactionTypeEnum {\n  PAYMENT = 'payment',\n  TRANSFER = 'transfer',\n}\n\nexport enum LimitOnViolationEnum {\n  BLOCK = 'block',\n  WARN = 'warn',\n  DEFER = 'defer',\n}\n\nexport enum LimitSeverityEnum {\n  LOW = 'low',\n  MEDIUM = 'medium',\n  HIGH = 'high',\n}\n\n"
+        }
+      }
+    },
+    "0865a1b6-8023-4007-929b-37a36649ebea": {
+      "id": "0865a1b6-8023-4007-929b-37a36649ebea",
+      "visible": true,
+      "name": "fee",
+      "desc": "\n## Complete Fee Management System\n\nThis unified API manages all types of fees across the banking platform:\n\n| Fee Type | Description | Documentation Link |\n|----------|-------------|-------------------|\n| **🔄 Transactional Fees** | Per-transaction charges for transfers, payments | [📖 View Docs](/api/docs/transactional-fees) |\n| **🎯 Initiation Fees** | One-time setup charges for new services | [📖 View Docs](/api/docs/initiation-fees) |\n| **📅 Periodic Fees** | Recurring maintenance and subscription charges | [📖 View Docs](/api/docs/periodic-fees) |\n| **⚠️ Penalty Fees** | Violation and compliance penalty charges | [📖 View Docs](/api/docs/penalty-fees) |\n\n---\n\n### 🔄 Transactional Fees\nPer-transaction charges for banking operations:\n- **Transfer Fees**: Wire transfers, ACH, internal transfers, international remittances\n- **Withdrawal Fees**: ATM withdrawals, over-the-counter cash, online withdrawals\n- **Payment Fees**: Bill payments, card transactions, merchant processing\n- **Foreign Exchange**: Currency conversion and cross-border transaction fees\n- **Real-time Calculation**: Dynamic fee computation during transaction processing\n\n### 🎯 Initiation Fees\nOne-time setup charges for new services:\n- **Account Opening**: Fees for new deposit and credit accounts\n- **Card Issuance**: Debit and credit card setup fees\n- **Service Activation**: Premium service enrollment fees\n- **Product Setup**: Investment account, loan origination fees\n- **Documentation**: Statement setup, checkbook issuance fees\n\n### 📅 Periodic Fees\nRecurring charges for account maintenance and services:\n- **Monthly Maintenance**: Account keeping fees, minimum balance charges\n- **Annual Fees**: Card annual fees, premium service subscriptions\n- **Quarterly Charges**: Statement fees, portfolio management fees\n- **Subscription Services**: Digital banking features, advisory services\n- **Automated Billing**: Scheduled fee collection and customer notification\n\n### ⚠️ Penalty Fees\nCharges for policy violations and special circumstances:\n- **Overdraft Fees**: Account overdraft protection and coverage fees\n- **Late Payment**: Overdue loan payments, credit card late fees\n- **Returned Items**: Bounced checks, insufficient funds charges\n- **Early Termination**: Account closure, loan prepayment penalties\n- **Compliance Violations**: Regulatory breach penalties\n\n### 🎛️ Fee Configuration Engine\n- **Multi-Tier Pricing**: Customer segment-based fee structures\n- **Geographic Pricing**: Region-specific fee configurations\n- **Time-Based Pricing**: Peak hours, weekend, holiday adjustments\n- **Volume Discounts**: Transaction frequency and amount-based discounts\n- **Promotional Pricing**: Temporary fee waivers and special offers\n\n### 📊 Fee Analytics & Reporting\n- **Revenue Tracking**: Fee income analysis by type and customer segment\n- **Customer Impact**: Fee burden analysis and customer satisfaction metrics\n- **Competitive Analysis**: Market positioning and pricing benchmarks\n- **Compliance Reporting**: Regulatory fee disclosure and audit trails\n- **Optimization Insights**: Fee structure recommendations and A/B testing\n\n---\n**Base Path:** `/api/fintech-banking-product/`\n\n### 🔍 Common Use Cases\n- Configure comprehensive fee structures for new markets\n- Implement dynamic pricing strategies across all fee types\n- Monitor fee revenue and customer impact holistically\n- Ensure regulatory compliance across all fee categories\n        ",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "e75fa612-2b03-48f7-b846-cd2bb7ffd2bd",
+          "name": "id",
+          "datatype": "JSON",
+          "param": "",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Composite identifier structure containing tenant context, product association, pricing tier, and configuration versioning for comprehensive fee package management.",
+          "defaultvalue": "",
+          "data": "{\"tenant\": \"bank123\", \"product\": \"PREMIUM_CHECKING\", \"tier\": \"PLATINUM\", \"version\": \"2024Q2\"}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "7d1167b1-1236-415e-8790-427033ed3eb5",
+          "name": "transactional_fees",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Comma-separated list of transactional fee codes that apply to this fee bundle. References fee configurations from the transactional_fee table for per-transaction charges.",
+          "defaultvalue": "",
+          "data": "WIRE_DOMESTIC,WIRE_INTERNATIONAL,ACH_OUTBOUND",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "a4754161-6082-46ac-912b-daf43af3efb1",
+          "name": "initiation_fees",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": false,
+          "fk": true,
+          "comment": "Comma-separated list of one-time setup fee codes included in this fee package. References initiation_fee table for account opening and product enrollment charges.",
+          "defaultvalue": "",
+          "data": "ACCOUNT_SETUP,CARD_ISSUANCE,WELCOME_KIT",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "80187747-0ca2-422d-9bce-96b2bfcf2bb7",
+          "name": "periodic_fees",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Comma-separated list of recurring fee codes for regular service charges. References periodic_fee table for monthly, quarterly, or annual maintenance fees.",
+          "defaultvalue": "",
+          "data": "MONTHLY_MAINTENANCE,QUARTERLY_STATEMENT,ANNUAL_CARD_FEE",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "4bdc83b2-71f1-419c-bed8-856e83ea800b",
+          "name": "penalty_fees",
+          "datatype": "VARCHAR",
+          "param": "20",
+          "pk": false,
+          "nn": false,
+          "fk": true,
+          "comment": "Comma-separated list of penalty fee codes for policy violations and exception conditions. References penalty_fee table for overdraft, returned item, and other violation charges.",
+          "defaultvalue": "",
+          "data": "OVERDRAFT,NSF_FEE,RETURNED_CHECK,EXCESSIVE_WITHDRAWALS",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        }
+      ],
+      "relations": [
+        "74413ee6-56d8-463e-9f8c-142d001fb369",
+        "337b2441-4af4-462d-9586-5bd78a8c3ffa",
+        "a79a0c4d-188d-45ca-b830-6cbba778b52a",
+        "f7a1cf41-77f9-4df1-9dbc-ec58a466d969",
+        "530585b5-b367-4744-95fa-260459ab9134"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "b2b08fee-e50c-4f7b-8b0f-815484fde873",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "09850e4a-b214-46d3-ba73-17bab4923b66",
+              "colid": "e75fa612-2b03-48f7-b846-cd2bb7ffd2bd"
+            }
+          ]
+        }
+      ],
+      "indexes": [],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "service",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "fees"
+      },
+      "_relationships": [
+        {
+          "name": "transactional_fee_fees",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "transactional_fee",
+          "parent": "transactional_fee",
+          "parentCol": "tranCode",
+          "parentClass": "TransactionalFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "transactional_fees",
+          "childClass": "Fee",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "initiation_fee_fees",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "initiation_fee",
+          "parent": "initiation_fee",
+          "parentCol": "initCode",
+          "parentClass": "InitiationFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "initiation_fees",
+          "childClass": "Fee",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "periodic_fee_fees",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "periodic_fee",
+          "parent": "periodic_fee",
+          "parentCol": "periCode",
+          "parentClass": "PeriodicFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "periodic_fees",
+          "childClass": "Fee",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "penalty_fee_fees",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "penalty_fee",
+          "parent": "penalty_fee",
+          "parentCol": "penCode",
+          "parentClass": "PenaltyFee",
+          "childTable": "fee",
+          "child": "fee",
+          "childCol": "penalty_fees",
+          "childClass": "Fee",
+          "c_p": "one",
+          "c_ch": "many"
+        },
+        {
+          "name": "fees_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "fee",
+          "parent": "fee",
+          "parentCol": "id",
+          "parentClass": "Fee",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "fees",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "dbe714d7-a866-48e7-90f4-1947281acdc4": {
+      "id": "dbe714d7-a866-48e7-90f4-1947281acdc4",
+      "visible": true,
+      "name": "limit_link",
+      "desc": "Limit association and hierarchy management table that links specific limit configurations to customers, products, and organizational scopes. Supports override hierarchies and flexible limit inheritance patterns for complex banking environments.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "ba3c954d-12fe-4746-a3bf-245dac6a7f4f",
+          "name": "id",
+          "datatype": "JSON",
+          "param": "",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "Multi-level identifier incorporating tenant, customer segment, product type, currency, and geographic scope to enable sophisticated limit assignment and inheritance structures.",
+          "defaultvalue": "",
+          "data": "{\"tenant\": \"bank123\", \"customer\": \"PREMIUM\", \"product\": \"CHECKING\", \"currency\": \"USD\", \"region\": \"NORTHEAST\"}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "2062da5b-67ad-4a4b-b765-08be52e7ae98",
+          "name": "customer",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Default customer-level limit configuration object that applies across all products unless specifically overridden. Includes base limits, customer segment rules, and fallback enforcement policies.",
+          "defaultvalue": "",
+          "data": "{\"limitConfigId\": \"STANDARD_CUSTOMER\", \"overrideLevel\": \"SEGMENT\", \"effectiveDate\": \"2024-01-01\", \"expirationDate\": null}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Limit"
+        },
+        {
+          "id": "ba776afe-8ca0-4c48-bf7d-9c83186cf52d",
+          "name": "product",
+          "datatype": "JSON",
+          "param": "",
+          "pk": false,
+          "nn": true,
+          "fk": true,
+          "comment": "Product-specific limit override configuration that takes precedence over customer defaults. Enables tailored limits based on account type, risk profile, and regulatory requirements for specific financial products.",
+          "defaultvalue": "",
+          "data": "{\"limitConfigId\": \"HIGH_VALUE_CHECKING\", \"overrideLevel\": \"PRODUCT\", \"conditions\": {\"minimumBalance\": 25000}, \"escalationRequired\": true}",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Limit"
+        }
+      ],
+      "relations": [
+        "57ecfc23-60c5-4e68-aad0-e0b8fd58c050",
+        "d7270dfe-eaa6-4638-9711-3a58b152a888",
+        "b1dfb14e-e1d4-44eb-9a7a-899192cbc312"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "44885ae4-5cea-42a6-b139-b0dbc7c209fe",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "d53dcd1c-9e04-48bb-8326-1e44cf515f5d",
+              "colid": "ba3c954d-12fe-4746-a3bf-245dac6a7f4f"
+            }
+          ]
+        }
+      ],
+      "indexes": [],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "service",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "limitLinks"
+      },
+      "_relationships": [
+        {
+          "name": "limit_limits",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "limit",
+          "parent": "limit",
+          "parentCol": "id",
+          "parentClass": "Limit",
+          "childTable": "limit_link",
+          "child": "limit_link",
+          "childCol": "customer",
+          "childClass": "LimitLink",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "limit_limits",
+          "isChild": true,
+          "isParent": false,
+          "parentTable": "limit",
+          "parent": "limit",
+          "parentCol": "id",
+          "parentClass": "Limit",
+          "childTable": "limit_link",
+          "child": "limit_link",
+          "childCol": "product",
+          "childClass": "LimitLink",
+          "c_p": "many",
+          "c_ch": "many"
+        },
+        {
+          "name": "limits_product",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "limit_link",
+          "parent": "limit_link",
+          "parentCol": "id",
+          "parentClass": "LimitLink",
+          "childTable": "product",
+          "child": "product",
+          "childCol": "limits",
+          "childClass": "Product",
+          "c_p": "one",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    },
+    "aab110a7-0be3-4349-97fb-0fe287815bcf": {
+      "id": "aab110a7-0be3-4349-97fb-0fe287815bcf",
+      "visible": true,
+      "name": "rules",
+      "desc": "Payment rails configuration table that defines the settlement networks and payment routing mechanisms available for financial transactions. Rails represent the underlying infrastructure used to move money between accounts.",
+      "estimatedSize": "",
+      "cols": [
+        {
+          "id": "1faff53a-dc67-4a84-ba8b-72930ada79cb",
+          "name": "code",
+          "datatype": "JSON",
+          "param": "20",
+          "pk": true,
+          "nn": true,
+          "fk": false,
+          "comment": "",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "Record<string, any>"
+        },
+        {
+          "id": "b5df8633-f361-4b74-a740-55e398819c3b",
+          "name": "name",
+          "datatype": "VARCHAR",
+          "param": "60",
+          "pk": false,
+          "nn": true,
+          "fk": false,
+          "comment": "",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        },
+        {
+          "id": "249ed063-6c9e-43c3-8ac2-cac4a002b669",
+          "name": "description",
+          "datatype": "VARCHAR",
+          "param": "255",
+          "pk": false,
+          "nn": false,
+          "fk": false,
+          "comment": "",
+          "defaultvalue": "",
+          "data": "",
+          "after": "",
+          "autoinc": false,
+          "collation": "",
+          "charset": "",
+          "binary": false,
+          "zerofill": false,
+          "unsigned": false,
+          "enum": "",
+          "estimatedSize": "",
+          "type": "string"
+        }
+      ],
+      "relations": [
+        "1f2009fe-79b8-4857-baa9-7a9feb3cfc1d"
+      ],
+      "lines": [],
+      "keys": [
+        {
+          "id": "b8ab1149-3f8a-447d-9756-c6efdbf3daab",
+          "name": "PRIMARY",
+          "isPk": true,
+          "cols": [
+            {
+              "id": "052ecafe-75b4-4f5e-b9b4-3f76d16efb24",
+              "colid": "1faff53a-dc67-4a84-ba8b-72930ada79cb"
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "id": "a1584bd5-e8bc-419a-a676-a7c69de8784d",
+          "name": "rail_ix_code",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "40458c64-5b71-4052-b830-f3419c62ed4f",
+              "colid": "1faff53a-dc67-4a84-ba8b-72930ada79cb",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "0fcbd0cb-2707-44e4-b284-6d5a08c77bdf",
+          "name": "rail_ix_name",
+          "unique": false,
+          "fulltext": true,
+          "using": "na",
+          "algorithm": "na",
+          "lockoption": "na",
+          "cols": [
+            {
+              "id": "3c98036c-163b-423f-b93a-f49618c68b72",
+              "colid": "b5df8633-f361-4b74-a740-55e398819c3b",
+              "mariadb": {
+                "desc": false
+              }
+            }
+          ]
+        }
+      ],
+      "embeddable": false,
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "tabletype": "InnoDB",
+      "collation": "utf8mb4_general_ci",
+      "charset": "utf8mb4",
+      "rowformat": "",
+      "database": "starter",
+      "initautoinc": "",
+      "temporary": false,
+      "ifnotexists": false,
+      "_properties": {
+        "plural": "rules"
+      },
+      "_relationships": [
+        {
+          "name": "rules_rail",
+          "isChild": false,
+          "isParent": true,
+          "parentTable": "rules",
+          "parent": "rules",
+          "parentCol": "code",
+          "parentClass": "Rules",
+          "childTable": "rail",
+          "child": "rail",
+          "childCol": "rules_code",
+          "childClass": "Rail",
+          "c_p": "many",
+          "c_ch": "many"
+        }
+      ],
+      "_enums": {}
+    }
+  },
+  "relations": {
+    "b12b09da-d743-4973-b9ab-2e63e6c0a020": {
+      "id": "b12b09da-d743-4973-b9ab-2e63e6c0a020",
+      "name": "currency_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "0ac1fdd1-61c1-4601-aeab-5ab4bf0f4e2e",
+      "parent": "5709f6b3-733d-4b2f-9708-aac9c8ccfb54",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "1765b477-5588-47a5-aff2-f9013bc0a004",
+          "parentcol": "ce8ef0bf-f0a9-4c02-85c6-42fceb09b266",
+          "childcol": "0069d397-3384-455f-a59a-fadf82b44f3f"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "f1c008de-6d5b-47a5-b5ed-534460d13f58": {
+      "id": "f1c008de-6d5b-47a5-b5ed-534460d13f58",
+      "name": "channel_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "99aa5d91-cff8-49c3-b7f8-864aff72aeb9",
+      "parent": "a9cd563e-aef6-44fc-a842-895c53094714",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "ceb92de1-e85a-499a-b661-344632a8bbd4",
+          "parentcol": "fe3ec1a5-7db1-4856-af19-d6b317c7fb09",
+          "childcol": "5d8dc920-ba9a-44bd-ae39-c7864a29cac8"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "e4b74af4-8ce3-4f5d-aa11-c45834ab6f87": {
+      "id": "e4b74af4-8ce3-4f5d-aa11-c45834ab6f87",
+      "name": "rail_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "d31c88ea-bd5d-40c1-9a5b-b8f2fa6a6ab5",
+      "parent": "62498fe2-f963-485a-ba03-e0886cd8f8c5",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "95b3544c-c8de-4a1a-88af-1b9cd5d61879",
+          "parentcol": "57feda74-6175-472a-b0c0-92cccce780df",
+          "childcol": "b9db7e6e-d9cf-45a9-bc15-8a9a0d21a327"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "05222e3f-132e-45c9-bdab-4fa2741c3700": {
+      "id": "05222e3f-132e-45c9-bdab-4fa2741c3700",
+      "name": "interest_configuration_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "13c13422-e2e8-40b0-bf2a-6047fa8d1e20",
+      "parent": "f92d678c-c897-4484-b476-b902d3931516",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "5c69b1ec-44e3-4fcd-8b09-efbad0e0910f",
+          "parentcol": "0c4954ca-d332-4e24-9976-a4aeb2b511dd",
+          "childcol": "1a03c40b-3590-4a53-b5b9-3e7115e0a611"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "54728bf8-32d3-4794-af68-e5c96cb44819": {
+      "id": "54728bf8-32d3-4794-af68-e5c96cb44819",
+      "name": "statement_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "d393202e-ecb2-4bbb-b373-d4a28f300aec",
+      "parent": "db66cef1-da0b-41ce-8bdf-e468eb409fff",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "43a075b8-6c71-4b84-8d5c-a4638e960a55",
+          "parentcol": "d13f9721-dad2-42d9-9a12-c89489fe9919",
+          "childcol": "6cf3b2b8-c0fd-482e-befe-d2513e5a5292"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "584f7e61-f08b-4bc2-8e27-6c347cb3b83f": {
+      "id": "584f7e61-f08b-4bc2-8e27-6c347cb3b83f",
+      "name": "dormancy_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "9225caf3-923f-43bc-a4c0-0817ae9f37f2",
+      "parent": "0b6353f6-92c3-45b0-9cd8-b14e08f454c1",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "dea24bed-1ea0-46d3-8345-cc1e34fb57ab",
+          "parentcol": "caafa843-1dc6-44bc-bb60-6324a8754cb3",
+          "childcol": "35f53d28-5661-4f99-845a-31a3b6ca69b7"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "74413ee6-56d8-463e-9f8c-142d001fb369": {
+      "id": "74413ee6-56d8-463e-9f8c-142d001fb369",
+      "name": "transactional_fee_fees",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "de57ec56-4865-46bd-ae2c-29061665c6ad",
+      "parent": "adec5299-d945-4688-a425-c21e33fe6050",
+      "child": "0865a1b6-8023-4007-929b-37a36649ebea",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "f0ae3866-10d1-4d82-ba7d-3f49651a0b3a",
+          "parentcol": "353ce489-b200-4df2-b697-9452bb013bcc",
+          "childcol": "7d1167b1-1236-415e-8790-427033ed3eb5"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "337b2441-4af4-462d-9586-5bd78a8c3ffa": {
+      "id": "337b2441-4af4-462d-9586-5bd78a8c3ffa",
+      "name": "initiation_fee_fees",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "c115ccbb-462e-4b04-820e-38477627eb0d",
+      "parent": "66764717-2f5c-4f53-a66e-5c08b59936a5",
+      "child": "0865a1b6-8023-4007-929b-37a36649ebea",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "d60353c6-c238-44f4-923d-8e7a79ea3386",
+          "parentcol": "7cbd5084-cbd3-4edb-b103-86de3bd80b30",
+          "childcol": "a4754161-6082-46ac-912b-daf43af3efb1"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "a79a0c4d-188d-45ca-b830-6cbba778b52a": {
+      "id": "a79a0c4d-188d-45ca-b830-6cbba778b52a",
+      "name": "periodic_fee_fees",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "ddabddf1-7a7b-4fa8-b375-194b0d31d135",
+      "parent": "dd59da13-0fcf-4bd8-bee0-de944b73af3e",
+      "child": "0865a1b6-8023-4007-929b-37a36649ebea",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "22ed494e-fea3-4526-9b96-d99699ab15c1",
+          "parentcol": "a7c5c2e0-0882-4ef8-b100-c831f04208a4",
+          "childcol": "80187747-0ca2-422d-9bce-96b2bfcf2bb7"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "f7a1cf41-77f9-4df1-9dbc-ec58a466d969": {
+      "id": "f7a1cf41-77f9-4df1-9dbc-ec58a466d969",
+      "name": "penalty_fee_fees",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "430b529b-4e92-4931-9a22-851f2351cd14",
+      "parent": "5acf4854-34d3-4c05-8c89-8468f9a1a344",
+      "child": "0865a1b6-8023-4007-929b-37a36649ebea",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "e6052105-0323-4ecb-9611-f0436cbb4cd4",
+          "parentcol": "49d36bc2-50b1-4d7f-8edf-347b44d928b7",
+          "childcol": "4bdc83b2-71f1-419c-bed8-856e83ea800b"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "530585b5-b367-4744-95fa-260459ab9134": {
+      "id": "530585b5-b367-4744-95fa-260459ab9134",
+      "name": "fees_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "b2b08fee-e50c-4f7b-8b0f-815484fde873",
+      "parent": "0865a1b6-8023-4007-929b-37a36649ebea",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "258a801c-f166-478e-a980-a7db9a30f2ee",
+          "parentcol": "e75fa612-2b03-48f7-b846-cd2bb7ffd2bd",
+          "childcol": "810e3a1b-b0ab-43bc-91c5-dd1548b14548"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "57ecfc23-60c5-4e68-aad0-e0b8fd58c050": {
+      "id": "57ecfc23-60c5-4e68-aad0-e0b8fd58c050",
+      "name": "limit_limits",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "721bdbaf-df40-41f3-aa06-b1100ba30b7a",
+      "parent": "6b11cb32-8653-45f7-b595-ee5f0d3cfb85",
+      "child": "dbe714d7-a866-48e7-90f4-1947281acdc4",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "3085a4e3-cf0b-44f5-9d59-d6c36a80d571",
+          "parentcol": "d10f7837-d2a8-4de9-b955-6e4c7b88256a",
+          "childcol": "2062da5b-67ad-4a4b-b765-08be52e7ae98"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "d7270dfe-eaa6-4638-9711-3a58b152a888": {
+      "id": "d7270dfe-eaa6-4638-9711-3a58b152a888",
+      "name": "limit_limits",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "721bdbaf-df40-41f3-aa06-b1100ba30b7a",
+      "parent": "6b11cb32-8653-45f7-b595-ee5f0d3cfb85",
+      "child": "dbe714d7-a866-48e7-90f4-1947281acdc4",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "08de08aa-16c7-48e5-af79-089ee40e7c7f",
+          "parentcol": "d10f7837-d2a8-4de9-b955-6e4c7b88256a",
+          "childcol": "ba776afe-8ca0-4c48-bf7d-9c83186cf52d"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "b1dfb14e-e1d4-44eb-9a7a-899192cbc312": {
+      "id": "b1dfb14e-e1d4-44eb-9a7a-899192cbc312",
+      "name": "limits_product",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "44885ae4-5cea-42a6-b139-b0dbc7c209fe",
+      "parent": "dbe714d7-a866-48e7-90f4-1947281acdc4",
+      "child": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "one",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "1a6d15dc-8f03-457c-97bd-b64a43475ddc",
+          "parentcol": "ba3c954d-12fe-4746-a3bf-245dac6a7f4f",
+          "childcol": "4b87d06a-5efb-44b0-8ef0-7fe1ed8375cd"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    },
+    "1f2009fe-79b8-4857-baa9-7a9feb3cfc1d": {
+      "id": "1f2009fe-79b8-4857-baa9-7a9feb3cfc1d",
+      "name": "rules_rail",
+      "desc": "",
+      "type": "identifying",
+      "parent_key": "b8ab1149-3f8a-447d-9756-c6efdbf3daab",
+      "parent": "aab110a7-0be3-4349-97fb-0fe287815bcf",
+      "child": "62498fe2-f963-485a-ba03-e0886cd8f8c5",
+      "c_mp": "true",
+      "c_mch": "true",
+      "c_p": "many",
+      "c_ch": "many",
+      "c_cp": "",
+      "c_cch": "",
+      "cols": [
+        {
+          "id": "bffceef0-bd7f-4e90-bb15-b463aa820ffd",
+          "parentcol": "1faff53a-dc67-4a84-ba8b-72930ada79cb",
+          "childcol": "78b615fd-4596-48ad-8d3f-a96bb3cdd308"
+        }
+      ],
+      "generate": true,
+      "generateCustomCode": true,
+      "customCode": "",
+      "relationColor": "transparent",
+      "linegraphics": "default"
+    }
+  },
+  "notes": {},
+  "lines": {},
+  "model": {
+    "color": "transparent",
+    "activeDiagram": "914a25f8-2e60-46c0-a2cf-907835861077",
+    "caseConvention": "under",
+    "def_charset": "utf8mb4",
+    "def_collation": "utf8mb4_general_ci",
+    "def_coltopk": true,
+    "def_rowformat": "",
+    "def_tabletype": "InnoDB",
+    "def_database": "service",
+    "desc": "## 🏦 Banking Product Platform Overview\n\nThis comprehensive platform manages the complete lifecycle of banking products and services within a modular monolith architecture. Each module represents a distinct business capability that could potentially be extracted as a microservice.\n\n### 🎯 Core Business Capabilities\n\n#### 💰 **Fee Management Ecosystem**\nComplete fee lifecycle management across all transaction types:\n- **Transactional Fees**: Real-time charges for individual banking operations\n- **Initiation Fees**: One-time charges for account setup and service activation\n- **Periodic Fees**: Recurring maintenance and subscription charges\n- **Penalty Fees**: Compliance and violation-based charges\n\n#### 🌐 **Infrastructure & Routing**\nMission-critical payment processing infrastructure:\n- **Payment Rails**: SWIFT, ACH, and proprietary settlement networks\n- **Transaction Routing**: Intelligent cost optimization and failover mechanisms\n- **Channel Management**: Multi-channel banking access (mobile, web, ATM, branch)\n\n#### 💱 **Multi-Currency Operations**\nGlobal banking with comprehensive currency support:\n- **ISO 4217 Compliance**: Full international currency standard support\n- **Exchange Rate Management**: Real-time rates and conversion handling\n- **Regional Currency Support**: Local and digital currency integration\n\n#### 📦 **Product Catalog Management**\nComprehensive banking product lifecycle:\n- **Deposit Products**: Savings, current, term deposits, money market accounts\n- **Credit Products**: Loans, mortgages, credit cards, overdraft facilities\n- **Investment Products**: Mutual funds, ETFs, wealth management solutions\n- **Payment Products**: Cards, wallets, merchant services\n\n### ⚙️ **Business Rules & Configuration**\n- **Automated Decision Making**: Rule-based approval workflows\n- **Risk Assessment**: Credit scoring and fraud detection\n- **Pricing Models**: Dynamic pricing based on customer profiles\n- **Compliance Management**: Regulatory requirement enforcement\n\n### 📊 **Analytics & Monitoring**\n- **Performance Metrics**: Transaction success rates and timing\n- **Cost Analysis**: Fee optimization and revenue tracking\n- **Customer Journey**: Product adoption and usage lifecycle\n- **Risk Monitoring**: Portfolio analysis and stress testing\n\n---\n**Base Platform Path:** `/api/fintech-banking-product`\n\n### 🔍 Common Integration Patterns\n- Configure new banking products with comprehensive fee structures\n- Set up payment routing for cost optimization and reliability\n- Implement multi-currency support for international operations\n- Manage customer lifecycle from onboarding to product maturity\n\n### 🛡️ Security & Compliance\n- JWT Bearer authentication across all endpoints\n- Regulatory compliance for banking operations\n- Data privacy and protection standards\n- Audit trails for all financial transactions\n",
+    "id": "6645c9b2-33b9-4cef-bcf6-5f382e5ff3a6",
+    "isDirty": true,
+    "name": "Banking product configuration",
+    "parentTableInFkCols": true,
+    "path": "",
+    "replaceSpace": "_",
+    "sideSelections": true,
+    "storedin": {
+      "major": 4,
+      "minor": 6,
+      "extra": 6
+    },
+    "type": "MARIADB",
+    "version": 1,
+    "lastSaved": 1753311664353,
+    "beforeScript": "",
+    "afterScript": "",
+    "sqlSettings": {
+      "wrapLines": true,
+      "wrapOffset": 80,
+      "indent": true,
+      "indentationString": "spaces",
+      "indentationSize": 2,
+      "limitItemsOnLine": true,
+      "maxListItemsOnLine": 3,
+      "statementDelimiter": ";",
+      "routineDelimiter": "//",
+      "keywordCase": "upper",
+      "identiferCase": "original",
+      "includeSchema": "always",
+      "quotationExistance": "if_needed"
+    },
+    "writeFileParam": false,
+    "modelHTMLReportDir": "D:\\gs\\cqrs-builder\\tools\\domain\\report",
+    "modelPdfReportPath": "D:\\gs\\banking\\gs\\mdt\\gsmdm-person\\tools\\domain\\data\\Masterdata person management.pdf",
+    "connectionVersion": "",
+    "authorName": "",
+    "companyDetails": "",
+    "companyUrl": "",
+    "synchronizationSettings": {
+      "preserveData": "use_temporary_tables",
+      "ignoreSystemDefaults": "yes",
+      "includeWarnings": "yes",
+      "includeCreationSql": "no"
+    },
+    "laststoredin": {
+      "major": 11,
+      "minor": 0,
+      "extra": 0
+    }
+  },
+  "otherObjects": {},
+  "diagrams": {
+    "914a25f8-2e60-46c0-a2cf-907835861077": {
+      "id": "914a25f8-2e60-46c0-a2cf-907835861077",
+      "lineColor": "transparent",
+      "description": "this is the main diagram",
+      "diagramItems": {
+        "62498fe2-f963-485a-ba03-e0886cd8f8c5": {
+          "referencedItemId": "62498fe2-f963-485a-ba03-e0886cd8f8c5",
+          "x": 48,
+          "y": 30,
+          "gHeight": 182,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "5709f6b3-733d-4b2f-9708-aac9c8ccfb54": {
+          "referencedItemId": "5709f6b3-733d-4b2f-9708-aac9c8ccfb54",
+          "x": 286,
+          "y": 253,
+          "gHeight": 164,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "a9cd563e-aef6-44fc-a842-895c53094714": {
+          "referencedItemId": "a9cd563e-aef6-44fc-a842-895c53094714",
+          "x": 52,
+          "y": 230,
+          "gHeight": 146,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "72bb0c46-7bf1-46ce-9591-dcc378de7b55": {
+          "referencedItemId": "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+          "x": 590,
+          "y": 30,
+          "gHeight": 380,
+          "gWidth": 280,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "f92d678c-c897-4484-b476-b902d3931516": {
+          "referencedItemId": "f92d678c-c897-4484-b476-b902d3931516",
+          "x": 908,
+          "y": 30,
+          "gHeight": 189,
+          "gWidth": 252,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "db66cef1-da0b-41ce-8bdf-e468eb409fff": {
+          "referencedItemId": "db66cef1-da0b-41ce-8bdf-e468eb409fff",
+          "x": 1194,
+          "y": 30,
+          "gHeight": 171,
+          "gWidth": 217,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "0b6353f6-92c3-45b0-9cd8-b14e08f454c1": {
+          "referencedItemId": "0b6353f6-92c3-45b0-9cd8-b14e08f454c1",
+          "x": 914,
+          "y": 490,
+          "gHeight": 135,
+          "gWidth": 228,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "6b11cb32-8653-45f7-b595-ee5f0d3cfb85": {
+          "referencedItemId": "6b11cb32-8653-45f7-b595-ee5f0d3cfb85",
+          "x": 1163,
+          "y": 392,
+          "gHeight": 171,
+          "gWidth": 257,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "adec5299-d945-4688-a425-c21e33fe6050": {
+          "referencedItemId": "adec5299-d945-4688-a425-c21e33fe6050",
+          "x": 433,
+          "y": 399,
+          "gHeight": 146,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "66764717-2f5c-4f53-a66e-5c08b59936a5": {
+          "referencedItemId": "66764717-2f5c-4f53-a66e-5c08b59936a5",
+          "x": 51,
+          "y": 403,
+          "gHeight": 146,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "dd59da13-0fcf-4bd8-bee0-de944b73af3e": {
+          "referencedItemId": "dd59da13-0fcf-4bd8-bee0-de944b73af3e",
+          "x": 52,
+          "y": 472,
+          "gHeight": 146,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "5acf4854-34d3-4c05-8c89-8468f9a1a344": {
+          "referencedItemId": "5acf4854-34d3-4c05-8c89-8468f9a1a344",
+          "x": 51,
+          "y": 560,
+          "gHeight": 146,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "0865a1b6-8023-4007-929b-37a36649ebea": {
+          "referencedItemId": "0865a1b6-8023-4007-929b-37a36649ebea",
+          "x": 313,
+          "y": 541,
+          "gHeight": 117,
+          "gWidth": 265,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "dbe714d7-a866-48e7-90f4-1947281acdc4": {
+          "referencedItemId": "dbe714d7-a866-48e7-90f4-1947281acdc4",
+          "x": 1036,
+          "y": 253,
+          "gHeight": 81,
+          "gWidth": 174,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        },
+        "aab110a7-0be3-4349-97fb-0fe287815bcf": {
+          "referencedItemId": "aab110a7-0be3-4349-97fb-0fe287815bcf",
+          "x": 343,
+          "y": 74,
+          "gHeight": 128,
+          "gWidth": 232,
+          "color": "#ffffff",
+          "background": "#03a9f4",
+          "resized": false,
+          "autoExpand": true,
+          "backgroundOpacity": "10",
+          "collapsed": false
+        }
+      },
+      "isOpen": true,
+      "main": true,
+      "name": "Template details",
+      "keysgraphics": true,
+      "linegraphics": "detailed",
+      "zoom": 1,
+      "background": "transparent",
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "erd",
+      "showColumns": true,
+      "showColumnDataTypes": true,
+      "showSampleData": false,
+      "showTableIndexes": true,
+      "showTableDescriptions": false,
+      "showEstimatedSize": false,
+      "showSchemaContainer": true,
+      "showEmbeddedInParents": true,
+      "showCardinalityCaptions": true,
+      "showRelations": true,
+      "backgroundImage": "na",
+      "descriptionsColor": "transparent",
+      "showHorizontal": true,
+      "showDescriptions": false,
+      "showIndicators": true,
+      "showProgress": true,
+      "lineWidth": "2",
+      "boxSize": "0",
+      "showIndicatorCaptions": true,
+      "embeddedSpacing": "2",
+      "showMainIcon": true,
+      "showLabels": true,
+      "boxSpacing": "2",
+      "boxAlign": "center",
+      "showRelationshipNames": false,
+      "showLineCaptions": false,
+      "showCustomizations": true,
+      "showExportDimensions": false,
+      "showCompleted": true
+    },
+    "a9be86f6-8c2b-48f4-a608-f4a42b34552f": {
+      "name": "Main Diagram",
+      "description": "",
+      "id": "a9be86f6-8c2b-48f4-a608-f4a42b34552f",
+      "keysgraphics": true,
+      "linegraphics": "detailed",
+      "zoom": 1,
+      "background": "transparent",
+      "lineColor": "transparent",
+      "isOpen": true,
+      "main": false,
+      "diagramItems": {},
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "erd",
+      "showColumns": true,
+      "showColumnDataTypes": true,
+      "showSampleData": false,
+      "showTableIndexes": true,
+      "showTableDescriptions": false,
+      "showEstimatedSize": false,
+      "showSchemaContainer": true,
+      "showEmbeddedInParents": true,
+      "showCardinalityCaptions": true,
+      "showRelations": true,
+      "backgroundImage": "na",
+      "descriptionsColor": "transparent",
+      "showHorizontal": true,
+      "showDescriptions": false,
+      "showIndicators": true,
+      "showProgress": true,
+      "lineWidth": "2",
+      "boxSize": "0",
+      "showIndicatorCaptions": true,
+      "embeddedSpacing": "2",
+      "showMainIcon": true,
+      "showLabels": true,
+      "boxSpacing": "2",
+      "boxAlign": "center",
+      "showRelationshipNames": false,
+      "showLineCaptions": false,
+      "showCustomizations": false,
+      "showExportDimensions": false,
+      "showCompleted": true
+    }
+  },
+  "diagramsOrder": [
+    "a9be86f6-8c2b-48f4-a608-f4a42b34552f"
+  ],
+  "order": [
+    "a9cd563e-aef6-44fc-a842-895c53094714",
+    "5709f6b3-733d-4b2f-9708-aac9c8ccfb54",
+    "0b6353f6-92c3-45b0-9cd8-b14e08f454c1",
+    "0865a1b6-8023-4007-929b-37a36649ebea",
+    "66764717-2f5c-4f53-a66e-5c08b59936a5",
+    "f92d678c-c897-4484-b476-b902d3931516",
+    "6b11cb32-8653-45f7-b595-ee5f0d3cfb85",
+    "dbe714d7-a866-48e7-90f4-1947281acdc4",
+    "5acf4854-34d3-4c05-8c89-8468f9a1a344",
+    "dd59da13-0fcf-4bd8-bee0-de944b73af3e",
+    "72bb0c46-7bf1-46ce-9591-dcc378de7b55",
+    "62498fe2-f963-485a-ba03-e0886cd8f8c5",
+    "aab110a7-0be3-4349-97fb-0fe287815bcf",
+    "db66cef1-da0b-41ce-8bdf-e468eb409fff",
+    "adec5299-d945-4688-a425-c21e33fe6050",
+    "f1c008de-6d5b-47a5-b5ed-534460d13f58",
+    "b12b09da-d743-4973-b9ab-2e63e6c0a020",
+    "584f7e61-f08b-4bc2-8e27-6c347cb3b83f",
+    "530585b5-b367-4744-95fa-260459ab9134",
+    "337b2441-4af4-462d-9586-5bd78a8c3ffa",
+    "05222e3f-132e-45c9-bdab-4fa2741c3700",
+    "57ecfc23-60c5-4e68-aad0-e0b8fd58c050",
+    "d7270dfe-eaa6-4638-9711-3a58b152a888",
+    "b1dfb14e-e1d4-44eb-9a7a-899192cbc312",
+    "f7a1cf41-77f9-4df1-9dbc-ec58a466d969",
+    "a79a0c4d-188d-45ca-b830-6cbba778b52a",
+    "e4b74af4-8ce3-4f5d-aa11-c45834ab6f87",
+    "54728bf8-32d3-4794-af68-e5c96cb44819",
+    "74413ee6-56d8-463e-9f8c-142d001fb369",
+    "1f2009fe-79b8-4857-baa9-7a9feb3cfc1d"
+  ],
+  "collapsedTreeItems": [],
+  "reverseStats": {},
+  "parameters": {
+    "rail": {
+      "docs": {
+        "name": "Rails",
+        "summary": "Defines the `core banking rails` used for transactions, including their attributes and configurations."
+      },
+      "apis": {
+        "reset/:stream": {
+          "method": "POST",
+          "params": {
+            "stream": {
+              "type": "string",
+              "required": true,
+              "description": "The ID of the projection to retrieve and reset. This parameter specifies which projection stream will be targeted by the reset operation."
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "The projection was reset successfully. The operation completed without errors and the specified projection stream is now in its initial state."
+            }
+          },
+          "description": "Resets a specific projection stream to its initial state. Use this endpoint to reinitialize a single projection by its stream identifier."
+        },
+        "reset-all": {
+          "method": "POST",
+          "responses": {
+            "200": {
+              "description": "All projections were reset successfully. The operation completed without errors and all projection streams are now in their initial state."
+            }
+          },
+          "description": "Resets all projection streams in the system to their initial state. Use this endpoint for bulk reinitialization of all projections."
+        },
+        "metrics": {
+          "method": "GET",
+          "responses": {
+            "200": {
+              "description": "Metrics for all projections were retrieved successfully."
+            }
+          },
+          "description": "Retrieves metrics for all projection streams in the system."
+        }
+      },
+      "store": {
+        "read": "redis",
+        "write": "redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.rail.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.rail.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "status": {},
+        "enabled": {},
+        "rules_code": {},
+        "theCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "currency": {
+      "docs": {
+        "name": "Currencies",
+        "summary": "Defines the currencies used in the banking system, including their attributes and configurations."
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.currency.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.currency.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "code_the": {},
+        "enabled": {},
+        "status": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "channel": {
+      "docs": {
+        "name": "Channels",
+        "summary": "Defines the channels through which banking services are accessed, including their attributes and configurations."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql",
+        "write": "sql"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.channel.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.channel.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {},
+        "active": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "transactional_fee": {
+      "docs": {
+        "name": "Transactional Fees",
+        "summary": "Per-transaction charges for transfers, payments, and other banking operations."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql",
+        "write": "sql"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.transactional-fee.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.transactional-fee.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "tranCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "initiation_fee": {
+      "docs": {
+        "name": "Initiation Fees",
+        "summary": "One-time setup charges for new services or account openings."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.initiation-fee.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.initiation-fee.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "initCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "periodic_fee": {
+      "docs": {
+        "name": "Periodic Fees",
+        "summary": "Recurring maintenance and subscription charges applied at regular intervals."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.periodic-fee.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.periodic-fee.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "periCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "penalty_fee": {
+      "docs": {
+        "name": "Penalty Fees",
+        "summary": "Charges applied for violations or compliance issues."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": true,
+        "update": true,
+        "delete": true,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.penalty-fee.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.penalty-fee.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "penCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "product": {
+      "docs": {
+        "name": "Products",
+        "summary": "Defines the core banking products available in the system, including their attributes and configurations."
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": "product"
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.product.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.product.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {},
+        "active": {},
+        "currency": {},
+        "channels": {},
+        "rails": {},
+        "category": {},
+        "isDefault": {},
+        "fees": {},
+        "routingNumber": {},
+        "accountNumberPrefix": {},
+        "interest": {},
+        "statement": {},
+        "dormancy": {},
+        "limits": {},
+        "attributes": {}
+      }
+    },
+    "interest_configuration": {
+      "docs": {
+        "name": "Interest Configuration",
+        "summary": "Defines the interest calculation and application rules for various products."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.interest-configuration.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.interest-configuration.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "id": {},
+        "rate": {},
+        "rateCode": {},
+        "calculation": {},
+        "accrual": {},
+        "capitalization": {},
+        "dayCountConversion": {},
+        "active": {},
+        "lastAppliedAt": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "dormancy": {
+      "docs": {
+        "name": "Dormancy Configuration",
+        "summary": "Manages dormancy rules for accounts, including inactivity periods and notification settings."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.dormancy.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.dormancy.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "id": {},
+        "days": {},
+        "activation": {},
+        "actions": {},
+        "notifyChannels": {},
+        "tagAsDormant": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "limit": {
+      "docs": {
+        "name": "Limits",
+        "summary": "Defines transaction limits for products, including counts and values per period."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.limit.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.limit.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "id": {},
+        "period": {},
+        "transactionType": {},
+        "count": {},
+        "totalValueLimit ": {},
+        "perTransactionLimit ": {},
+        "onViolation": {},
+        "severity": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "limit_link": {
+      "docs": {
+        "name": "Limit Links",
+        "summary": "Associates limits with products and customers, enabling dynamic limit management."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.limit-link.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.limit-link.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "id": {},
+        "product": {},
+        "customer": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "statement": {
+      "docs": {
+        "name": "Statements",
+        "summary": "Manages periodic statements for accounts, including frequency, delivery methods, and retention."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.statement.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.statement.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "id": {},
+        "frequency": {},
+        "day": {},
+        "timeZone": {},
+        "type": {},
+        "deliveryMethod": {},
+        "gracePeriodDays": {},
+        "retentionPeriod": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "fee": {
+      "docs": {
+        "name": "Fees",
+        "summary": "Comprehensive fee management for transactional, initiation, periodic, and penalty fees."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.fee.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.fee.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "id": {},
+        "transactional_fees": {},
+        "initiation_fees": {},
+        "periodic_fees": {},
+        "penalty_fees": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "rules": {
+      "docs": {
+        "name": "Rules",
+        "summary": "Defines rules for various operations, including fee calculations, interest applications, and compliance checks."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.rules.v1",
+        "ttl": 3600,
+        "hash": true
+      },
+      "eventstream": {
+        "stream": "core.rules.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    }
+  },
+  "service": {
+    "name": "fintech-banking-product",
+    "version": "1",
+    "module": "bank-product"
+  },
+  "excluded": [],
+  "sourceDirectory": "D:\\gsnew\\temp\\fintech-banking-product\\src\\bank-product"
+}

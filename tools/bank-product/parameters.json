@@ -1,0 +1,772 @@
+{
+  "service": {
+    "name": "banking-product",
+    "version": "1",
+    "module": "bank-product",
+    "boundedContext": "banking",
+    "hasRedis": true,
+    "hasSql": true,
+    "hasEventStream": true
+  },
+  "tables": {
+    "rail": {
+      "docs": {
+        "name": "Rails",
+        "summary": "Defines the `core banking rails` used for transactions, including their attributes and configurations."
+      },
+      "apis": {
+        "reset/:stream": {
+          "method": "POST",
+          "params": {
+            "stream": {
+              "type": "string",
+              "required": true,
+              "description": "The ID of the projection to retrieve and reset. This parameter specifies which projection stream will be targeted by the reset operation."
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "The projection was reset successfully. The operation completed without errors and the specified projection stream is now in its initial state."
+            }
+          },
+          "description": "Resets a specific projection stream to its initial state. Use this endpoint to reinitialize a single projection by its stream identifier."
+        },
+        "reset-all": {
+          "method": "POST",
+          "responses": {
+            "200": {
+              "description": "All projections were reset successfully. The operation completed without errors and all projection streams are now in their initial state."
+            }
+          },
+          "description": "Resets all projection streams in the system to their initial state. Use this endpoint for bulk reinitialization of all projections."
+        },
+        "metrics": {
+          "method": "GET",
+          "responses": {
+            "200": {
+              "description": "Metrics for all projections were retrieved successfully."
+            }
+          },
+          "description": "Retrieves metrics for all projection streams in the system."
+        }
+      },
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream",
+        "list": "redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "prefix": "bank-product",
+        "version": "v1",
+        "category": "lookups:core.rail.v1",
+        "ttl": 3600,
+        "hash": true,
+        "aggregate": "rail"
+      },
+      "eventstream": {
+        "boundedContext": "bank-product",
+        "aggregate": "rail",
+        "version": "v1",
+        "stream": "core.rail.v1",
+        "create-type": "create",
+        "update-type": "update"
+      },
+      "cols": {
+        "status": {},
+        "enabled": {},
+        "rules_code": {},
+        "theCode": {},
+        "name": {},
+        "description": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "currency": {
+      "docs": {
+        "name": "Currencies",
+        "summary": "Defines the currencies used in the banking system, including their attributes and configurations."
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "list": "sql",
+        "write": "eventstream"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.currency.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank:product",
+        "aggregate": "currency",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.currency.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank",
+        "aggregate": "currency",
+        "version": "v1"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "code_the": {},
+        "enabled": {},
+        "status": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "channel": {
+      "docs": {
+        "name": "Channels",
+        "summary": "Defines the channels through which banking services are accessed, including their attributes and configurations."
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream",
+        "list": "redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.channel.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "lookups:core",
+        "aggregate": "channel",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.channel.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "core",
+        "aggregate": "channel",
+        "version": "v1"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {},
+        "active": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "transactional_fee": {
+      "docs": {
+        "name": "Transactional Fees",
+        "summary": "Per-transaction charges for transfers, payments, and other banking operations."
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.transactional-fee.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "transactional-fee",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.transactional-fee.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "transactional-fee",
+        "version": "v1"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "tranCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "initiation_fee": {
+      "docs": {
+        "name": "Initiation Fees",
+        "summary": "One-time setup charges for new services or account openings."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.initiation-fee.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "initiation-fee",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.initiation-fee.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "initiation-fee",
+        "version": "v1"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "initCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "periodic_fee": {
+      "docs": {
+        "name": "Periodic Fees",
+        "summary": "Recurring maintenance and subscription charges applied at regular intervals."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.periodic-fee.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "periodic-fee",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.periodic-fee.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "periodic-fee",
+        "version": "v1"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "periCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "penalty_fee": {
+      "docs": {
+        "name": "Penalty Fees",
+        "summary": "Charges applied for violations or compliance issues."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": true,
+        "update": true,
+        "delete": true,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.penalty-fee.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "penalty-fee",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.penalty-fee.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "penalty-fee",
+        "version": "v1"
+      },
+      "cols": {
+        "name": {},
+        "description": {},
+        "active": {},
+        "penCode": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "product": {
+      "docs": {
+        "name": "Products",
+        "summary": "Defines the core banking products available in the system, including their attributes and configurations."
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": "product"
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.product.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "product",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.product.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "product",
+        "version": "v1"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {},
+        "active": {},
+        "category": {},
+        "isDefault": {},
+        "fees": {},
+        "routingNumber": {},
+        "accountNumberPrefix": {},
+        "interest": {},
+        "dormancy": {},
+        "limits": {},
+        "attributes": {},
+        "currency_code": {},
+        "channel_codes": {},
+        "rail_codes": {},
+        "statement_code": {}
+      }
+    },
+    "interest_configuration": {
+      "docs": {
+        "name": "Interest Configuration",
+        "summary": "Defines the interest calculation and application rules for various products."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.interest-configuration.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "interest-configuration",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.interest-configuration.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "interest-configuration",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "rate": {},
+        "rateCode": {},
+        "calculation": {},
+        "accrual": {},
+        "capitalization": {},
+        "dayCountConversion": {},
+        "active": {},
+        "lastAppliedAt": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "dormancy": {
+      "docs": {
+        "name": "Dormancy Configuration",
+        "summary": "Manages dormancy rules for accounts, including inactivity periods and notification settings."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.dormancy.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "dormancy",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.dormancy.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "dormancy",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "days": {},
+        "activation": {},
+        "actions": {},
+        "notifyChannels": {},
+        "tagAsDormant": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "limit": {
+      "docs": {
+        "name": "Limits",
+        "summary": "Defines transaction limits for products, including counts and values per period."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.limit.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "limit",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.limit.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "limit",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "period": {},
+        "transactionType": {},
+        "count": {},
+        "totalValueLimit ": {},
+        "perTransactionLimit ": {},
+        "onViolation": {},
+        "severity": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "limit_link": {
+      "docs": {
+        "name": "Limit Links",
+        "summary": "Associates limits with products and customers, enabling dynamic limit management."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.limit-link.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "limit-link",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.limit-link.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "limit-link",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "product": {},
+        "customer": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "statement": {
+      "docs": {
+        "name": "Statements",
+        "summary": "Manages periodic statements for accounts, including frequency, delivery methods, and retention."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.statement.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "statement",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.statement.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "statement",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "frequency": {},
+        "day": {},
+        "timeZone": {},
+        "type": {},
+        "deliveryMethod": {},
+        "gracePeriodDays": {},
+        "retentionPeriod": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "fee": {
+      "docs": {
+        "name": "Fees",
+        "summary": "Comprehensive fee management for transactional, initiation, periodic, and penalty fees."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.fee.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "fee",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.fee.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "fee",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "periodic_fees": {},
+        "penalty_fees": {},
+        "transactional_fee_codes": {},
+        "initiation_fee_codes": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    },
+    "rules": {
+      "docs": {
+        "name": "Rules",
+        "summary": "Defines rules for various operations, including fee calculations, interest applications, and compliance checks."
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.rules.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "bank-product",
+        "aggregate": "rules",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.rules.v1",
+        "create-type": "create",
+        "update-type": "update",
+        "boundedContext": "bank-product",
+        "aggregate": "rules",
+        "version": "v1"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {}
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      }
+    }
+  },
+  "excluded": [],
+  "docs": {
+    "summary": "Complete Banking Product domain modules and operations"
+  }
+}

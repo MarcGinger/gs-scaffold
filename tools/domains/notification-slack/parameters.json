@@ -1,0 +1,165 @@
+{
+  "service": {
+    "name": "core slack service",
+    "version": "1",
+    "module": "core-slack",
+    "hasRedis": false,
+    "hasSql": true,
+    "hasEventStream": true
+  },
+  "tables": {
+    "template": {
+      "docs": {
+        "summary": "This is the Template module"
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream",
+        "list": "sql"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.template.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "core-slack",
+        "aggregate": "template",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.template.v1",
+        "create-type": "create.v1",
+        "update-type": "update.v1",
+        "boundedContext": "core-slack",
+        "aggregate": "template",
+        "version": "v1"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {},
+        "active": {},
+        "content": {},
+        "schema": {}
+      }
+    },
+    "message": {
+      "docs": {
+        "summary": "This is the Message module"
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      },
+      "apis": {},
+      "store": {
+        "read": "eventstream",
+        "write": "eventstream",
+        "list": "sql"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.message.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "core-slack",
+        "aggregate": "message",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.message.v1",
+        "create-type": "create.v1",
+        "update-type": "update.v1",
+        "boundedContext": "core-slack",
+        "aggregate": "message",
+        "version": "v1"
+      },
+      "cols": {
+        "id": {},
+        "config_code": {},
+        "channel": {},
+        "template_code": {},
+        "payload": {},
+        "rendered_message": {},
+        "status": {},
+        "scheduled_at": {},
+        "sent_at": {},
+        "failure_reason": {},
+        "correlation_id": {},
+        "retry_count": {},
+        "created_at": {},
+        "updated_at": {}
+      }
+    },
+    "configuration": {
+      "docs": {
+        "summary": "This is the Configuration module"
+      },
+      "permissions": {
+        "enabled": true,
+        "prefix": ""
+      },
+      "apis": {},
+      "store": {
+        "read": "sql,eventstream,redis",
+        "write": "sql,eventstream,redis",
+        "list": "sql,eventstream,redis"
+      },
+      "cancel": {
+        "create": false,
+        "update": false,
+        "delete": false,
+        "batch": false,
+        "get": false
+      },
+      "complete": [],
+      "redis": {
+        "category": "lookups:core.configuration.v1",
+        "ttl": 3600,
+        "hash": true,
+        "prefix": "core-slack",
+        "aggregate": "configuration",
+        "version": "v1"
+      },
+      "eventstream": {
+        "stream": "core.configuration.v1",
+        "create-type": "create.v1",
+        "update-type": "update.v1",
+        "boundedContext": "core-slack",
+        "aggregate": "configuration",
+        "version": "v1"
+      },
+      "cols": {
+        "code": {},
+        "name": {},
+        "description": {},
+        "active": {},
+        "channel": {},
+        "template_code": {}
+      }
+    }
+  },
+  "excluded": [],
+  "docs": {
+    "summary": "This is the core slack messaging service"
+  }
+}
