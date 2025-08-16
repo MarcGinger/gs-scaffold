@@ -11,6 +11,7 @@ export {
   ProductStatusType,
   PRODUCT_STATUS_TRANSITIONS,
 } from './types/product-status.types';
+export { ChangeProductPrice } from './types/change-product-price.types';
 
 // Aggregates
 export { ProductAggregate, ProductProps } from './product.aggregate';

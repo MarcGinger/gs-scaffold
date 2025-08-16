@@ -11,6 +11,7 @@ export { ApiProductId } from './product-id.decorator';
 export { ApiProductName } from './product-name.decorator';
 export { ApiProductSKU } from './product-sku.decorator';
 export { ApiProductPrice } from './product-price.decorator';
+export { ApiProductCurrency } from './product-currency.decorator';
 export { ApiProductCategory } from './product-category.decorator';
 export { ApiProductStatus } from './product-status.decorator';
 export { ApiProductDescription } from './product-description.decorator';

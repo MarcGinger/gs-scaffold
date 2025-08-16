@@ -3,14 +3,16 @@ import {
   ApiProductName,
   ApiProductSKU,
   ApiProductPrice,
+  ApiProductCurrency,
   ApiProductCategory,
   ApiProductStatus,
   ApiProductDescription,
   ApiCreatedAt,
   ApiUpdatedAt,
 } from '../decorators';
+import { ChangeProductPrice } from '../../domain';
 
-export class ProductResponseDto {
+export class ProductResponseDto implements ChangeProductPrice {
   @ApiProductId()
   id: string;
 
@@ -23,6 +25,7 @@ export class ProductResponseDto {
   @ApiProductPrice()
   price: number;
 
+  @ApiProductCurrency()
   currency: string;
 
   @ApiProductCategory()

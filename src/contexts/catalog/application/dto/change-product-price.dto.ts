@@ -1,8 +1,10 @@
-import { ApiProductPrice } from '../decorators';
+import { ApiProductPrice, ApiProductCurrency } from '../decorators';
+import { ChangeProductPrice } from '../../domain';
 
-export class ChangeProductPriceDto {
+export class ChangeProductPriceDto implements ChangeProductPrice {
   @ApiProductPrice()
   price: number;
 
+  @ApiProductCurrency()
   currency: string;
 }

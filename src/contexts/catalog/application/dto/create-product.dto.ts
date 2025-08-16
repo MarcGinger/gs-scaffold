@@ -2,6 +2,7 @@ import {
   ApiProductName,
   ApiProductSKU,
   ApiProductPrice,
+  ApiProductCurrency,
   ApiProductCategory,
   ApiProductDescription,
 } from '../decorators';
@@ -16,6 +17,7 @@ export class CreateProductDto {
   @ApiProductPrice()
   price: number;
 
+  @ApiProductCurrency({ required: false })
   currency: string = 'USD';
 
   categoryId: string;
