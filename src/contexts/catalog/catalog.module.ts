@@ -1,16 +1,25 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 
-// Controllers
-import { ProductController } from './interface/http/product.controller';
-
-// Use Cases
-import { CreateProductUseCase } from './application/use-cases/create-product.use-case';
-import { UpdateProductUseCase } from './application/use-cases/update-product.use-case';
-
-// Repositories
-import { ProductRepository } from './application/ports/product.repository.port';
-import { EventStoreProductRepository } from './infrastructure/persistence/eventstore-product.repository';
+// Import from barrel exports
+import { ProductController } from './interface';
+import {
+  CreateProductUseCase,
+  UpdateProductUseCase,
+  ProductRepository,
+  // Command Handlers
+  CreateProductHandler,
+  UpdateProductHandler,
+  DeleteProductHandler,
+  ActivateProductHandler,
+  DeactivateProductHandler,
+  CategorizeProductHandler,
+  ChangeProductPriceHandler,
+  // Query Handlers
+  GetProductHandler,
+  ListProductsHandler,
+} from './application';
+import { EventStoreProductRepository } from './infrastructure';
 
 @Module({
   imports: [CqrsModule],
@@ -20,12 +29,39 @@ import { EventStoreProductRepository } from './infrastructure/persistence/events
     CreateProductUseCase,
     UpdateProductUseCase,
 
+    // Command Handlers
+    CreateProductHandler,
+    UpdateProductHandler,
+    DeleteProductHandler,
+    ActivateProductHandler,
+    DeactivateProductHandler,
+    CategorizeProductHandler,
+    ChangeProductPriceHandler,
+
+    // Query Handlers
+    GetProductHandler,
+    ListProductsHandler,
+
     // Repository implementations
     {
       provide: ProductRepository,
       useClass: EventStoreProductRepository,
     },
   ],
-  exports: [ProductRepository, CreateProductUseCase, UpdateProductUseCase],
+  exports: [
+    ProductRepository,
+    CreateProductUseCase,
+    UpdateProductUseCase,
+    // Handlers can be exported if needed by other modules
+    CreateProductHandler,
+    UpdateProductHandler,
+    DeleteProductHandler,
+    ActivateProductHandler,
+    DeactivateProductHandler,
+    CategorizeProductHandler,
+    ChangeProductPriceHandler,
+    GetProductHandler,
+    ListProductsHandler,
+  ],
 })
 export class CatalogModule {}

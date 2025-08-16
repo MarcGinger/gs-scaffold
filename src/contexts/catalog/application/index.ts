@@ -13,6 +13,9 @@ export { ChangeProductPriceCommand } from './commands/change-product-price.comma
 export { GetProductQuery } from './queries/get-product.query';
 export { ListProductsQuery } from './queries/list-products.query';
 
+// Handlers
+export * from './handlers';
+
 // Use Cases
 export { CreateProductUseCase } from './use-cases/create-product.use-case';
 export { UpdateProductUseCase } from './use-cases/update-product.use-case';

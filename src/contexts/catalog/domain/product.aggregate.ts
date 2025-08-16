@@ -1,12 +1,14 @@
 import { AggregateRootBase } from '../../../shared/domain/aggregates/aggregate-root.base';
 import { DomainEvent } from '../../../shared/domain/events/events';
-import { ProductId } from './value-objects/product-id.vo';
-import { ProductName } from './value-objects/product-name.vo';
-import { Price } from './value-objects/price.vo';
-import { Sku } from './value-objects/sku.vo';
-import { Category } from './value-objects/category.vo';
-import { ProductStatus } from './value-objects/product-status.vo';
-import { ProductErrors } from './errors/product.errors';
+import {
+  ProductId,
+  ProductName,
+  Price,
+  Sku,
+  Category,
+  ProductStatus,
+  ProductErrors,
+} from './index';
 import {
   Result,
   ok,
@@ -262,9 +264,9 @@ export class ProductAggregate extends AggregateRootBase {
 
   private onProductUpdated(event: ProductUpdatedDomainEvent): void {
     if (event.payload.changes.name) {
-      this.props.name = ProductName.create(
-        event.payload.changes.name.new,
-      ).unwrap();
+      this.props.name = unsafeUnwrap(
+        ProductName.create(event.payload.changes.name.new),
+      );
     }
     if (event.payload.changes.description !== undefined) {
       this.props.description = event.payload.changes.description.new;
@@ -273,18 +275,19 @@ export class ProductAggregate extends AggregateRootBase {
   }
 
   private onProductPriceChanged(event: ProductPriceChangedDomainEvent): void {
-    this.props.price = Price.create(
-      event.payload.newPrice,
-      event.payload.currency,
-    ).unwrap();
+    this.props.price = unsafeUnwrap(
+      Price.create(event.payload.newPrice, event.payload.currency),
+    );
     this.props.updatedAt = event.occurredAt;
   }
 
   private onProductCategorized(event: ProductCategorizedDomainEvent): void {
-    this.props.category = Category.create(
-      event.payload.newCategoryId,
-      event.payload.newCategoryName,
-    ).unwrap();
+    this.props.category = unsafeUnwrap(
+      Category.create(
+        event.payload.newCategoryId,
+        event.payload.newCategoryName,
+      ),
+    );
     this.props.updatedAt = event.occurredAt;
   }
 
@@ -306,14 +309,13 @@ export class ProductAggregate extends AggregateRootBase {
   // Snapshot methods (required by base class)
   protected applySnapshot(snapshot: any): void {
     this.props = {
-      id: ProductId.create(snapshot.id).unwrap(),
-      name: ProductName.create(snapshot.name).unwrap(),
-      sku: Sku.create(snapshot.sku).unwrap(),
-      price: Price.create(snapshot.price, snapshot.currency).unwrap(),
-      category: Category.create(
-        snapshot.categoryId,
-        snapshot.categoryName,
-      ).unwrap(),
+      id: unsafeUnwrap(ProductId.create(snapshot.id)),
+      name: unsafeUnwrap(ProductName.create(snapshot.name)),
+      sku: unsafeUnwrap(Sku.create(snapshot.sku)),
+      price: unsafeUnwrap(Price.create(snapshot.price, snapshot.currency)),
+      category: unsafeUnwrap(
+        Category.create(snapshot.categoryId, snapshot.categoryName),
+      ),
       status: ProductStatus.fromString(snapshot.status),
       description: snapshot.description,
       createdAt: new Date(snapshot.createdAt),
