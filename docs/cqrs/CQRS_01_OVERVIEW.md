@@ -4,12 +4,6 @@
 
 ---
 
-## 0) Executive Principl## 13) Don'ts```
-
----
-
-## 12) Security Framework Integration
-
 ### **🔐 Security Architecture Overview**
 
 The CQRS architecture integrates comprehensive security at every layer with three core pillars:
