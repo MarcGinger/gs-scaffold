@@ -155,6 +155,9 @@ export const LoggingConfigSchema = z.object({
   LOGGING_CORE_SINK: LogSink.default('stdout'),
   LOGGING_CORE_PRETTY_ENABLED: z.coerce.boolean().default(false),
 
+  // Secret Redaction (comma-separated list of additional keys to redact)
+  LOGGING_CORE_REDACT_KEYS: z.string().optional(),
+
   // Loki Configuration (when sink=loki)
   LOGGING_LOKI_URL: z.string().url().optional(),
   LOGGING_LOKI_BASIC_AUTH: z.string().optional(),

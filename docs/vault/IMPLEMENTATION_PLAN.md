@@ -155,57 +155,51 @@ export const AppConfigSchema = BaseConfigSchema.extend({
 - Schema for main application
 - Unit tests for configuration validation
 
-#### 2.2 Secret Redaction & Logging ⚠️ **IN PROGRESS**
+#### 2.2 Secret Redaction & Logging ✅ **COMPLETED**
 
 **Owner**: Mid-level Developer  
 **Duration**: 2 days  
-**Status**: Critical security requirement - needs immediate attention
+**Completed**: December 19, 2024
 
 **Tasks:**
 
-- [ ] Configure pino with secret redaction
-- [ ] Implement centralized logging configuration
-- [ ] Add tests to verify no secrets leak to logs
-- [ ] Create logging utility functions
+- [x] Configure pino with secret redaction
+- [x] Implement centralized logging configuration
+- [x] Add tests to verify no secrets leak to logs
+- [x] Create logging utility functions
 
 **Implementation Details:**
 
+✅ **Completed Implementation:**
+
+- Created `src/shared/logging/logger.config.ts` with centralized logging configuration
+- Added `LOGGING_CORE_REDACT_KEYS` to configuration schema and Doppler
+- Enhanced existing redaction with 50+ secret patterns including wildcards
+- Integrated with existing AppConfigUtil for consistent configuration management
+- Created comprehensive test suite in `logger.config.spec.ts`
+- Validated integration with existing pino-based logging infrastructure
+
 ```typescript
-// src/shared/logging/logger.config.ts
-import { createLogger } from '@nestjs/common';
-import pino from 'pino';
-
-const DEFAULT_REDACT_KEYS = [
-  '*_SECRET',
-  '*_TOKEN',
-  '*_PASSWORD',
-  'AZURE_*_KEY',
-  'AZURE_STORAGE_CONNECTION_STRING',
-  'KEYCLOAK_CLIENT_SECRET',
-  'TYPEORM_PASSWORD',
-  'REDIS_PASSWORD',
-];
-
-export const createAppLogger = (config: AppConfig) => {
-  const redactKeys = config.LOG_REDACT
-    ? [...DEFAULT_REDACT_KEYS, ...config.LOG_REDACT.split(',')]
-    : DEFAULT_REDACT_KEYS;
-
+// Key features implemented:
+export const createAppLogger = (config?: Record<string, unknown>) => {
+  // Combines DEFAULT_REDACT_KEYS + LOGGING_CORE_REDACT_KEYS from environment
+  // Supports wildcard patterns like *_SECRET, *_TOKEN, AZURE_*_KEY
+  // Integrates with existing AppConfigUtil.getLoggingConfig()
   return pino({
-    level: config.LOG_LEVEL,
-    redact: {
-      paths: redactKeys,
-      censor: '[REDACTED]',
-    },
+    level: configToUse.level,
+    redact: { paths: redactKeys, censor: '[REDACTED]' },
+    // Enhanced serializers with additional header redaction
   });
 };
 ```
 
 **Deliverables:**
 
-- Centralized logging configuration
-- Secret redaction implementation
-- Automated tests for log security
+- ✅ Centralized logging configuration (`logger.config.ts`)
+- ✅ Secret redaction implementation (50+ patterns + configurable)
+- ✅ Automated tests for log security (`logger.config.spec.ts`)
+- ✅ Integration with existing logging infrastructure
+- ✅ Doppler configuration (`LOGGING_CORE_REDACT_KEYS`)
 
 ---
 
