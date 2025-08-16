@@ -16,13 +16,14 @@ import { OpaModule } from './opa/opa.module';
 
 // ✨ NEW: Import Doppler configuration
 import { DopplerConfigModule } from './shared/config/doppler-config.module';
+import { AppConfigUtil } from './shared/config/app-config.util';
 
 // Create service-specific logger factory for the main app
 const appLoggerFactory = createServiceLoggerFactory('gs-scaffold');
 
 // ✨ NEW: Dynamic Doppler Configuration Factory
 const createDopplerConfig = () => {
-  const nodeEnv = process.env.NODE_ENV || 'development';
+  const nodeEnv = AppConfigUtil.getEnvironment();
 
   // Map environments to Doppler configs
   const configMap: Record<string, string> = {

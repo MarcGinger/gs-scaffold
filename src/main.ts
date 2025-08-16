@@ -85,7 +85,7 @@ async function bootstrap() {
       port,
       serverUrl,
       environment: configManager.getEnvironment(),
-      nodeEnv: process.env.NODE_ENV,
+      nodeEnv: AppConfigUtil.getEnvironment(),
       processId: process.pid,
     });
 
@@ -120,7 +120,7 @@ async function bootstrap() {
         configManager.logError(error, 'Application failed to start', {
           method: 'bootstrap',
           environment: AppConfigUtil.getEnvironment(),
-          nodeEnv: process.env.NODE_ENV,
+          nodeEnv: AppConfigUtil.getEnvironment(),
           errorStack: error.stack,
         });
       } catch {

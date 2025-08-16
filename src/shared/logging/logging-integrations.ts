@@ -1,6 +1,7 @@
 // BullMQ integration: propagate traceId/correlationId in job metadata
 import { Queue, Worker, Job } from 'bullmq';
 import { ClsService } from 'nestjs-cls';
+import { AppConfigUtil } from '../config/app-config.util';
 
 // Producer example
 export function addJobWithTrace(
@@ -47,7 +48,7 @@ export function appendEventWithMetadata(
       traceId: cls.get('traceId'),
       correlationId: cls.get('correlationId'),
       user: { id: cls.get('userId'), tenantId: cls.get('tenantId') },
-      source: process.env.APP_NAME,
+      source: AppConfigUtil.getLoggingConfig().appName,
     },
   });
 }
