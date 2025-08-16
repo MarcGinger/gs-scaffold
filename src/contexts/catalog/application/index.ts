@@ -25,7 +25,10 @@ export {
   CreateProductDto,
   UpdateProductDto,
   ChangeProductPriceDto,
-} from './dto/product.dto';
+  CategorizeProductDto,
+  ProductResponseDto,
+  ProductListResponseDto,
+} from './dto';
 export { ProductReadModel } from './dto/product.read-model';
 
 // Ports (Repository Interface)

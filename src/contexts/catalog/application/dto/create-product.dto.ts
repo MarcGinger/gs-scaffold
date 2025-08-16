@@ -1,19 +1,12 @@
 import {
-  ApiProductId,
   ApiProductName,
   ApiProductSKU,
   ApiProductPrice,
   ApiProductCategory,
-  ApiProductStatus,
   ApiProductDescription,
-  ApiCreatedAt,
-  ApiUpdatedAt,
 } from '../decorators';
 
-export class ProductResponseDto {
-  @ApiProductId()
-  id: string;
-
+export class CreateProductDto {
   @ApiProductName()
   name: string;
 
@@ -23,20 +16,13 @@ export class ProductResponseDto {
   @ApiProductPrice()
   price: number;
 
-  currency: string;
+  currency: string = 'USD';
+
+  categoryId: string;
 
   @ApiProductCategory()
   categoryName: string;
 
-  @ApiProductStatus()
-  status: string;
-
   @ApiProductDescription({ required: false })
   description?: string;
-
-  @ApiCreatedAt()
-  createdAt: string;
-
-  @ApiUpdatedAt()
-  updatedAt: string;
 }
