@@ -1,20 +1,34 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsNotEmpty,
-  IsOptional,
+  IsUUID,
   IsString,
   IsNumber,
   MinLength,
   MaxLength,
-  Min,
-  Max,
-  IsPositive,
-  Matches,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsNotEmpty,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
-export class CreateProductDto {
+enum ProductStatusEnum {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  DISCONTINUED = 'DISCONTINUED',
+}
+
+export class ProductResponseDto {
+  @ApiProperty({
+    description: 'Unique identifier for the product',
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    type: String,
+    format: 'uuid',
+  })
+  @IsUUID('4')
+  @IsNotEmpty()
+  id: string;
+
   @ApiProperty({
     description: 'The display name of the product',
     example: 'Premium Wireless Headphones',
@@ -34,14 +48,10 @@ export class CreateProductDto {
     type: String,
     minLength: 3,
     maxLength: 50,
-    pattern: '^[A-Z0-9-]+$',
   })
   @IsString()
   @MinLength(3)
   @MaxLength(50)
-  @Matches(/^[A-Z0-9-]+$/, {
-    message: 'SKU must contain only uppercase letters, numbers, and hyphens',
-  })
   @IsNotEmpty()
   sku: string;
 
@@ -52,97 +62,11 @@ export class CreateProductDto {
     minimum: 0.01,
     maximum: 999999.99,
   })
-  @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
-  @Min(0.01)
-  @Max(999999.99)
-  @IsNotEmpty()
-  price: number;
-
-  currency: string = 'USD';
-
-  categoryId: string;
-
-  @ApiProperty({
-    description: 'Product category classification',
-    example: 'Electronics',
-    type: String,
-    minLength: 2,
-    maxLength: 50,
-  })
-  @IsString()
-  @MinLength(2)
-  @MaxLength(50)
-  @IsNotEmpty()
-  categoryName: string;
-
-  @ApiProperty({
-    description: 'Detailed description of the product',
-    example: 'High-quality wireless headphones with noise cancellation.',
-    type: String,
-    minLength: 10,
-    maxLength: 1000,
-    required: false,
-  })
-  @IsString()
-  @MinLength(10)
-  @MaxLength(1000)
-  @IsOptional()
-  description?: string;
-}
-
-export class UpdateProductDto {
-  @ApiProperty({
-    description: 'The display name of the product',
-    example: 'Premium Wireless Headphones',
-    type: String,
-    minLength: 3,
-    maxLength: 100,
-    required: false,
-  })
-  @IsString()
-  @MinLength(3)
-  @MaxLength(100)
-  @IsOptional()
-  name?: string;
-
-  @ApiProperty({
-    description: 'Detailed description of the product',
-    example: 'High-quality wireless headphones with noise cancellation.',
-    type: String,
-    minLength: 10,
-    maxLength: 1000,
-    required: false,
-  })
-  @IsString()
-  @MinLength(10)
-  @MaxLength(1000)
-  @IsOptional()
-  description?: string;
-}
-
-export class ChangeProductPriceDto {
-  @ApiProperty({
-    description: 'Product price',
-    example: 199.99,
-    type: Number,
-    minimum: 0.01,
-    maximum: 999999.99,
-  })
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
-  @Min(0.01)
-  @Max(999999.99)
   @IsNotEmpty()
   price: number;
 
   currency: string;
-}
-
-export class CategorizeProductDto {
-  categoryId: string;
 
   @ApiProperty({
     description: 'Product category classification',
@@ -156,4 +80,54 @@ export class CategorizeProductDto {
   @MaxLength(50)
   @IsNotEmpty()
   categoryName: string;
+
+  @ApiProperty({
+    description: 'Current status of the product',
+    example: ProductStatusEnum.ACTIVE,
+    enum: ProductStatusEnum,
+  })
+  @IsEnum(ProductStatusEnum)
+  @IsNotEmpty()
+  status: string;
+
+  @ApiProperty({
+    description: 'Detailed description of the product',
+    example: 'High-quality wireless headphones with noise cancellation.',
+    type: String,
+    minLength: 10,
+    maxLength: 1000,
+    required: false,
+  })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  @IsOptional()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Date and time when the product was created',
+    example: '2024-01-15T10:30:00Z',
+    type: String,
+    format: 'date-time',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  createdAt: string;
+
+  @ApiProperty({
+    description: 'Date and time when the product was last updated',
+    example: '2024-01-15T14:45:00Z',
+    type: String,
+    format: 'date-time',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  updatedAt: string;
+}
+
+export class ProductListResponseDto {
+  products: ProductResponseDto[];
+  total: number;
+  page: number;
+  limit: number;
 }
