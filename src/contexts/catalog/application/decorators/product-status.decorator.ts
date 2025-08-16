@@ -2,15 +2,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
-
-/**
- * Product Status Enum for validation
- */
-enum ProductStatusEnum {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  DISCONTINUED = 'DISCONTINUED',
-}
+import { ProductStatusType } from '../../domain/types/product-status.types';
 
 /**
  * Options for property decorators
@@ -30,11 +22,12 @@ export function ApiProductStatus(options: PropOptions = {}) {
   return applyDecorators(
     ApiProperty({
       description: 'Current status of the product',
-      example: ProductStatusEnum.ACTIVE,
-      enum: ProductStatusEnum,
+      example: ProductStatusType.ACTIVE,
+      enum: ProductStatusType,
+      type: String,
       required,
     }),
-    IsEnum(ProductStatusEnum),
+    IsEnum(ProductStatusType),
     required ? IsNotEmpty() : IsOptional(),
   );
 }
