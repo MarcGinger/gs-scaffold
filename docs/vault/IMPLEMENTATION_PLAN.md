@@ -155,10 +155,11 @@ export const AppConfigSchema = BaseConfigSchema.extend({
 - Schema for main application
 - Unit tests for configuration validation
 
-#### 2.2 Secret Redaction & Logging
+#### 2.2 Secret Redaction & Logging ⚠️ **IN PROGRESS**
 
 **Owner**: Mid-level Developer  
-**Duration**: 2 days
+**Duration**: 2 days  
+**Status**: Critical security requirement - needs immediate attention
 
 **Tasks:**
 
@@ -212,17 +213,20 @@ export const createAppLogger = (config: AppConfig) => {
 
 ### Week 3: Core Service Migration
 
-#### 3.1 Main Application Doppler Integration
+#### 3.1 Main Application Doppler Integration ⚠️ **PARTIALLY COMPLETE**
 
 **Owner**: Lead Developer  
-**Duration**: 2 days
+**Duration**: 2 days  
+**Status**: Core migration complete, staging/prod environments needed
 
 **Tasks:**
 
-- [ ] Create `gs-scaffold-api` Doppler project
-- [ ] Set up dev/staging/prod configurations
-- [ ] Migrate existing secrets to Doppler
+- [x] Create `gs-scaffold-api` Doppler project
+- [x] Set up dev configuration
+- [x] Migrate existing secrets to Doppler (25+ variables)
+- [ ] Set up staging/prod configurations
 - [ ] Update application bootstrap process
+- [ ] Validate functionality across all environments
 
 **Implementation Details:**
 
