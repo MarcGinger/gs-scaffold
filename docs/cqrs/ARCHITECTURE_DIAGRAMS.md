@@ -172,7 +172,7 @@ HTTP Request
 src/contexts/catalog/
 │
 ├── domain/                              # Core Business Logic
-│   ├── types/                          
+│   ├── types/
 │   │   ├── product-status.types.ts     # Status enum + rules
 │   │   └── change-product-price.types.ts # Price contracts
 │   ├── value-objects/
@@ -190,8 +190,8 @@ src/contexts/catalog/
 │   │   ├── create-product.dto.ts       # ✅ One class per file
 │   │   ├── update-product.dto.ts       # ✅ Single responsibility
 │   │   ├── change-product-price.dto.ts # ✅ Domain contracts
-│   │   ├── categorize-product.dto.ts   
-│   │   ├── product-response.dto.ts     
+│   │   ├── categorize-product.dto.ts
+│   │   ├── product-response.dto.ts
 │   │   ├── product-list-response.dto.ts
 │   │   └── index.ts                    # ✅ Barrel exports
 │   ├── decorators/
@@ -224,7 +224,7 @@ TYPE SAFETY
 │ interface       │    │ interface       │    │consistency      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
-MAINTAINABILITY  
+MAINTAINABILITY
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │Single decorator │──▶│ Multiple DTOs   │──▶│Easy to maintain │
 │definition       │    │ use it          │    │and update       │

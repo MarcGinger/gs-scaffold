@@ -50,14 +50,24 @@ export const PRODUCT_STATUS_TRANSITIONS: Record<
   ProductStatusType,
   ProductStatusType[]
 > = {
-  [ProductStatusType.DRAFT]: [ProductStatusType.ACTIVE, ProductStatusType.DELETED],
-  [ProductStatusType.ACTIVE]: [ProductStatusType.INACTIVE, ProductStatusType.DELETED],
-  [ProductStatusType.INACTIVE]: [ProductStatusType.ACTIVE, ProductStatusType.DELETED],
+  [ProductStatusType.DRAFT]: [
+    ProductStatusType.ACTIVE,
+    ProductStatusType.DELETED,
+  ],
+  [ProductStatusType.ACTIVE]: [
+    ProductStatusType.INACTIVE,
+    ProductStatusType.DELETED,
+  ],
+  [ProductStatusType.INACTIVE]: [
+    ProductStatusType.ACTIVE,
+    ProductStatusType.DELETED,
+  ],
   [ProductStatusType.DELETED]: [], // Terminal state
 };
 ```
 
 **Key Features:**
+
 - ✅ Centralized enum definition in domain types
 - ✅ Business rules co-located with enum (transitions matrix)
 - ✅ Terminal state handling for deleted products
@@ -77,6 +87,7 @@ export interface ChangeProductPrice {
 ```
 
 **Key Features:**
+
 - ✅ Descriptive naming convention
 - ✅ Single source of truth for price change operations
 - ✅ Type safety across application layers
@@ -96,10 +107,18 @@ export class ProductStatus {
   private constructor(private readonly value: ProductStatusType) {}
 
   // Factory methods
-  public static draft(): ProductStatus { /* ... */ }
-  public static active(): ProductStatus { /* ... */ }
-  public static inactive(): ProductStatus { /* ... */ }
-  public static deleted(): ProductStatus { /* ... */ }
+  public static draft(): ProductStatus {
+    /* ... */
+  }
+  public static active(): ProductStatus {
+    /* ... */
+  }
+  public static inactive(): ProductStatus {
+    /* ... */
+  }
+  public static deleted(): ProductStatus {
+    /* ... */
+  }
 
   // Business methods
   public canTransitionTo(newStatus: ProductStatus): boolean {
@@ -107,13 +126,18 @@ export class ProductStatus {
   }
 
   // Query methods
-  public isDraft(): boolean { /* ... */ }
-  public isActive(): boolean { /* ... */ }
+  public isDraft(): boolean {
+    /* ... */
+  }
+  public isActive(): boolean {
+    /* ... */
+  }
   // ... other query methods
 }
 ```
 
 **Key Features:**
+
 - ✅ Encapsulates business logic for status transitions
 - ✅ Uses centralized transition rules from domain types
 - ✅ Immutable design with factory methods
@@ -135,22 +159,33 @@ export class Price {
     // Validation logic
     if (value < 0) return err(/* ... */);
     if (!currency || currency.trim().length !== 3) return err(/* ... */);
-    
+
     const roundedValue = Math.round(value * 100) / 100;
     return ok(new Price(roundedValue, currency.toUpperCase()));
   }
 
-  public getValue(): number { return this.value; }
-  public getCurrency(): string { return this.currency; }
-  
+  public getValue(): number {
+    return this.value;
+  }
+  public getCurrency(): string {
+    return this.currency;
+  }
+
   // Business operations
-  public add(other: Price): Result<Price, DomainError> { /* ... */ }
-  public subtract(other: Price): Result<Price, DomainError> { /* ... */ }
-  public multiply(factor: number): Result<Price, DomainError> { /* ... */ }
+  public add(other: Price): Result<Price, DomainError> {
+    /* ... */
+  }
+  public subtract(other: Price): Result<Price, DomainError> {
+    /* ... */
+  }
+  public multiply(factor: number): Result<Price, DomainError> {
+    /* ... */
+  }
 }
 ```
 
 **Key Features:**
+
 - ✅ Domain validation (negative prices, currency format)
 - ✅ Automatic rounding to 2 decimal places
 - ✅ Currency mismatch protection
@@ -187,6 +222,7 @@ currency: string;
 ```
 
 **Benefits:**
+
 - ✅ **DRY Principle**: No code duplication across DTOs
 - ✅ **Semantic Clarity**: Decorators express business intent
 - ✅ **Consistency**: Uniform validation rules and examples
@@ -205,7 +241,7 @@ export class CreateProductDto implements ChangeProductPrice {
   @ApiProductCurrency({ required: false }) currency: string = 'USD';
   @ApiProductCategory() categoryName: string;
   @ApiProductDescription({ required: false }) description?: string;
-  
+
   categoryId: string; // Internal field
 }
 
@@ -249,6 +285,7 @@ export class ProductListResponseDto {
 ```
 
 **Key Features:**
+
 - ✅ **Domain Interface Implementation**: DTOs implement domain contracts
 - ✅ **Clean Separation**: One DTO per file (single responsibility)
 - ✅ **Type Safety**: Domain interfaces ensure structural consistency
@@ -272,6 +309,7 @@ export class ChangeProductPriceCommand implements ChangeProductPrice {
 ```
 
 **Key Features:**
+
 - ✅ **Domain Contract Compliance**: Implements `ChangeProductPrice` interface
 - ✅ **Immutable Design**: All properties are readonly
 - ✅ **Metadata Support**: Correlation ID, user context, and tenant isolation
@@ -330,8 +368,12 @@ interface ChangeProductPrice {
 }
 
 // All implementations follow same structure
-class ChangeProductPriceDto implements ChangeProductPrice { /* ... */ }
-class ChangeProductPriceCommand implements ChangeProductPrice { /* ... */ }
+class ChangeProductPriceDto implements ChangeProductPrice {
+  /* ... */
+}
+class ChangeProductPriceCommand implements ChangeProductPrice {
+  /* ... */
+}
 
 // Compiler enforces structural consistency
 const dto: ChangeProductPrice = new ChangeProductPriceDto();
@@ -355,11 +397,13 @@ const command: ChangeProductPrice = new ChangeProductPriceCommand(/* ... */);
 ## Implementation Statistics
 
 ### Code Reduction
+
 - **Before**: 128 lines for verbose DTOs with repetitive decorators
 - **After**: 50 lines with clean custom decorators
 - **Savings**: ~60% code reduction with improved readability
 
 ### Architecture Patterns
+
 - ✅ **Domain-Driven Design**: Clear domain boundaries
 - ✅ **CQRS**: Command/Query separation
 - ✅ **Clean Architecture**: Dependency inversion
@@ -368,8 +412,9 @@ const command: ChangeProductPrice = new ChangeProductPriceCommand(/* ... */);
 - ✅ **Type Safety**: Compile-time guarantees
 
 ### File Organization
+
 - **Domain Layer**: 15+ files with clear separation
-- **Application Layer**: 25+ files with focused responsibilities  
+- **Application Layer**: 25+ files with focused responsibilities
 - **Custom Decorators**: 10 specialized validation decorators
 - **DTOs**: 6 focused DTOs with domain contracts
 - **Commands**: Domain-contract-compliant commands

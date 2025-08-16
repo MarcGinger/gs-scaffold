@@ -11,6 +11,7 @@ The Catalog Domain implementation demonstrates a **mature, enterprise-grade arch
 **Decision**: Move domain enums and types to dedicated `domain/types/` folder
 
 **Before**:
+
 ```typescript
 // Enum scattered in value object files
 export class ProductStatus {
@@ -19,17 +20,25 @@ export class ProductStatus {
 ```
 
 **After**:
+
 ```typescript
 // domain/types/product-status.types.ts
-export enum ProductStatusType { /* ... */ }
-export const PRODUCT_STATUS_TRANSITIONS = { /* ... */ };
+export enum ProductStatusType {
+  /* ... */
+}
+export const PRODUCT_STATUS_TRANSITIONS = {
+  /* ... */
+};
 
-// domain/value-objects/product-status.vo.ts  
+// domain/value-objects/product-status.vo.ts
 import { ProductStatusType } from '../types/product-status.types';
-export class ProductStatus { /* clean implementation */ }
+export class ProductStatus {
+  /* clean implementation */
+}
 ```
 
 **Benefits**:
+
 - ✅ Single source of truth for domain types
 - ✅ Business rules co-located with domain concepts
 - ✅ Clean separation of types from behavior
@@ -41,13 +50,18 @@ export class ProductStatus { /* clean implementation */ }
 
 ```typescript
 // Before: Generic naming
-export interface PriceProps { /* ... */ }
+export interface PriceProps {
+  /* ... */
+}
 
 // After: Domain-specific naming
-export interface ChangeProductPrice { /* ... */ }
+export interface ChangeProductPrice {
+  /* ... */
+}
 ```
 
 **Benefits**:
+
 - ✅ Clear intent and purpose
 - ✅ Domain language consistency
 - ✅ Better code readability
@@ -65,13 +79,22 @@ interface ChangeProductPrice {
 }
 
 // All implementations follow contract
-class ChangeProductPriceDto implements ChangeProductPrice { /* ... */ }
-class ChangeProductPriceCommand implements ChangeProductPrice { /* ... */ }
-class CreateProductDto implements ChangeProductPrice { /* ... */ }
-class ProductResponseDto implements ChangeProductPrice { /* ... */ }
+class ChangeProductPriceDto implements ChangeProductPrice {
+  /* ... */
+}
+class ChangeProductPriceCommand implements ChangeProductPrice {
+  /* ... */
+}
+class CreateProductDto implements ChangeProductPrice {
+  /* ... */
+}
+class ProductResponseDto implements ChangeProductPrice {
+  /* ... */
+}
 ```
 
 **Benefits**:
+
 - ✅ Structural consistency enforced by compiler
 - ✅ Refactoring safety
 - ✅ Type safety across layers
@@ -104,6 +127,7 @@ price: number;
 ```
 
 **Benefits**:
+
 - ✅ 60% code reduction
 - ✅ DRY principle compliance
 - ✅ Consistent validation rules
@@ -123,12 +147,13 @@ export class ChangeProductPriceDto { /* ... */ }
 // After: Individual files with barrel exports
 dto/
 ├── create-product.dto.ts
-├── update-product.dto.ts  
+├── update-product.dto.ts
 ├── change-product-price.dto.ts
 └── index.ts // barrel exports
 ```
 
 **Benefits**:
+
 - ✅ Single responsibility principle
 - ✅ Easy navigation and maintenance
 - ✅ Focused testing
@@ -138,24 +163,24 @@ dto/
 
 ### Code Quality Improvements
 
-| Metric | Before | After | Improvement |
-|--------|--------|--------|-------------|
-| **DTO Line Count** | 128 lines | 50 lines | **-60%** |
-| **Validation Consistency** | Manual, error-prone | Centralized decorators | **+100%** |
-| **Type Safety** | Partial | Full domain contracts | **+100%** |
-| **Code Duplication** | High | Eliminated | **-90%** |
-| **File Organization** | Monolithic | Single responsibility | **+100%** |
+| Metric                     | Before              | After                  | Improvement |
+| -------------------------- | ------------------- | ---------------------- | ----------- |
+| **DTO Line Count**         | 128 lines           | 50 lines               | **-60%**    |
+| **Validation Consistency** | Manual, error-prone | Centralized decorators | **+100%**   |
+| **Type Safety**            | Partial             | Full domain contracts  | **+100%**   |
+| **Code Duplication**       | High                | Eliminated             | **-90%**    |
+| **File Organization**      | Monolithic          | Single responsibility  | **+100%**   |
 
 ### Architecture Compliance
 
-| Pattern | Implementation | Status |
-|---------|---------------|--------|
-| **Domain-Driven Design** | Clear domain boundaries | ✅ Complete |
-| **Clean Architecture** | Dependency inversion | ✅ Complete |
-| **CQRS** | Command/Query separation | ✅ Complete |
-| **Single Responsibility** | One concern per file | ✅ Complete |
-| **DRY Principle** | No code duplication | ✅ Complete |
-| **Type Safety** | Domain contracts | ✅ Complete |
+| Pattern                   | Implementation           | Status      |
+| ------------------------- | ------------------------ | ----------- |
+| **Domain-Driven Design**  | Clear domain boundaries  | ✅ Complete |
+| **Clean Architecture**    | Dependency inversion     | ✅ Complete |
+| **CQRS**                  | Command/Query separation | ✅ Complete |
+| **Single Responsibility** | One concern per file     | ✅ Complete |
+| **DRY Principle**         | No code duplication      | ✅ Complete |
+| **Type Safety**           | Domain contracts         | ✅ Complete |
 
 ## Implementation Patterns
 
@@ -168,7 +193,7 @@ domain/types/
 ├── change-product-price.types.ts // Domain Contracts
 └── [future-types].ts          // Extensible
 
-// Value Object Pattern  
+// Value Object Pattern
 domain/value-objects/
 ├── product-status.vo.ts        // Rich behavior
 ├── price.vo.ts                 // Domain validation
@@ -201,8 +226,12 @@ interface DomainContract {
 }
 
 // Application Layer Compliance
-class ApplicationDTO implements DomainContract { /* ... */ }
-class ApplicationCommand implements DomainContract { /* ... */ }
+class ApplicationDTO implements DomainContract {
+  /* ... */
+}
+class ApplicationCommand implements DomainContract {
+  /* ... */
+}
 
 // Compiler Guarantees
 const dto: DomainContract = new ApplicationDTO(); // ✅ Type safe
@@ -211,26 +240,31 @@ const dto: DomainContract = new ApplicationDTO(); // ✅ Type safe
 ## Best Practices Demonstrated
 
 ### 1. Domain-First Approach
+
 - Domain concepts drive technical structure
 - Business language used throughout
 - Domain rules centralized and co-located
 
 ### 2. Type Safety
+
 - Interfaces define contracts
-- Compiler enforces consistency  
+- Compiler enforces consistency
 - Refactoring safety guaranteed
 
 ### 3. Clean Code
+
 - Single responsibility principle
 - DRY principle compliance
 - Semantic naming conventions
 
 ### 4. Maintainability
+
 - Easy to extend and modify
 - Clear separation of concerns
 - Consistent patterns throughout
 
 ### 5. Professional Standards
+
 - Industry best practices
 - Enterprise-grade architecture
 - Production-ready implementation
@@ -238,9 +272,10 @@ const dto: DomainContract = new ApplicationDTO(); // ✅ Type safe
 ## Future Roadmap
 
 ### Phase 1 Extensions
+
 1. **Additional Domain Types**
    - Customer-related types
-   - Order-related types  
+   - Order-related types
    - Inventory-related types
 
 2. **Enhanced Decorators**
@@ -249,6 +284,7 @@ const dto: DomainContract = new ApplicationDTO(); // ✅ Type safe
    - Conditional validation
 
 ### Phase 2 Enhancements
+
 1. **Domain Event Types**
    - Event sourcing contracts
    - Event versioning support
@@ -264,7 +300,7 @@ const dto: DomainContract = new ApplicationDTO(); // ✅ Type safe
 This implementation represents a **gold standard** for domain-driven architecture in NestJS applications. The combination of:
 
 - **Clear domain boundaries**
-- **Type-safe contracts**  
+- **Type-safe contracts**
 - **Clean code principles**
 - **Maintainable patterns**
 - **Enterprise standards**
