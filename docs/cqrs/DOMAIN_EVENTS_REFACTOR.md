@@ -23,21 +23,25 @@ src/contexts/catalog/domain/events/
 ## Benefits Achieved
 
 ### 1. **Single Responsibility Principle**
+
 - ✅ Each file contains exactly one event
 - ✅ Easy to locate specific event logic
 - ✅ Reduced cognitive load when working with events
 
 ### 2. **Better Organization**
+
 - ✅ Shared types in dedicated `event-types.ts`
 - ✅ Consistent naming convention: `[entity]-[action].event.ts`
 - ✅ Clean barrel exports for easy importing
 
 ### 3. **Maintainability**
+
 - ✅ Changes to one event don't affect others
 - ✅ Easier code reviews and testing
 - ✅ Better version control history
 
 ### 4. **Discoverability**
+
 - ✅ Event files are immediately visible in file explorer
 - ✅ Clear naming makes purpose obvious
 - ✅ Better IDE navigation and search
@@ -73,6 +77,7 @@ export class [Event]Event {
 ## Shared Types Architecture
 
 ### `event-types.ts`
+
 Contains interfaces used across multiple events:
 
 ```typescript
@@ -100,6 +105,7 @@ export interface ProductChangeSet {
 ## Individual Event Files
 
 ### 1. **Product Created Event**
+
 ```typescript
 // product-created.event.ts
 export interface ProductCreatedEventPayload {
@@ -119,6 +125,7 @@ export interface ProductCreatedEventPayload {
 ```
 
 ### 2. **Product Price Changed Event**
+
 ```typescript
 // product-price-changed.event.ts
 export interface ProductPriceChangedEventPayload {
@@ -133,27 +140,33 @@ export interface ProductPriceChangedEventPayload {
 ```
 
 ### 3. **Product Status Events**
+
 - `product-activated.event.ts` - Product becomes available
 - `product-deactivated.event.ts` - Product temporarily unavailable
 - `product-deleted.event.ts` - Product soft delete
 
 ### 4. **Product Change Events**
+
 - `product-updated.event.ts` - General product updates
 - `product-categorized.event.ts` - Category changes
 
 ## Import Patterns
 
 ### Individual Event Import
+
 ```typescript
 // Import specific event
 import { ProductCreatedEvent } from './domain/events/product-created.event';
 
 // Use in handler
 @EventsHandler(ProductCreatedEvent)
-export class ProductCreatedEventHandler { /* ... */ }
+export class ProductCreatedEventHandler {
+  /* ... */
+}
 ```
 
 ### Barrel Import (Multiple Events)
+
 ```typescript
 // Import multiple events from barrel
 import {
@@ -167,6 +180,7 @@ import * as ProductEvents from './domain/events';
 ```
 
 ### Legacy Compatibility Import
+
 ```typescript
 // Still works for backward compatibility
 import { ProductCreatedEvent } from './domain/events/product.events';
@@ -184,6 +198,7 @@ The refactor maintains 100% backward compatibility:
 ## File Organization Benefits
 
 ### Before: Monolithic File
+
 ```
 product.events.ts (316 lines)
 ├── EventMetadata interface
@@ -198,6 +213,7 @@ product.events.ts (316 lines)
 ```
 
 ### After: Focused Files
+
 ```
 event-types.ts (20 lines) - Shared interfaces
 product-created.event.ts (82 lines) - Creation logic
@@ -214,6 +230,7 @@ product.events.ts (12 lines) - Legacy compatibility
 ## Development Workflow Improvements
 
 ### 1. **Event Development**
+
 ```bash
 # Before: Find event in 316-line file
 # After: Open dedicated event file
@@ -221,6 +238,7 @@ code product-price-changed.event.ts
 ```
 
 ### 2. **Testing**
+
 ```bash
 # Before: Test file with multiple events
 # After: Test specific event
@@ -228,6 +246,7 @@ jest product-created.event.spec.ts
 ```
 
 ### 3. **Code Reviews**
+
 ```bash
 # Before: Review changes mixed with other events
 # After: Review focused changes to specific event
@@ -237,18 +256,21 @@ git diff product-activated.event.ts
 ## Implementation Quality
 
 ### Architecture Compliance
+
 - ✅ **Single Responsibility**: One event per file
 - ✅ **Domain-Driven Design**: Events represent business concepts
 - ✅ **Clean Architecture**: Proper separation of concerns
 - ✅ **Consistency**: All events follow same pattern
 
 ### Code Quality
+
 - ✅ **Maintainability**: Easy to modify individual events
 - ✅ **Readability**: Clear file names and structure
 - ✅ **Testability**: Focused unit tests per event
 - ✅ **Documentation**: Each event well documented
 
 ### Organization Benefits
+
 - ✅ **Discoverability**: Events easy to find
 - ✅ **Navigation**: Better IDE experience
 - ✅ **Scalability**: Easy to add new events
@@ -264,6 +286,7 @@ Adding new events is now straightforward:
 4. **Optional**: Add to legacy file for compatibility
 
 Example new event:
+
 ```typescript
 // product-restored.event.ts
 import { EventMetadata } from './event-types';
@@ -278,9 +301,9 @@ export interface ProductRestoredEventPayload {
 export class ProductRestoredEvent {
   public readonly eventType = 'ProductRestored';
   public readonly eventVersion = '1.0';
-  
+
   constructor(public readonly payload: ProductRestoredEventPayload) {}
-  
+
   // Getters...
 }
 ```
