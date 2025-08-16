@@ -1,4 +1,5 @@
 import { DomainEvent } from '../../../../shared/domain/events/events';
+// EventMetadata intentionally not referenced here; event constructors accept `any` for metadata
 import { EventMetadata } from './product.events';
 
 export abstract class CatalogDomainEvent implements DomainEvent {
@@ -15,7 +16,8 @@ export abstract class CatalogDomainEvent implements DomainEvent {
 }
 
 export class ProductCreatedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductCreated';
+  public static readonly TYPE = 'ProductCreated';
+  public readonly type = ProductCreatedDomainEvent.TYPE;
 
   constructor(
     aggregateId: string,
@@ -31,13 +33,15 @@ export class ProductCreatedDomainEvent extends CatalogDomainEvent {
       status: string;
       description?: string;
     },
+    occurredAt?: Date,
   ) {
-    super(aggregateId, version, metadata);
+    super(aggregateId, version, metadata, occurredAt);
   }
 }
 
 export class ProductUpdatedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductUpdated';
+  public static readonly TYPE = 'ProductUpdated';
+  public readonly type = ProductUpdatedDomainEvent.TYPE;
 
   constructor(
     aggregateId: string,
@@ -49,13 +53,15 @@ export class ProductUpdatedDomainEvent extends CatalogDomainEvent {
         description?: { old?: string; new?: string };
       };
     },
+    occurredAt?: Date,
   ) {
-    super(aggregateId, version, metadata);
+    super(aggregateId, version, metadata, occurredAt);
   }
 }
 
 export class ProductPriceChangedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductPriceChanged';
+  public static readonly TYPE = 'ProductPriceChanged';
+  public readonly type = ProductPriceChangedDomainEvent.TYPE;
 
   constructor(
     aggregateId: string,
@@ -66,13 +72,15 @@ export class ProductPriceChangedDomainEvent extends CatalogDomainEvent {
       newPrice: number;
       currency: string;
     },
+    occurredAt?: Date,
   ) {
-    super(aggregateId, version, metadata);
+    super(aggregateId, version, metadata, occurredAt);
   }
 }
 
 export class ProductCategorizedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductCategorized';
+  public static readonly TYPE = 'ProductCategorized';
+  public readonly type = ProductCategorizedDomainEvent.TYPE;
 
   constructor(
     aggregateId: string,
@@ -83,31 +91,47 @@ export class ProductCategorizedDomainEvent extends CatalogDomainEvent {
       newCategoryId: string;
       newCategoryName: string;
     },
+    occurredAt?: Date,
   ) {
-    super(aggregateId, version, metadata);
+    super(aggregateId, version, metadata, occurredAt);
   }
 }
 
 export class ProductActivatedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductActivated';
-
-  constructor(aggregateId: string, version: number, metadata: EventMetadata) {
-    super(aggregateId, version, metadata);
+  public static readonly TYPE = 'ProductActivated';
+  public readonly type = ProductActivatedDomainEvent.TYPE;
+  constructor(
+    aggregateId: string,
+    version: number,
+    metadata: EventMetadata,
+    occurredAt?: Date,
+  ) {
+    super(aggregateId, version, metadata, occurredAt);
   }
 }
 
 export class ProductDeactivatedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductDeactivated';
-
-  constructor(aggregateId: string, version: number, metadata: EventMetadata) {
-    super(aggregateId, version, metadata);
+  public static readonly TYPE = 'ProductDeactivated';
+  public readonly type = ProductDeactivatedDomainEvent.TYPE;
+  constructor(
+    aggregateId: string,
+    version: number,
+    metadata: EventMetadata,
+    occurredAt?: Date,
+  ) {
+    super(aggregateId, version, metadata, occurredAt);
   }
 }
 
 export class ProductDeletedDomainEvent extends CatalogDomainEvent {
-  public readonly type = 'ProductDeleted';
-
-  constructor(aggregateId: string, version: number, metadata: EventMetadata) {
-    super(aggregateId, version, metadata);
+  public static readonly TYPE = 'ProductDeleted';
+  public readonly type = ProductDeletedDomainEvent.TYPE;
+  constructor(
+    aggregateId: string,
+    version: number,
+    metadata: EventMetadata,
+    occurredAt?: Date,
+  ) {
+    super(aggregateId, version, metadata, occurredAt);
   }
 }

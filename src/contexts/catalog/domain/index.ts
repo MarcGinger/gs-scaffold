@@ -28,7 +28,7 @@ export {
 } from './entities';
 
 // Aggregates
-export { ProductAggregate, ProductProps } from './product.aggregate';
+export { ProductAggregate } from './product.aggregate';
 
 // Events
 export * from './events/product.events';

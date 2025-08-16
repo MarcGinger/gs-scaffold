@@ -30,17 +30,9 @@ import {
 } from './events/catalog-domain.events';
 import { EventMetadata } from './events/product.events';
 
-export interface ProductProps {
-  id: ProductId;
-  name: ProductName;
-  sku: Sku;
-  price: Price;
-  category: Category;
-  status: ProductStatus;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// NOTE: `ProductEntityProps` from the entities module is the single source of truth
+// for product shape. The older `ProductProps` duplicate was removed to avoid
+// drift between aggregate and entity definitions.
 
 /**
  * Product Aggregate
@@ -301,25 +293,25 @@ export class ProductAggregate extends AggregateRootBase {
   // Event handling (when method from base class)
   protected when(event: DomainEvent): void {
     switch (event.type) {
-      case 'ProductCreated':
+      case ProductCreatedDomainEvent.TYPE:
         this.onProductCreated(event as ProductCreatedDomainEvent);
         break;
-      case 'ProductUpdated':
+      case ProductUpdatedDomainEvent.TYPE:
         this.onProductUpdated(event as ProductUpdatedDomainEvent);
         break;
-      case 'ProductPriceChanged':
+      case ProductPriceChangedDomainEvent.TYPE:
         this.onProductPriceChanged(event as ProductPriceChangedDomainEvent);
         break;
-      case 'ProductCategorized':
+      case ProductCategorizedDomainEvent.TYPE:
         this.onProductCategorized(event as ProductCategorizedDomainEvent);
         break;
-      case 'ProductActivated':
+      case ProductActivatedDomainEvent.TYPE:
         this.onProductActivated(event as ProductActivatedDomainEvent);
         break;
-      case 'ProductDeactivated':
+      case ProductDeactivatedDomainEvent.TYPE:
         this.onProductDeactivated(event as ProductDeactivatedDomainEvent);
         break;
-      case 'ProductDeleted':
+      case ProductDeletedDomainEvent.TYPE:
         this.onProductDeleted(event as ProductDeletedDomainEvent);
         break;
     }
@@ -337,7 +329,7 @@ export class ProductAggregate extends AggregateRootBase {
       Category.create(event.payload.categoryId, event.payload.categoryName),
     );
     const status = ProductStatus.fromString(event.payload.status);
-    const now = new Date(event.occurredAt);
+    const now = event.occurredAt ?? event.metadata?.timestamp ?? new Date();
 
     const props: ProductEntityProps = {
       id,
@@ -351,7 +343,8 @@ export class ProductAggregate extends AggregateRootBase {
       updatedAt: now,
     };
 
-    this.entity = unsafeUnwrap(ProductEntity.create(props));
+    // Reconstitute to avoid validation side-effects during replay
+    this.entity = ProductEntity.reconstitute(props);
   }
 
   private onProductUpdated(event: ProductUpdatedDomainEvent): void {
