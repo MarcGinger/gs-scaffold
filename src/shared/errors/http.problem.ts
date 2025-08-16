@@ -302,7 +302,7 @@ export function shouldSanitizeError(
     return sanitizeOverride;
   }
 
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = AppConfigUtil.isProduction();
 
   // Hide detailed information for security errors in production
   if (error.category === 'security' && isProduction) {

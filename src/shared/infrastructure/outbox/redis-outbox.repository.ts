@@ -4,6 +4,7 @@ import Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import type { Logger } from 'pino';
 import { APP_LOGGER, Log } from '../../logging';
+import { AppConfigUtil } from '../../config/app-config.util';
 
 /**
  * Production-ready Redis outbox repository with:
@@ -57,7 +58,7 @@ export class RedisOutboxRepository implements OutboxRepository {
     @Inject(APP_LOGGER) private readonly logger: Logger,
   ) {
     // Environment isolation
-    const envPrefix = `app:${process.env.NODE_ENV ?? 'dev'}:`;
+    const envPrefix = `app:${AppConfigUtil.getEnvironment()}:`;
     this.outboxKey = `${envPrefix}outbox:events`;
     this.statusKey = `${envPrefix}outbox:status`;
     this.dedupePrefix = `${envPrefix}outbox:dedupe`;

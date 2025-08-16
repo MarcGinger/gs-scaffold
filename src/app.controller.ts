@@ -3,6 +3,7 @@ import { AppService } from './app.service';
 import { Logger } from 'pino';
 import { APP_LOGGER } from './shared/logging/logging.providers';
 import { Log } from './shared/logging/structured-logger';
+import { AppConfigUtil } from './shared/config/app-config.util';
 
 @Controller()
 export class AppController {
@@ -29,12 +30,14 @@ export class AppController {
       method: 'healthCheck',
     });
 
+    const config = AppConfigUtil.getLoggingConfig();
+
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
-      version: process.env.APP_VERSION,
+      version: config.appVersion,
     };
   }
 }

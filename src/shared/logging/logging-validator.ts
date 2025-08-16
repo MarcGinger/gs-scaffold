@@ -1,44 +1,45 @@
 import { Logger } from 'pino';
+import { AppConfigUtil } from '../config/app-config.util';
 
 /**
  * Validates production logging configuration on startup
  */
 export function validateProductionLogging(logger: Logger): void {
-  const env = process.env.NODE_ENV;
-  const sink = process.env.LOG_SINK;
-  const level = process.env.LOG_LEVEL;
-  const pretty = process.env.PRETTY_LOGS;
+  const env = AppConfigUtil.getEnvironment();
+  const config = AppConfigUtil.getLoggingConfig();
 
   const warnings: string[] = [];
   const errors: string[] = [];
 
   // Production environment checks
   if (env === 'production') {
-    if (sink !== 'stdout') {
+    if (config.sink !== 'stdout') {
       warnings.push(
-        `Production LOG_SINK is '${sink}', recommended: 'stdout' for better resilience`,
+        `Production LOGGING_CORE_SINK is '${config.sink}', recommended: 'stdout' for better resilience`,
       );
     }
 
-    if (pretty === 'true') {
+    if (config.pretty) {
       warnings.push(
-        'PRETTY_LOGS=true in production will impact performance, set to false',
+        'LOGGING_CORE_PRETTY_ENABLED=true in production will impact performance, set to false',
       );
     }
 
-    if (level === 'debug') {
+    if (config.level === 'debug') {
       errors.push(
-        'LOG_LEVEL=debug in production will generate excessive logs and impact performance',
+        'LOGGING_CORE_LEVEL=debug in production will generate excessive logs and impact performance',
       );
     }
 
-    if (!process.env.APP_NAME) {
-      errors.push('APP_NAME environment variable is required for production');
+    if (!config.appName || config.appName === 'gs-scaffold') {
+      errors.push(
+        'APP_CORE_NAME environment variable is required for production',
+      );
     }
 
-    if (!process.env.APP_VERSION) {
+    if (!config.appVersion || config.appVersion === '1.0.0') {
       warnings.push(
-        'APP_VERSION environment variable not set, using default value',
+        'APP_CORE_VERSION environment variable not set, using default value',
       );
     }
   }
@@ -80,9 +81,9 @@ export function validateProductionLogging(logger: Logger): void {
       component: 'LoggingValidator',
       method: 'validateProductionLogging',
       config: {
-        sink,
-        level,
-        pretty: pretty === 'true',
+        sink: config.sink,
+        level: config.level,
+        pretty: config.pretty,
         environment: env,
       },
     },
@@ -101,7 +102,7 @@ export function validateClsContext(
 
   // This would be called within a CLS context
   // Implementation depends on your CLS service injection pattern
-  expectedFields.forEach((field) => {
+  expectedFields.forEach(() => {
     // This is a placeholder - you'd inject ClsService to check actual values
     // if (!cls.get(field)) missingFields.push(field);
   });

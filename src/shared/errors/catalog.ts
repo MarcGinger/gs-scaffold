@@ -1,4 +1,5 @@
 import { DomainError } from './error.types';
+import { AppConfigUtil } from '../config/app-config.util';
 
 /**
  * Creates a typed error catalog with namespaced error codes.
@@ -35,7 +36,7 @@ export function makeCatalog<
   T extends Record<string, Omit<DomainError, 'code'>>,
 >(definitions: T, namespace: string) {
   // Auto-validate in development environments
-  if (process.env.NODE_ENV !== 'production') {
+  if (!AppConfigUtil.isProduction()) {
     const validationErrors = validateCatalogNaming(definitions);
     if (validationErrors.length > 0) {
       console.warn(

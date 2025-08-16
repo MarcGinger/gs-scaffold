@@ -10,6 +10,7 @@ import {
   PIIAuditEvent,
 } from './pii.types';
 import { PIIDetectorService } from './pii-detector.service';
+import { AppConfigUtil } from '../../config/app-config.util';
 
 /**
  * PII protection service that applies data protection actions
@@ -330,9 +331,11 @@ export class PIIProtectionService {
   }
 
   /**
-   * Get encryption key (implement proper key management in production)
+   * Get encryption key for PII encryption operations
+   * @returns The encryption key from centralized configuration
    */
   private getEncryptionKey(): string {
-    return process.env.PII_ENCRYPTION_KEY || 'default-key-change-in-production';
+    const config = AppConfigUtil.getDataProtectionConfig();
+    return config.pii.encryptionKey;
   }
 }

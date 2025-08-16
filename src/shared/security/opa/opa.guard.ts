@@ -12,6 +12,7 @@ import { IUserToken } from '../types/user-token.interface';
 import { OpaInput } from './opa.types';
 import { AuthErrors } from '../errors/auth.errors';
 import { DecisionLoggerService } from '../audit/decision-logger.service';
+import { AppConfigUtil } from '../../config/app-config.util';
 
 type HeaderValue = string | string[] | undefined;
 
@@ -193,7 +194,7 @@ export class OpaGuard implements CanActivate {
       context: {
         correlationId,
         time: tsIso,
-        environment: process.env.NODE_ENV || 'development',
+        environment: AppConfigUtil.getEnvironment(),
         ipAddress: request.ip,
         userAgent: this.getHeader(request, 'user-agent'),
         metadata: {

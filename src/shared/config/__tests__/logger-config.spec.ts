@@ -2,41 +2,44 @@ import { AppConfigUtil } from '../app-config.util';
 import { ConfigManager } from '../config.manager';
 
 /**
- * Test logging configuration centralization
+ * Test logging configuration centralizat      // Test Elasticsearch configuration
+      process.env.LOGGING_CORE_SINK = 'elasticsearch';
+      process.env.LOGGING_ELASTICSEARCH_NODE = 'http://test-es:9200';
+      process.env.LOGGING_ELASTICSEARCH_INDEX = 'test-logs';
  * This validates that logger factory configuration is properly centralized through AppConfigUtil
  */
 describe('Logger Factory Configuration Centralization', () => {
   beforeAll(() => {
-    // Set test environment variables (legacy format)
-    process.env.LOG_SINK = 'loki';
-    process.env.PRETTY_LOGS = 'true';
-    process.env.LOG_LEVEL = 'debug';
-    process.env.APP_NAME = 'test-app';
-    process.env.APP_VERSION = '1.0.0';
-    process.env.LOKI_URL = 'http://localhost:3100';
-    process.env.LOKI_BASIC_AUTH = 'user:pass';
-    process.env.ES_NODE = 'http://localhost:9200';
-    process.env.ES_INDEX = 'test-logs';
+    // Set test environment variables (new format)
+    process.env.LOGGING_CORE_SINK = 'loki';
+    process.env.LOGGING_CORE_PRETTY_ENABLED = 'true';
+    process.env.LOGGING_CORE_LEVEL = 'debug';
+    process.env.APP_CORE_NAME = 'test-app';
+    process.env.APP_CORE_VERSION = '1.0.0';
+    process.env.LOGGING_LOKI_URL = 'http://localhost:3100';
+    process.env.LOGGING_LOKI_BASIC_AUTH = 'user:pass';
+    process.env.LOGGING_ELASTICSEARCH_NODE = 'http://localhost:9200';
+    process.env.LOGGING_ELASTICSEARCH_INDEX = 'test-logs';
   });
 
   afterAll(() => {
     // Clean up environment variables
-    delete process.env.LOG_SINK;
-    delete process.env.PRETTY_LOGS;
-    delete process.env.LOG_LEVEL;
-    delete process.env.APP_NAME;
-    delete process.env.APP_VERSION;
-    delete process.env.LOKI_URL;
-    delete process.env.LOKI_BASIC_AUTH;
-    delete process.env.ES_NODE;
-    delete process.env.ES_INDEX;
+    delete process.env.LOGGING_CORE_SINK;
+    delete process.env.LOGGING_CORE_PRETTY_ENABLED;
+    delete process.env.LOGGING_CORE_LEVEL;
+    delete process.env.APP_CORE_NAME;
+    delete process.env.APP_CORE_VERSION;
+    delete process.env.LOGGING_LOKI_URL;
+    delete process.env.LOGGING_LOKI_BASIC_AUTH;
+    delete process.env.LOGGING_ELASTICSEARCH_NODE;
+    delete process.env.LOGGING_ELASTICSEARCH_INDEX;
   });
 
   describe('AppConfigUtil.getLoggingConfig()', () => {
-    it('should return centralized logging configuration with legacy support', () => {
+    it('should return centralized logging configuration', () => {
       const config = AppConfigUtil.getLoggingConfig();
 
-      // Verify legacy environment variable support
+      // Verify environment variable support
       expect(config.sink).toBe('loki');
       expect(config.pretty).toBe(true);
       expect(config.level).toBe('debug');
@@ -54,10 +57,10 @@ describe('Logger Factory Configuration Centralization', () => {
 
     it('should provide sensible defaults', () => {
       // Clear environment variables
-      delete process.env.LOG_SINK;
-      delete process.env.APP_NAME;
-      delete process.env.LOG_LEVEL;
-      delete process.env.ES_INDEX; // Clear this too
+      delete process.env.LOGGING_CORE_SINK;
+      delete process.env.APP_CORE_NAME;
+      delete process.env.LOGGING_CORE_LEVEL;
+      delete process.env.LOGGING_ELASTICSEARCH_INDEX; // Clear this too
 
       const config = AppConfigUtil.getLoggingConfig();
 
@@ -65,31 +68,17 @@ describe('Logger Factory Configuration Centralization', () => {
       expect(config.sink).toBe('stdout');
       expect(config.level).toBe('info');
       expect(config.appName).toBe('gs-scaffold');
-      expect(config.appVersion).toBe('1.0.0'); // Should still use APP_VERSION
+      expect(config.appVersion).toBe('1.0.0');
       expect(config.elasticsearch.index).toBe('app-logs');
-    });
-
-    it('should prefer new environment variables over legacy ones', () => {
-      // Set both new and legacy variables
-      process.env.LOG_SINK = 'console'; // Legacy
-      process.env.LOGGING_CORE_SINK = 'elasticsearch'; // New format
-      process.env.APP_NAME = 'legacy-app'; // Legacy
-      process.env.APP_CORE_NAME = 'new-app'; // New format
-
-      const config = AppConfigUtil.getLoggingConfig();
-
-      // Should prefer legacy for backward compatibility
-      expect(config.sink).toBe('console');
-      expect(config.appName).toBe('legacy-app');
     });
   });
 
   describe('ConfigManager logging validation', () => {
     beforeEach(() => {
       // Reset environment for validation tests
-      process.env.LOG_SINK = 'loki';
-      process.env.LOG_LEVEL = 'info';
-      process.env.APP_NAME = 'test-app';
+      process.env.LOGGING_CORE_SINK = 'loki';
+      process.env.LOGGING_CORE_LEVEL = 'info';
+      process.env.APP_CORE_NAME = 'test-app';
     });
 
     it('should validate logging configuration successfully', () => {
@@ -117,10 +106,10 @@ describe('Logger Factory Configuration Centralization', () => {
       };
 
       // Set specific configuration for testing
-      process.env.LOG_SINK = 'console';
-      process.env.PRETTY_LOGS = 'true';
-      process.env.LOG_LEVEL = 'debug';
-      process.env.APP_NAME = 'logger-test';
+      process.env.LOGGING_CORE_SINK = 'console';
+      process.env.LOGGING_CORE_PRETTY_ENABLED = 'true';
+      process.env.LOGGING_CORE_LEVEL = 'debug';
+      process.env.APP_CORE_NAME = 'logger-test';
 
       const { buildAppLogger } = await import('../../logging/logger.factory');
       const config = AppConfigUtil.getLoggingConfig();
@@ -148,9 +137,9 @@ describe('Logger Factory Configuration Centralization', () => {
       const mockClsService = { get: jest.fn() };
 
       // Test Loki configuration
-      process.env.LOG_SINK = 'loki';
-      process.env.LOKI_URL = 'http://test-loki:3100';
-      process.env.LOKI_BASIC_AUTH = 'test:auth';
+      process.env.LOGGING_CORE_SINK = 'loki';
+      process.env.LOGGING_LOKI_URL = 'http://test-loki:3100';
+      process.env.LOGGING_LOKI_BASIC_AUTH = 'test:auth';
 
       const { buildAppLogger } = await import('../../logging/logger.factory');
       const config = AppConfigUtil.getLoggingConfig();
@@ -166,9 +155,9 @@ describe('Logger Factory Configuration Centralization', () => {
 
     it('should handle Elasticsearch configuration', () => {
       // Test Elasticsearch configuration
-      process.env.LOG_SINK = 'elasticsearch';
-      process.env.ES_NODE = 'http://test-es:9200';
-      process.env.ES_INDEX = 'test-index';
+      process.env.LOGGING_CORE_SINK = 'elasticsearch';
+      process.env.LOGGING_ELASTICSEARCH_NODE = 'http://test-es:9200';
+      process.env.LOGGING_ELASTICSEARCH_INDEX = 'test-index';
 
       const config = AppConfigUtil.getLoggingConfig();
 

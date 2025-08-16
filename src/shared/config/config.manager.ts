@@ -342,10 +342,7 @@ export class ConfigManager {
 
           // Validate connection settings
           const hasUrl = !!(dbConfig.url && dbConfig.url.trim());
-          const hasExplicitHost = !!(
-            process.env.DATABASE_POSTGRES_HOST &&
-            process.env.DATABASE_POSTGRES_HOST.trim()
-          );
+          const hasExplicitHost = !!(dbConfig.host && dbConfig.host.trim());
 
           if (!hasUrl && !hasExplicitHost) {
             errors.push('Database connection URL or host must be configured');

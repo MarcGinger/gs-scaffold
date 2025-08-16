@@ -17,6 +17,7 @@ import Redis from 'ioredis';
 import { EventStoreDBClient } from '@eventstore/db-client';
 import type { Logger } from 'pino';
 import { APP_LOGGER } from '../logging';
+import { AppConfigUtil } from '../config/app-config.util';
 
 // ===== INTERFACE TOKENS FOR DEPENDENCY INJECTION =====
 export const CHECKPOINT_STORE = 'CHECKPOINT_STORE';
@@ -64,9 +65,7 @@ export const EVENTSTORE_CLIENT = 'EVENTSTORE_CLIENT';
       provide: RedisCheckpointStore,
       inject: ['IORedis', APP_LOGGER],
       useFactory: (redis: Redis, logger: Logger) => {
-        const envPrefix = process.env.NODE_ENV
-          ? `${process.env.NODE_ENV}:`
-          : '';
+        const envPrefix = `${AppConfigUtil.getEnvironment()}:`;
         return new RedisCheckpointStore(redis, logger, envPrefix);
       },
     },

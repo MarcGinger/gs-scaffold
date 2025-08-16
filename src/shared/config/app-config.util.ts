@@ -113,6 +113,19 @@ export class AppConfigUtil {
     );
   }
 
+  /** System configuration for runtime context */
+  static getSystemConfig() {
+    return {
+      environment: this.getEnvironment(),
+      isProduction: this.isProduction(),
+      isContainerized: this.isContainerized(),
+      nodeEnv: process.env.NODE_ENV || 'development',
+      appVersion: process.env.APP_VERSION || 'unknown',
+      buildTimestamp: process.env.BUILD_TIMESTAMP,
+      instanceId: process.env.INSTANCE_ID || `instance-${Date.now()}`,
+    };
+  }
+
   /** Database configuration with sensible defaults */
   static getDatabaseConfig() {
     const port = Number(process.env.DATABASE_POSTGRES_PORT || '5432');
@@ -163,12 +176,9 @@ export class AppConfigUtil {
     };
   }
 
-  /** Logging level: single string with a safe default; supports multiple env keys */
+  /** Logging level: single string with a safe default */
   static getLogLevel(): string {
-    const level =
-      process.env.LOGGING_CORE_LEVEL ||
-      process.env.LOG_LEVEL || // Legacy fallback
-      '';
+    const level = process.env.LOGGING_CORE_LEVEL || '';
     const normalized = level.toLowerCase().trim();
     // Allow only known levels; default to info
     const allowed = new Set([
@@ -185,13 +195,7 @@ export class AppConfigUtil {
 
   /** Get logging sink configuration for your production logging strategy */
   static getLogSink(): 'stdout' | 'console' | 'loki' | 'elasticsearch' {
-    const sink = (
-      process.env.LOG_SINK || // Legacy support
-      process.env.LOGGING_CORE_SINK ||
-      ''
-    )
-      .toLowerCase()
-      .trim();
+    const sink = (process.env.LOGGING_CORE_SINK || '').toLowerCase().trim();
     const allowed = ['stdout', 'console', 'loki', 'elasticsearch'] as const;
     type LogSink = (typeof allowed)[number];
     return allowed.includes(sink as LogSink) ? (sink as LogSink) : 'stdout';
@@ -202,36 +206,19 @@ export class AppConfigUtil {
     return {
       level: this.getLogLevel(),
       sink: this.getLogSink(),
-      pretty:
-        process.env.PRETTY_LOGS === 'true' || // Legacy support
-        process.env.LOGGING_CORE_PRETTY_ENABLED?.toLowerCase() === 'true',
-      appName:
-        process.env.APP_NAME || // Legacy support
-        process.env.APP_CORE_NAME ||
-        'gs-scaffold',
-      appVersion:
-        process.env.APP_VERSION || // Legacy support
-        process.env.APP_CORE_VERSION ||
-        '0.0.1',
+      pretty: process.env.LOGGING_CORE_PRETTY_ENABLED?.toLowerCase() === 'true',
+      appName: process.env.APP_CORE_NAME || 'gs-scaffold',
+      appVersion: process.env.APP_CORE_VERSION || '0.0.1',
       environment: this.getEnvironment(),
       // Loki configuration
       loki: {
-        url:
-          process.env.LOKI_URL || // Legacy support
-          process.env.LOGGING_LOKI_URL,
-        basicAuth:
-          process.env.LOKI_BASIC_AUTH || // Legacy support
-          process.env.LOGGING_LOKI_BASIC_AUTH,
+        url: process.env.LOGGING_LOKI_URL,
+        basicAuth: process.env.LOGGING_LOKI_BASIC_AUTH,
       },
       // Elasticsearch configuration
       elasticsearch: {
-        node:
-          process.env.ES_NODE || // Legacy support
-          process.env.LOGGING_ELASTICSEARCH_NODE,
-        index:
-          process.env.ES_INDEX || // Legacy support
-          process.env.LOGGING_ELASTICSEARCH_INDEX ||
-          'app-logs',
+        node: process.env.LOGGING_ELASTICSEARCH_NODE,
+        index: process.env.LOGGING_ELASTICSEARCH_INDEX || 'app-logs',
       },
     };
   }
@@ -250,19 +237,19 @@ export class AppConfigUtil {
     if (this.isProduction()) {
       if (config.sink !== 'stdout') {
         warnings.push(
-          `Production LOG_SINK is '${config.sink}', recommended: 'stdout' for better resilience`,
+          `Production LOGGING_CORE_SINK is '${config.sink}', recommended: 'stdout' for better resilience`,
         );
       }
 
       if (config.pretty) {
         warnings.push(
-          'PRETTY_LOGS=true in production will impact performance, set to false',
+          'LOGGING_CORE_PRETTY_ENABLED=true in production will impact performance, set to false',
         );
       }
 
       if (config.level === 'debug') {
         errors.push(
-          'LOG_LEVEL=debug in production will generate excessive logs and impact performance',
+          'LOGGING_CORE_LEVEL=debug in production will generate excessive logs and impact performance',
         );
       }
 
@@ -281,11 +268,13 @@ export class AppConfigUtil {
 
     // Sink-specific validations
     if (config.sink === 'loki' && !config.loki.url) {
-      errors.push('LOKI_URL is required when LOG_SINK=loki');
+      errors.push('LOGGING_LOKI_URL is required when LOGGING_CORE_SINK=loki');
     }
 
     if (config.sink === 'elasticsearch' && !config.elasticsearch.node) {
-      errors.push('ES_NODE is required when LOG_SINK=elasticsearch');
+      errors.push(
+        'LOGGING_ELASTICSEARCH_NODE is required when LOGGING_CORE_SINK=elasticsearch',
+      );
     }
 
     return {
@@ -428,6 +417,97 @@ export class AppConfigUtil {
         10,
       ),
       enableTracing: process.env.ERROR_ENABLE_TRACING !== 'false',
+    };
+  }
+
+  /** Data Protection Configuration */
+  static getDataProtectionConfig() {
+    return {
+      pii: {
+        encryptionKey:
+          process.env.DATA_PROTECTION_PII_ENCRYPTION_KEY ||
+          'default-key-change-in-production',
+        enableTokenization:
+          process.env.DATA_PROTECTION_PII_TOKENIZATION_ENABLED?.toLowerCase() ===
+          'true',
+        auditingEnabled:
+          process.env.DATA_PROTECTION_PII_AUDITING_ENABLED?.toLowerCase() !==
+          'false',
+        retentionDays: parseInt(
+          process.env.DATA_PROTECTION_PII_RETENTION_DAYS || '365',
+          10,
+        ),
+      },
+      compliance: {
+        gdprEnabled:
+          process.env.DATA_PROTECTION_GDPR_ENABLED?.toLowerCase() === 'true',
+        ccpaEnabled:
+          process.env.DATA_PROTECTION_CCPA_ENABLED?.toLowerCase() === 'true',
+        hipaaEnabled:
+          process.env.DATA_PROTECTION_HIPAA_ENABLED?.toLowerCase() === 'true',
+      },
+    };
+  }
+
+  /** Validate data protection configuration */
+  static validateDataProtectionConfig(): {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
+    const config = this.getDataProtectionConfig();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // PII Configuration validations
+    if (config.pii.encryptionKey === 'default-key-change-in-production') {
+      if (this.isProduction()) {
+        errors.push(
+          'DATA_PROTECTION_PII_ENCRYPTION_KEY must be set in production',
+        );
+      } else {
+        warnings.push(
+          'Using default PII encryption key - change for production',
+        );
+      }
+    }
+
+    if (config.pii.encryptionKey.length < 32) {
+      warnings.push(
+        'PII encryption key should be at least 32 characters for better security',
+      );
+    }
+
+    if (config.pii.retentionDays < 1) {
+      errors.push('DATA_PROTECTION_PII_RETENTION_DAYS must be at least 1 day');
+    }
+
+    if (config.pii.retentionDays > 3650) {
+      // 10 years
+      warnings.push(
+        'PII retention period is very long (>10 years), consider compliance requirements',
+      );
+    }
+
+    // Compliance validations
+    if (this.isProduction()) {
+      const complianceEnabled = [
+        config.compliance.gdprEnabled,
+        config.compliance.ccpaEnabled,
+        config.compliance.hipaaEnabled,
+      ];
+
+      if (!complianceEnabled.some((enabled) => enabled)) {
+        warnings.push(
+          'No compliance frameworks enabled - consider enabling GDPR, CCPA, or HIPAA if applicable',
+        );
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      warnings,
     };
   }
 

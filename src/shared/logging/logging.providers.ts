@@ -1,6 +1,6 @@
-import { Provider } from '@nestjs/common';
 import pino, { Logger } from 'pino';
 import { ClsService } from 'nestjs-cls';
+import { AppConfigUtil } from '../config/app-config.util';
 
 export const APP_LOGGER = 'APP_LOGGER';
 
@@ -18,11 +18,10 @@ export const createAppLoggerProvider = (serviceName?: string) => ({
   provide: APP_LOGGER,
   inject: [ClsService],
   useFactory: (cls: ClsService): Logger => {
-    const sink = process.env.LOG_SINK ?? 'stdout';
-    const pretty = process.env.PRETTY_LOGS === 'true';
+    const config = AppConfigUtil.getLoggingConfig();
 
     let transport: pino.TransportSingleOptions | undefined;
-    if (sink === 'console' && pretty) {
+    if (config.sink === 'console' && config.pretty) {
       transport = {
         target: 'pino-pretty',
         options: {
@@ -31,39 +30,39 @@ export const createAppLoggerProvider = (serviceName?: string) => ({
           ignore: 'pid,hostname',
         },
       };
-    } else if (sink === 'loki') {
+    } else if (config.sink === 'loki') {
       transport = {
         target: 'pino-loki',
         options: {
-          host: process.env.LOKI_URL,
-          basicAuth: process.env.LOKI_BASIC_AUTH,
+          host: config.loki.url,
+          basicAuth: config.loki.basicAuth,
           batching: true,
           interval: 2000,
           labels: {
-            app: process.env.APP_NAME ?? 'app',
-            env: process.env.NODE_ENV ?? 'local',
+            app: config.appName,
+            env: config.environment,
           },
         },
       };
-    } else if (sink === 'elasticsearch') {
+    } else if (config.sink === 'elasticsearch') {
       transport = {
         target: 'pino-elasticsearch',
         options: {
-          node: process.env.ES_NODE,
-          index: process.env.ES_INDEX ?? 'app-logs',
+          node: config.elasticsearch.node,
+          index: config.elasticsearch.index,
           esVersion: 8,
         },
       };
     }
 
     return pino({
-      level: process.env.LOG_LEVEL ?? 'info',
+      level: config.level,
       transport,
       base: {
-        app: process.env.APP_NAME ?? 'app',
-        environment: process.env.NODE_ENV ?? 'local',
-        version: process.env.APP_VERSION ?? '0.0.1',
-        service: serviceName || process.env.APP_NAME || 'app', // Configurable service name
+        app: config.appName,
+        environment: config.environment,
+        version: config.appVersion,
+        service: serviceName || config.appName,
       },
       mixin() {
         return {

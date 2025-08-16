@@ -69,5 +69,4 @@ export const AppDataSource = new DataSource({
   // Connection pool configuration
   // These can be overridden by the TypeORM module
   connectTimeoutMS: dbConfig.connectTimeoutMS,
-  // acquireTimeoutMillis: Number(process.env.DB_ACQUIRE_TIMEOUT) || 10000, // Not supported in PostgreSQL driver
 });

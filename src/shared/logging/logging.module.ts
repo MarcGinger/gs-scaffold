@@ -2,35 +2,35 @@ import { LoggerModule } from 'nestjs-pino';
 import { Module } from '@nestjs/common';
 import { appLoggerProvider } from './logging.providers';
 import { randomUUID } from 'crypto';
+import { AppConfigUtil } from '../config/app-config.util';
 
 function buildTransport() {
-  const sink = process.env.LOG_SINK ?? 'stdout';
-  const pretty = process.env.PRETTY_LOGS === 'true';
+  const config = AppConfigUtil.getLoggingConfig();
 
-  if (sink === 'console' && pretty) {
+  if (config.sink === 'console' && config.pretty) {
     return { target: 'pino-pretty', options: { translateTime: 'UTC:isoTime' } };
   }
-  if (sink === 'loki') {
+  if (config.sink === 'loki') {
     return {
       target: 'pino-loki',
       options: {
-        host: process.env.LOKI_URL,
-        basicAuth: process.env.LOKI_BASIC_AUTH,
+        host: config.loki.url,
+        basicAuth: config.loki.basicAuth,
         batching: true,
         interval: 2000,
         labels: {
-          app: process.env.APP_NAME ?? 'app',
-          env: process.env.NODE_ENV ?? 'local',
+          app: config.appName,
+          env: config.environment,
         },
       },
     };
   }
-  if (sink === 'elasticsearch') {
+  if (config.sink === 'elasticsearch') {
     return {
       target: 'pino-elasticsearch',
       options: {
-        node: process.env.ES_NODE,
-        index: process.env.ES_INDEX ?? 'app-logs',
+        node: config.elasticsearch.node,
+        index: config.elasticsearch.index,
         esVersion: 8,
       },
     };
@@ -72,16 +72,19 @@ export function redactPayload(
   imports: [
     LoggerModule.forRoot({
       pinoHttp: {
-        level: process.env.LOG_LEVEL ?? 'info',
+        level: AppConfigUtil.getLogLevel(),
         transport: buildTransport(),
         genReqId: (req) =>
           (req.headers['x-request-id'] as string) || randomUUID(),
         customAttributeKeys: { reqId: 'traceId' },
-        customProps: () => ({
-          app: process.env.APP_NAME ?? 'app',
-          environment: process.env.NODE_ENV ?? 'local',
-          version: process.env.APP_VERSION ?? '0.0.1',
-        }),
+        customProps: () => {
+          const config = AppConfigUtil.getLoggingConfig();
+          return {
+            app: config.appName,
+            environment: config.environment,
+            version: config.appVersion,
+          };
+        },
         serializers: {
           req(req: any) {
             return {
@@ -110,25 +113,26 @@ export function redactPayload(
 export class LoggingModule {}
 
 // Log sink and batching are already handled in buildTransport()
-// Example environment configuration:
+// Example environment configuration (new standardized variables):
 //
-// LOG_SINK=stdout|console|loki|elasticsearch
-// LOG_LEVEL=info
-// APP_NAME=gsnest-template
-// APP_VERSION=0.0.1
+// LOGGING_CORE_SINK=stdout|console|loki|elasticsearch
+// LOGGING_CORE_LEVEL=info
+// LOGGING_CORE_PRETTY_ENABLED=false
+// APP_CORE_NAME=gs-scaffold
+// APP_CORE_VERSION=1.0.0
 // NODE_ENV=local|development|staging|production
 //
-// # Loki (if LOG_SINK=loki)
-// LOKI_URL=http://loki:3100
-// LOKI_BASIC_AUTH=username:password  # optional
+// # Loki (if LOGGING_CORE_SINK=loki)
+// LOGGING_LOKI_URL=http://loki:3100
+// LOGGING_LOKI_BASIC_AUTH=username:password  # optional
 //
-// # Elasticsearch (if LOG_SINK=elasticsearch)
-// ES_NODE=http://elasticsearch:9200
-// ES_INDEX=app-logs
-//
-// # Local pretty printing (optional)
-// PRETTY_LOGS=true
+// # Elasticsearch (if LOGGING_CORE_SINK=elasticsearch)
+// LOGGING_ELASTICSEARCH_NODE=http://elasticsearch:9200
+// LOGGING_ELASTICSEARCH_INDEX=app-logs
 //
 // Batching is enabled for Loki by default (interval: 2000ms)
 //
 // To avoid logging large objects, use truncateField() in serializers or log helpers.
+//
+// Note: This module now uses AppConfigUtil for centralized configuration management.
+// Legacy environment variables (LOG_SINK, LOG_LEVEL, APP_NAME, etc.) are no longer supported.
