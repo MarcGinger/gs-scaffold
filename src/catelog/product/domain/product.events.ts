@@ -4,6 +4,8 @@
 
 import { DomainEvent } from 'src/shared/domain/events';
 
+// Keep occurredAt as Date to match shared DomainEvent interface. Aggregates
+// should supply a Date obtained from the injected Clock (e.g. clock.now()).
 export class ProductCreatedEvent implements DomainEvent {
   readonly type = 'ecommerce.product.created.v1';
   readonly version = 1;
@@ -18,9 +20,10 @@ export class ProductCreatedEvent implements DomainEvent {
     public readonly price: number,
     public readonly categoryId: string,
     public readonly sku: string,
+    occurredAt?: Date,
   ) {
     this.aggregateId = productId;
-    this.occurredAt = new Date();
+    this.occurredAt = occurredAt ?? new Date();
   }
 }
 
@@ -36,9 +39,10 @@ export class ProductPriceUpdatedEvent implements DomainEvent {
     public readonly oldPrice: number,
     public readonly newPrice: number,
     public readonly reason?: string,
+    occurredAt?: Date,
   ) {
     this.aggregateId = productId;
-    this.occurredAt = new Date();
+    this.occurredAt = occurredAt ?? new Date();
   }
 }
 
@@ -52,8 +56,9 @@ export class ProductDeactivatedEvent implements DomainEvent {
   constructor(
     public readonly productId: string,
     public readonly reason: string,
+    occurredAt?: Date,
   ) {
     this.aggregateId = productId;
-    this.occurredAt = new Date();
+    this.occurredAt = occurredAt ?? new Date();
   }
 }

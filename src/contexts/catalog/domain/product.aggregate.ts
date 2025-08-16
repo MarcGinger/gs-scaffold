@@ -19,6 +19,7 @@ import {
   DomainError,
   unsafeUnwrap,
 } from '../../../shared/errors/error.types';
+import { systemClock } from '../../../shared/time/clock';
 import {
   ProductCreatedDomainEvent,
   ProductUpdatedDomainEvent,
@@ -43,10 +44,15 @@ import { EventMetadata } from './events/product.events';
  */
 export class ProductAggregate extends AggregateRootBase {
   private entity: ProductEntity;
+  private readonly clock: { now: () => Date; nowIso?: () => string };
 
-  private constructor(entity: ProductEntity) {
+  private constructor(
+    entity: ProductEntity,
+    clock?: { now: () => Date; nowIso?: () => string },
+  ) {
     super();
     this.entity = entity;
+    this.clock = clock ?? systemClock;
   }
 
   // Factory method for creating new products
@@ -58,7 +64,10 @@ export class ProductAggregate extends AggregateRootBase {
     category: Category,
     metadata: EventMetadata,
     description?: string,
+    // optional clock for determinism in tests; defaults to systemClock
+    clockParam?: { now: () => Date; nowIso?: () => string },
   ): Result<ProductAggregate, DomainError> {
+    const clock = clockParam ?? systemClock;
     // Domain validation
     if (price.getValue() < 0) {
       return err(ProductErrors.INVALID_PRICE);
@@ -73,8 +82,8 @@ export class ProductAggregate extends AggregateRootBase {
       category,
       status: ProductStatus.draft(),
       description,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
     };
 
     const entityResult = ProductEntity.create(entityProps);
@@ -82,19 +91,28 @@ export class ProductAggregate extends AggregateRootBase {
       return err(entityResult.error);
     }
 
-    const product = new ProductAggregate(entityResult.value);
+    const product = new ProductAggregate(entityResult.value, clock);
+    // Ensure product entity uses the same clock for updatedAt when mutated.
+    // Static setter is pragmatic and test-friendly for this migration.
+    ProductEntity.setClock({ now: () => clock.now() });
 
     // Apply creation event
-    const event = new ProductCreatedDomainEvent(id.getValue(), 1, metadata, {
-      name: name.getValue(),
-      sku: sku.getValue(),
-      price: price.getValue(),
-      currency: price.getCurrency(),
-      categoryId: category.getId(),
-      categoryName: category.getName(),
-      status: 'DRAFT',
-      description,
-    });
+    const event = new ProductCreatedDomainEvent(
+      id.getValue(),
+      1,
+      metadata,
+      {
+        name: name.getValue(),
+        sku: sku.getValue(),
+        price: price.getValue(),
+        currency: price.getCurrency(),
+        categoryId: category.getId(),
+        categoryName: category.getName(),
+        status: 'DRAFT',
+        description,
+      },
+      clock.now(),
+    );
 
     product.apply(event);
     return ok(product);
@@ -142,6 +160,7 @@ export class ProductAggregate extends AggregateRootBase {
           }),
         },
       },
+      this.clock.now(),
     );
 
     this.apply(event);
@@ -178,6 +197,7 @@ export class ProductAggregate extends AggregateRootBase {
         newPrice: newPrice.getValue(),
         currency: newPrice.getCurrency(),
       },
+      this.clock.now(),
     );
 
     this.apply(event);
@@ -210,6 +230,7 @@ export class ProductAggregate extends AggregateRootBase {
         newCategoryId: category.getId(),
         newCategoryName: category.getName(),
       },
+      this.clock.now(),
     );
 
     this.apply(event);
@@ -236,6 +257,7 @@ export class ProductAggregate extends AggregateRootBase {
       this.entity.id.getValue(),
       this.version + 1,
       metadata,
+      this.clock.now(),
     );
 
     this.apply(event);
@@ -262,6 +284,7 @@ export class ProductAggregate extends AggregateRootBase {
       this.entity.id.getValue(),
       this.version + 1,
       metadata,
+      this.clock.now(),
     );
 
     this.apply(event);
@@ -284,6 +307,7 @@ export class ProductAggregate extends AggregateRootBase {
       this.entity.id.getValue(),
       this.version + 1,
       metadata,
+      this.clock.now(),
     );
 
     this.apply(event);

@@ -91,7 +91,10 @@ export abstract class AggregateRootBase {
   protected executeBusinessLogic(operation: () => void): Result<void, string> {
     const validationResult = this.validateInvariants();
     if (!validationResult.success) {
-      return failure(validationResult.error);
+      // Narrow the union to the failure branch before accessing `error` so
+      // TypeScript stops complaining about property access on the success variant.
+      const err = (validationResult as { success: false; error: string }).error;
+      return failure(err);
     }
 
     try {

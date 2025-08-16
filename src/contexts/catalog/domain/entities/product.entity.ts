@@ -54,6 +54,12 @@ export interface ProductEntityProps {
  * Handles product identity, validation, and state management.
  */
 export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
+  private static clock: { now: () => Date } = { now: () => new Date() };
+
+  public static setClock(c: { now: () => Date }) {
+    this.clock = c;
+  }
+
   private constructor(props: ProductEntityProps) {
     super(props, props.id);
   }
@@ -186,7 +192,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       name: newName,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
@@ -208,7 +214,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       description,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
@@ -232,7 +238,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       price: newPrice,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
@@ -254,7 +260,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       category: newCategory,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
@@ -282,7 +288,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       status: activeStatus,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
@@ -310,7 +316,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       status: inactiveStatus,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
@@ -334,7 +340,7 @@ export class ProductEntity extends EntityBase<ProductEntityProps, ProductId> {
     const updatedProps: ProductEntityProps = {
       ...this.props,
       status: deletedStatus,
-      updatedAt: new Date(),
+      updatedAt: ProductEntity.clock.now(),
     };
 
     return ProductEntity.create(updatedProps);
