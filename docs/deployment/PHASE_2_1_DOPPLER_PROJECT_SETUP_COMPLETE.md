@@ -129,7 +129,7 @@ test('should have correct project configuration', () => {
 
 ```bash
 # Run setup validation
-node test-doppler-setup.js
+node tools\doppler\test-doppler-setup.js
 
 # Expected output:
 # 🔧 Testing Doppler Project Setup...
@@ -240,7 +240,7 @@ await manager.setSecret('gs-scaffold-api', 'dev', 'NEW_SECRET', 'secret-value');
 ### New Files
 
 - `src/shared/config/doppler-setup.ts` - Core project management
-- `test-doppler-setup.js` - Validation and testing utilities
+- `tools\doppler\test-doppler-setup.js` - Validation and testing utilities
 
 ### Dependencies
 

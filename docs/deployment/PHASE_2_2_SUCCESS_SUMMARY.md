@@ -51,10 +51,10 @@
 
 ```bash
 # View all secrets
-.\doppler.bat secrets --project gs-scaffold-api --config dev_main
+.\tools\doppler\doppler.bat secrets --project gs-scaffold-api --config dev_main
 
 # Check authentication
-.\doppler.bat me
+.\tools\doppler\doppler.bat me
 ```
 
 ### 🚀 What's Ready for Next Phase

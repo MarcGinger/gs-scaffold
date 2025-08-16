@@ -66,9 +66,9 @@ Production Ready: ✅
 
 ### Migration Tools
 
-- `migrate-secrets.js` - Interactive secret migration with priority groups
-- `doppler.bat` - Windows CLI wrapper for consistent access
-- `validate-doppler-simple.js` - Production readiness validation
+- `tools\doppler\migrate-secrets.js` - Interactive secret migration with priority groups
+- `tools\doppler\doppler.bat` - Windows CLI wrapper for consistent access
+- `tools\doppler\validate-doppler-simple.js` - Production readiness validation
 
 ### Documentation
 
@@ -180,4 +180,4 @@ Your application now has:
 
 ---
 
-_Need help? Check the integration guides or run `node validate-doppler-simple.js` to verify your setup._
+_Need help? Check the integration guides or run `node tools\doppler\validate-doppler-simple.js` to verify your setup._

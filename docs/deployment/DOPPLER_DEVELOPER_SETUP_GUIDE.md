@@ -492,11 +492,11 @@ doppler secrets
 doppler secrets get DATABASE_POSTGRES_URL --plain
 
 # Validate application configuration
-node validate-doppler-simple.js
+node tools\doppler\validate-doppler-simple.js
 
 # Check application integration
 npm run build
-node test-integration.js
+node tools\doppler\test-integration.js
 ```
 
 ### Validation Scripts
@@ -505,7 +505,7 @@ The project includes validation scripts:
 
 ```bash
 # Simple validation (no TypeScript compilation)
-node validate-doppler-simple.js
+node tools\doppler\validate-doppler-simple.js
 
 # Full validation (with TypeScript)
 node validate-doppler-integration.js
@@ -726,8 +726,8 @@ export const MyDomainConfigSchema = z.object({
 - `docs/deployment/DOPPLER_INTEGRATION_GUIDE.md` - Complete integration guide
 - `docs/deployment/APP_MODULE_INTEGRATION_EXAMPLE.md` - NestJS integration examples
 - `DOPPLER_SUCCESS_SUMMARY.md` - Implementation summary
-- `migrate-secrets.js` - Interactive migration script
-- `validate-doppler-simple.js` - Validation script
+- `tools\doppler\migrate-secrets.js` - Interactive migration script
+- `tools\doppler\validate-doppler-simple.js` - Validation script
 
 ### Quick Reference Commands
 
@@ -746,7 +746,7 @@ doppler secrets download         # Backup secrets
 doppler me                       # Check auth
 doppler configure               # Check config
 doppler --version               # Check CLI version
-node validate-doppler-simple.js # Validate setup
+node tools\doppler\validate-doppler-simple.js # Validate setup
 ```
 
 ---

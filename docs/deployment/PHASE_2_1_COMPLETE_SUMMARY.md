@@ -22,7 +22,7 @@
 - Service token generation with secure display
 - Environment setup (dev/staging/prod)
 
-#### 3. **Testing & Validation** (`test-doppler-setup.js`)
+#### 3. **Testing & Validation** (`tools\doppler\test-doppler-setup.js`)
 
 - Authentication status checking
 - Project listing and verification
@@ -74,7 +74,7 @@ if (result.success) {
 
 ```bash
 # Test current setup status
-node test-doppler-setup.js
+node tools\doppler\test-doppler-setup.js
 
 # Expected output:
 # ✅ Authentication status
